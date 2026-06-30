@@ -5,6 +5,9 @@ on:
     - cron: '0 16 * * *'  # 18:00 CET (UTC+2 estate)
   workflow_dispatch:       # avvio manuale dalla UI GitHub
 
+permissions:
+  contents: write
+
 jobs:
   send_email:
     runs-on: ubuntu-latest
