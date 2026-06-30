@@ -1,0 +1,43 @@
+name: Scraping offerte
+
+on:
+  schedule:
+    # Orari italiani estivi (CEST = UTC+2). In inverno aggiungere 1 ora ai cron.
+    - cron: '0 7 * * *'    # 09:00 CET
+    - cron: '0 10 * * *'   # 12:00 CET
+    - cron: '0 13 * * *'   # 15:00 CET
+    - cron: '30 15 * * *'  # 17:30 CET
+  workflow_dispatch:        # avvio manuale dalla UI GitHub
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Esegui scraping
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
+        run: python run_manual_scrape.py
+
+      - name: Salva memoria (commit JSON)
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add offerte_viste.json offerte_giornaliere.json
+          git diff --staged --quiet || git commit -m "chore: aggiorna stato scraper [skip ci]"
+          git push

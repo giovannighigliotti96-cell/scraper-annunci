@@ -1,0 +1,39 @@
+name: Invio email giornaliera
+
+on:
+  schedule:
+    - cron: '0 16 * * *'  # 18:00 CET (UTC+2 estate)
+  workflow_dispatch:       # avvio manuale dalla UI GitHub
+
+jobs:
+  send_email:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Invia email e svuota accumulo giornaliero
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
+        run: python run_email_job.py
+
+      - name: Salva stato post-email
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          git add offerte_giornaliere.json
+          git diff --staged --quiet || git commit -m "chore: svuota giornaliere post-email [skip ci]"
+          git push
