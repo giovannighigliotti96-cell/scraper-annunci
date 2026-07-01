@@ -1358,10 +1358,6 @@ def invia_email(nuove_offerte):
         logging.error("Credenziali email mancanti. Controlla il file .env")
         return False
 
-    print(f"[DEBUG EMAIL] GMAIL_USER len={len(GMAIL_USER)} repr_start={repr(GMAIL_USER[:5])}")
-    print(f"[DEBUG EMAIL] DESTINATION_EMAIL len={len(DESTINATION_EMAIL)} repr_start={repr(DESTINATION_EMAIL[:5])}")
-    print(f"[DEBUG EMAIL] GMAIL_APP_PASSWORD len={len(GMAIL_APP_PASSWORD)}")
-
     data_oggi = datetime.now().strftime("%d/%m/%Y")
     
     msg = MIMEMultipart()
