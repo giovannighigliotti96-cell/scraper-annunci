@@ -2,7 +2,7 @@ name: Scraping offerte
 
 on:
   schedule:
-    # Orari italiani estivi (CEST = UTC+2). In inverno aggiungere 1 ora ai cron.
+    # Orari italiani estivi (CEST = UTC+2). In inverno aggiungere 1 ora.
     # Minuto :17 per evitare il picco di carico GitHub a inizio ora (best practice)
     - cron: '17 7 * * *'   # 09:17 CEST
     - cron: '17 10 * * *'  # 12:17 CEST
