@@ -1363,7 +1363,7 @@ def invia_email(nuove_offerte):
     msg = MIMEMultipart()
     msg['From'] = GMAIL_USER
     msg['To'] = DESTINATION_EMAIL
-    msg['Subject'] = f"[Job Alert] Nuove offerte Multi-City – {data_oggi}"
+    msg['Subject'] = f"[Job Alert] Nuove offerte Multi-City - {data_oggi}"
     
     body = ""
     if not nuove_offerte:
@@ -1435,7 +1435,7 @@ def invia_email(nuove_offerte):
         except Exception as e:
             logging.error(f"Errore caricamento prospect: {e}")
             
-    msg.attach(MIMEText(body, 'plain'))
+    msg.attach(MIMEText(body, 'plain', 'utf-8'))
     
     retry_delays = [5, 15, 30]
     for attempt, delay in enumerate(retry_delays):
