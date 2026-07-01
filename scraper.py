@@ -20,9 +20,9 @@ from curl_cffi import requests as curl_requests
 # ==========================================
 load_dotenv(override=True)
 
-GMAIL_USER = os.getenv("GMAIL_USER")
-GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").strip()
-DESTINATION_EMAIL = os.getenv("DESTINATION_EMAIL")
+GMAIL_USER = os.getenv("GMAIL_USER", "").strip().lstrip('﻿').strip()
+GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").lstrip('﻿').strip()
+DESTINATION_EMAIL = os.getenv("DESTINATION_EMAIL", "").strip().lstrip('﻿').strip()
 INCLUDE_UNVERIFIED = True
 PENDING_SCRAPER_EMAIL_FILE = "pending_scraper_email.json"
 
@@ -1357,7 +1357,11 @@ def invia_email(nuove_offerte):
     if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
         logging.error("Credenziali email mancanti. Controlla il file .env")
         return False
-        
+
+    print(f"[DEBUG EMAIL] GMAIL_USER len={len(GMAIL_USER)} repr_start={repr(GMAIL_USER[:5])}")
+    print(f"[DEBUG EMAIL] DESTINATION_EMAIL len={len(DESTINATION_EMAIL)} repr_start={repr(DESTINATION_EMAIL[:5])}")
+    print(f"[DEBUG EMAIL] GMAIL_APP_PASSWORD len={len(GMAIL_APP_PASSWORD)}")
+
     data_oggi = datetime.now().strftime("%d/%m/%Y")
     
     msg = MIMEMultipart()
@@ -1452,7 +1456,8 @@ def invia_email(nuove_offerte):
                 os.remove(PENDING_SCRAPER_EMAIL_FILE)
             return True
         except Exception as e:
-            logging.warning(f"Tentativo {attempt+1}/{len(retry_delays)} invio email fallito: {e}")
+            import traceback
+            logging.warning(f"Tentativo {attempt+1}/{len(retry_delays)} invio email fallito: {e}\n{traceback.format_exc()}")
             if attempt < len(retry_delays) - 1:
                 time.sleep(delay)
                 
