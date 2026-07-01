@@ -82,6 +82,12 @@ logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(levelname)s - %(message)s"
 )
+# In GitHub Actions (no TTY) stampa WARNING+ anche su stdout per visibilità nei log
+if not sys.stdout.isatty():
+    _stdout_handler = logging.StreamHandler(sys.stdout)
+    _stdout_handler.setLevel(logging.WARNING)
+    _stdout_handler.setFormatter(logging.Formatter("%(asctime)s - %(levelname)s - %(message)s"))
+    logging.getLogger().addHandler(_stdout_handler)
 
 # ==========================================
 # LOGICA CV E MATCHING COMPETENZE
@@ -1589,14 +1595,19 @@ def invia_email_job():
     print(f"[{datetime.now()}] Avvio invio email report giornaliero...")
     giornaliere_dicts = load_giornaliere()
     offerte_da_inviare = [ScrapedJob.from_dict(d) for d in giornaliere_dicts]
-    
-    invia_email(offerte_da_inviare)
-    
-    msg_log = f"[EMAIL 18:00] Report inviato con {len(offerte_da_inviare)} offerte totali del giorno"
-    logging.info(msg_log)
-    print(msg_log)
-    
-    clear_giornaliere()
+
+    success = invia_email(offerte_da_inviare)
+
+    if success:
+        msg_log = f"[EMAIL 18:00] Email inviata con successo: {len(offerte_da_inviare)} offerte totali del giorno"
+        logging.info(msg_log)
+        print(msg_log)
+        clear_giornaliere()
+    else:
+        msg_err = f"[EMAIL 18:00] ERRORE: invio email fallito dopo tutti i tentativi. Le offerte restano in giornaliere.json."
+        logging.error(msg_err)
+        print(msg_err)
+        sys.exit(1)
 
 def reset_notturno():
     clear_giornaliere()
