@@ -15,7 +15,7 @@ from scraper import (
     WyserScraper, RandstadScraper, LhhScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta, get_match_type,
-    get_job_id
+    get_job_id, calcola_punteggio_e_modalita
 )
 
 if __name__ == "__main__":
@@ -79,6 +79,14 @@ if __name__ == "__main__":
             continue
         if snippet_sig and snippet_sig in seen_snippets:
             continue
+
+        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(job.link, job.snippet or "")
+        job.match_level = match_level
+        job.match_count = match_count
+        job.work_mode = work_mode
+        job.fetch_status = fetch_status
+        job.probabilita = probabilita
+        job.motivazione = motivazione
 
         nuove_offerte.append(job)
         viste.add(job_id)
