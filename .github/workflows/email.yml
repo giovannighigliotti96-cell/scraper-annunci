@@ -2,7 +2,7 @@ name: Invio email giornaliera
 
 on:
   schedule:
-    - cron: '0 16 * * *'  # 18:00 CET (UTC+2 estate)
+    - cron: '5 16 * * *'   # 18:05 CEST (UTC+2 estate, fuori picco)
   workflow_dispatch:       # avvio manuale dalla UI GitHub
 
 permissions:
