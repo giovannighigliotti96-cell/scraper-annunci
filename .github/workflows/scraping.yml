@@ -10,6 +10,10 @@ on:
     - cron: '30 15 * * *'  # 17:30 CEST (già fuori picco)
   workflow_dispatch:        # avvio manuale dalla UI GitHub
 
+concurrency:
+  group: scraping
+  cancel-in-progress: false
+
 permissions:
   contents: write
 
@@ -44,4 +48,5 @@ jobs:
           git config --local user.name "GitHub Actions"
           git add offerte_viste.json offerte_giornaliere.json
           git diff --staged --quiet || git commit -m "chore: aggiorna stato scraper [skip ci]"
+          git pull --rebase origin main
           git push
