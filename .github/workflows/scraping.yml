@@ -12,7 +12,7 @@ on:
 
 concurrency:
   group: scraping
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 permissions:
   contents: write
@@ -46,7 +46,43 @@ jobs:
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
+
+          # Backup dei JSON prodotti da questo run
+          cp offerte_viste.json /tmp/run_viste.json
+          cp offerte_giornaliere.json /tmp/run_gior.json
+
+          # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
+          git fetch origin main
+          git reset --hard origin/main
+
+          # Merge intelligente: unisce i risultati di questo run con lo stato remoto
+          python3 - <<'EOF'
+          import json
+
+          def load(path, default):
+              try:
+                  with open(path, encoding='utf-8') as f:
+                      return json.load(f)
+              except Exception:
+                  return default
+
+          remote_viste   = load('offerte_viste.json', {})
+          remote_gior    = load('offerte_giornaliere.json', [])
+          our_viste      = load('/tmp/run_viste.json', {})
+          our_gior       = load('/tmp/run_gior.json', [])
+
+          merged_viste = {**remote_viste, **our_viste}
+          existing_links = {j.get('link') for j in remote_gior}
+          merged_gior = remote_gior + [j for j in our_gior if j.get('link') not in existing_links]
+
+          with open('offerte_viste.json', 'w', encoding='utf-8') as f:
+              json.dump(merged_viste, f, ensure_ascii=False, indent=2)
+          with open('offerte_giornaliere.json', 'w', encoding='utf-8') as f:
+              json.dump(merged_gior, f, ensure_ascii=False, indent=2)
+
+          print(f"Merge OK: {len(merged_viste)} URL visti, {len(merged_gior)} offerte oggi")
+          EOF
+
           git add offerte_viste.json offerte_giornaliere.json
           git diff --staged --quiet || git commit -m "chore: aggiorna stato scraper [skip ci]"
-          git pull --rebase origin main
           git push
