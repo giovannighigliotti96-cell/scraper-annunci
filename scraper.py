@@ -515,6 +515,7 @@ class LinkedInScraper(BaseScraper):
             "Head of Growth",
             "Growth Marketing Manager",
             "Digital Marketing Manager",
+            "Digital Sales Manager",
             "Marketing Manager",
             "Responsabile Marketing",
         ]
@@ -702,6 +703,8 @@ class MichaelPageScraper(BaseScraper):
         urls = [
             "https://www.michaelpage.it/jobs/marketing",
             "https://www.michaelpage.it/jobs/sales-marketing",
+            "https://www.michaelpage.it/jobs/digital",
+            "https://www.michaelpage.it/jobs/commercial",
         ]
         seen = set()
         for url in urls:
@@ -766,7 +769,7 @@ class GiGroupScraper(BaseScraper):
     def scrape(self, city_name, city_config):
         import json as _json
         jobs = []
-        url = f"https://www.gigroup.it/offerte-lavoro/?q=marketing+manager"
+        search_keywords = ["marketing+manager", "digital+marketing+manager", "digital+sales+manager", "head+of+growth"]
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "it-IT,it;q=0.9",
@@ -775,12 +778,14 @@ class GiGroupScraper(BaseScraper):
         # Scrape solo per Genova per evitare 3x chiamate identiche (no filtro città)
         if city_name != "Genova":
             return []
-        try:
+        seen = set()
+        for kw in search_keywords:
+          url = f"https://www.gigroup.it/offerte-lavoro/?q={kw}"
+          try:
             response = requests.get(url, headers=headers, timeout=12)
-            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
+            logging.info(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
-                seen = set()
                 # a[data-job] contiene JSON con offerTitle e province
                 for a in soup.find_all("a", attrs={"data-job": True}):
                     try:
@@ -804,14 +809,14 @@ class GiGroupScraper(BaseScraper):
                                                city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
                     except Exception:
                         pass
-                if not jobs:
-                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
             else:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-        except requests.exceptions.Timeout:
-            logging.error(f"{self.portal_name}: timeout della richiesta")
-        except Exception as e:
-            logging.error(f"Errore scraping {self.portal_name}: {e}")
+                logging.error(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
+          except requests.exceptions.Timeout:
+              logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
+          except Exception as e:
+              logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
 
 
@@ -965,7 +970,7 @@ class RandstadScraper(BaseScraper):
             """,
             "variables": {
                 "search_mainSearchJobs": {
-                    "searchValues": ["marketing manager", "responsabile marketing", "head of growth", "head of marketing", "digital marketing manager"]
+                    "searchValues": ["marketing manager", "responsabile marketing", "head of growth", "head of marketing", "digital marketing manager", "digital sales manager"]
                 },
                 "query_mainSearchJobs": {
                     "sort": {
@@ -1051,20 +1056,24 @@ class AdzunaScraper(BaseScraper):
 
     def scrape(self, city_name, city_config):
         import json as _json
+        import re as _re
         jobs = []
-        url = f"https://www.adzuna.it/search?q=marketing+manager&w={city_name}&sort_by=date"
+        search_keywords = ["marketing+manager", "digital+marketing+manager", "digital+sales+manager", "head+of+growth"]
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        try:
+        seen = set()
+        for kw in search_keywords:
+          url = f"https://www.adzuna.it/search?q={kw}&w={city_name}&sort_by=date"
+          try:
             response = requests.get(url, headers=headers, timeout=12)
-            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
+            logging.info(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
 
-                # --- Strategia 1: JSON-LD (manteniamo per compatibilità futura) ---
+                # --- Strategia 1: JSON-LD ---
                 for script in soup.find_all("script", type="application/ld+json"):
                     try:
                         data = _json.loads(script.string or "{}")
@@ -1072,8 +1081,9 @@ class AdzunaScraper(BaseScraper):
                         for item in items:
                             if item.get("@type") == "JobPosting":
                                 title = item.get("title", "")
-                                if is_valid_job_title(title):
-                                    link = item.get("url", url)
+                                link = item.get("url", url)
+                                if is_valid_job_title(title) and link not in seen:
+                                    seen.add(link)
                                     company = item.get("hiringOrganization", {}).get("name", "")
                                     date = item.get("datePosted", "")
                                     desc = item.get("description", "")
@@ -1085,43 +1095,37 @@ class AdzunaScraper(BaseScraper):
                     except Exception:
                         pass
 
-                # --- Strategia 2: article[data-aid] (struttura attuale Adzuna) ---
-                if not jobs:
-                    import re as _re
-                    seen = set()
-                    for article in soup.find_all("article", attrs={"data-aid": True}):
-                        # Titolo: h2 > a[data-js="jobLink"]
-                        title_a = article.find("h2").find("a", attrs={"data-js": "jobLink"}) if article.find("h2") else None
-                        if not title_a:
-                            continue
-                        # get_text(" ") evita concatenazione senza spazio per inline tags (<strong> ecc.)
-                        title = _re.sub(r'\s+', ' ', title_a.get_text(" ", strip=True)).strip()
-                        link = title_a.get("href", "")
-                        if not title or not link or link in seen:
-                            continue
-                        if not link.startswith("http"):
-                            link = "https://www.adzuna.it" + link
-                        if not is_valid_job_title(title):
-                            continue
-                        seen.add(link)
-                        company_el = article.find(class_="ui-company")
-                        company = company_el.get_text(strip=True) if company_el else ""
-                        snippet_el = article.find(class_="max-snippet-height")
-                        snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, snippet)
-                        jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                               snippet=snippet[:150],
-                                               match_level=match_level, match_count=match_count,
-                                               city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
-
-                if not jobs:
-                    logging.error(f"{self.portal_name}: 0 offerte trovate. HTML preview: {response.text[:200]}")
+                # --- Strategia 2: article[data-aid] ---
+                for article in soup.find_all("article", attrs={"data-aid": True}):
+                    title_a = article.find("h2").find("a", attrs={"data-js": "jobLink"}) if article.find("h2") else None
+                    if not title_a:
+                        continue
+                    title = _re.sub(r'\s+', ' ', title_a.get_text(" ", strip=True)).strip()
+                    link = title_a.get("href", "")
+                    if not title or not link or link in seen:
+                        continue
+                    if not link.startswith("http"):
+                        link = "https://www.adzuna.it" + link
+                    if not is_valid_job_title(title):
+                        continue
+                    seen.add(link)
+                    company_el = article.find(class_="ui-company")
+                    company = company_el.get_text(strip=True) if company_el else ""
+                    snippet_el = article.find(class_="max-snippet-height")
+                    snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
+                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, snippet)
+                    jobs.append(ScrapedJob(title, company, self.portal_name, link,
+                                           snippet=snippet[:150],
+                                           match_level=match_level, match_count=match_count,
+                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
             else:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-        except requests.exceptions.Timeout:
-            logging.error(f"{self.portal_name}: timeout della richiesta")
-        except Exception as e:
-            logging.error(f"Errore scraping {self.portal_name}: {e}")
+                logging.error(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
+          except requests.exceptions.Timeout:
+              logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
+          except Exception as e:
+              logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
 
 
@@ -1285,7 +1289,7 @@ class LhhScraper(BaseScraper):
 
     def scrape(self, city_name, city_config):
         jobs = []
-        keywords = ["marketing"]
+        keywords = ["marketing", "digital sales", "head of growth"]
         lhh_location = city_config.get("lhh_location", f"{city_name}%2C+Italia")
 
         url = "https://www.lhh.com/api/data/jobs/summarized"
