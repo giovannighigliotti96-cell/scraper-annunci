@@ -1,1 +1,34 @@
-[]
+[
+  {
+    "title": "Offer marketing Manager PLC process",
+    "company": "Schneider Electric",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/offer-marketing-manager-plc-process-at-schneider-electric-4436220940",
+    "date": "Data non disponibile",
+    "snippet": "",
+    "match_level": "Alto",
+    "match_count": 5,
+    "city": "Milano",
+    "work_mode": "ibrido",
+    "fetch_status": "ok",
+    "match_type": "esatto",
+    "probabilita": 93,
+    "motivazione": "Hai: CRM, B2B, Funnel / CRO, Revenue / P&L (+8 altri). Gap: Salesforce"
+  },
+  {
+    "title": "Performance Marketing Manager",
+    "company": "Kotton",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/performance-marketing-manager-at-kotton-4434512940",
+    "date": "Data non disponibile",
+    "snippet": "",
+    "match_level": "Alto",
+    "match_count": 5,
+    "city": "Milano",
+    "work_mode": "ibrido",
+    "fetch_status": "ok",
+    "match_type": "esatto",
+    "probabilita": 92,
+    "motivazione": "Hai: CRM, Digital Marketing, Funnel / CRO, Budget (+5 altri). Gap: Salesforce"
+  }
+]
