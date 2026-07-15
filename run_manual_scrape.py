@@ -12,7 +12,8 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from scraper import (
     LinkedInScraper, MichaelPageScraper, PagePersonnelScraper,
-    WyserScraper, RandstadScraper, LhhScraper,
+    WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
+    IQMSelezioneScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta, get_match_type,
     get_job_id, calcola_punteggio_e_modalita
@@ -29,8 +30,10 @@ if __name__ == "__main__":
         MichaelPageScraper(),
         PagePersonnelScraper(),
         WyserScraper(),
-        RandstadScraper(),
         LhhScraper(),
+        GiGroupScraper(),
+        ManpowerScraper(),
+        IQMSelezioneScraper(),
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")

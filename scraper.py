@@ -305,6 +305,34 @@ EXACT_TITLES = [
     "responsabile marketing"
 ]
 
+# Keyword di ricerca da inviare alle API/search box dei portali che supportano
+# la ricerca per titolo (LinkedIn, LHH, GiGroup). Una voce per ciascun titolo
+# target distinto in EXACT_TITLES (varianti di punteggiatura "&"/"e"/"and"
+# accorpate in una sola voce). I portali che invece scaricano un'intera
+# pagina categoria e filtrano lato client (MichaelPage, PagePersonnel, Wyser,
+# Manpower, IQMSelezione) vedono già tutti i titoli tramite is_valid_job_title
+# e non hanno bisogno di questa lista.
+SEARCH_KEYWORDS = [
+    "Digital Sales and Marketing Manager",
+    "Growth Marketing Manager",
+    "Head of Growth",
+    "Digital Marketing Manager",
+    "Revenue Growth Manager",
+    "Go to Market Manager",
+    "Demand Generation Manager",
+    "B2B Marketing Manager",
+    "Performance Marketing Manager",
+    "Customer Acquisition Manager",
+    "CRM and Marketing Automation Manager",
+    "Commercial Strategy Manager",
+    "Digital Sales Manager",
+    "Marketing and Sales Manager",
+    "Growth and GTM Manager",
+    "Marketing Manager",
+    "Responsabile Marketing & Sales",
+    "Responsabile Marketing",
+]
+
 PARTIAL_KEYWORDS = []
 
 # Combinazioni: ENTRAMBE le parole devono essere nel titolo
@@ -510,16 +538,9 @@ class LinkedInScraper(BaseScraper):
         import json as _json
         import time
         jobs = []
-        
-        keywords = [
-            "Head of Growth",
-            "Growth Marketing Manager",
-            "Digital Marketing Manager",
-            "Digital Sales Manager",
-            "Marketing Manager",
-            "Responsabile Marketing",
-        ]
-        
+
+        keywords = SEARCH_KEYWORDS
+
         seen_links = set()
         
         # LinkedIn geolocalizza in modo errato le città italiane con l'italiano.
@@ -548,7 +569,8 @@ class LinkedInScraper(BaseScraper):
                 
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    
+                    jobs_before_strategia1 = len(jobs)
+
                     # Strategia 1: JSON-LD JobPosting
                     for script in soup.find_all("script", type="application/ld+json"):
                         try:
@@ -575,7 +597,10 @@ class LinkedInScraper(BaseScraper):
                             pass
                     
                     # Strategia 2: card HTML standard LinkedIn (classe base-card)
-                    if not jobs:
+                    # Solo se QUESTA keyword non ha trovato nulla via JSON-LD — non deve
+                    # dipendere dall'accumulatore globale, altrimenti una keyword precedente
+                    # che trova anche un solo risultato disattiva il fallback per tutte le successive.
+                    if len(jobs) == jobs_before_strategia1:
                         for card in soup.find_all("div", class_=lambda c: c and "base-card" in c):
                             title_elem = card.find(class_=lambda c: c and "base-search-card__title" in (c or ""))
                             company_elem = card.find(class_=lambda c: c and "base-search-card__subtitle" in (c or ""))
@@ -762,14 +787,23 @@ class GiGroupScraper(BaseScraper):
     """
     GiGroup — La pagina è SSR (WordPress) con dati job embedded nel tag a[data-job].
     Il filtro città via querystring non funziona: si filtra per province nel JSON data-job.
+    Il parametro di ricerca per titolo è "job" (verificato 2026-07-15 tramite il
+    <form>: <input name="job" placeholder="POSIZIONE">) — "q" (usato in precedenza)
+    non ha alcun effetto sul risultato server-side, viene ignorato silenziosamente
+    e restituisce sempre lo stesso listato generico non filtrato.
+    Aggiunge 2s di delay tra le 18 keyword per evitare rate limiting (osservato
+    dal vivo il 2026-07-15: 11/18 richieste consecutive senza delay sono andate
+    in timeout dopo uso intensivo del sito nella stessa sessione).
     """
     def __init__(self):
         super().__init__("GiGroup")
 
     def scrape(self, city_name, city_config):
         import json as _json
+        import urllib.parse as _urlparse
+        import time
         jobs = []
-        search_keywords = ["marketing+manager", "digital+marketing+manager", "digital+sales+manager", "head+of+growth"]
+        search_keywords = SEARCH_KEYWORDS
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
             "Accept-Language": "it-IT,it;q=0.9",
@@ -780,7 +814,7 @@ class GiGroupScraper(BaseScraper):
             return []
         seen = set()
         for kw in search_keywords:
-          url = f"https://www.gigroup.it/offerte-lavoro/?q={kw}"
+          url = f"https://www.gigroup.it/offerte-lavoro/?job={_urlparse.quote_plus(kw)}"
           try:
             response = requests.get(url, headers=headers, timeout=12)
             logging.info(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
@@ -801,8 +835,13 @@ class GiGroupScraper(BaseScraper):
                             continue
                         seen.add(href)
                         link = href if href.startswith("http") else "https://www.gigroup.it" + href
-                        province = dj.get("province", "")
-                        job_city = province if province else "Italia"
+                        # Etichettato "Italia" come MichaelPage/IQMSelezione, non con
+                        # dj["province"]: questo scraper gira solo durante l'iterazione
+                        # Genova e viene filtrato con la policy (lenient) di quella città,
+                        # quindi una città reale nel campo "city" farebbe apparire l'annuncio
+                        # nella sezione email di un'altra città senza aver mai applicato
+                        # la sua policy work-mode (es. "solo ibrido" per Milano/Torino).
+                        job_city = "Italia"
                         match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
                         jobs.append(ScrapedJob(title, "GiGroup", self.portal_name, link,
                                                match_level=match_level, match_count=match_count,
@@ -815,6 +854,7 @@ class GiGroupScraper(BaseScraper):
               logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
           except Exception as e:
               logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
+          time.sleep(2)
         if not jobs:
             logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
@@ -922,12 +962,28 @@ class GlassdoorScraper(BaseScraper):
 
 class RandstadScraper(BaseScraper):
     """
-    Randstad IT — utilizza l'API GraphQL ufficiale (api.randstadservices.com).
+    Randstad IT — DISABILITATO (verificato 2026-07-15).
+    L'API GraphQL ufficiale (api.randstadservices.com) risponde 200 e la query
+    è sintatticamente valida, ma il campo searchValues non filtra più i
+    risultati per titolo: interrogando dal vivo "marketing manager" su Milano
+    (raggio 30km) si ottengono le stesse ~223-232 offerte generiche (agenti di
+    commercio, store manager, stage, ecc.) indipendentemente dal termine
+    cercato — su un campione di 100 risultati nessuno conteneva letteralmente
+    uno dei titoli target. Il codice sotto resta funzionante e viene lasciato
+    per un eventuale ripristino se Randstad corregge l'API, ma lo scraper è
+    rimosso dalla lista attiva in esegui_scraping_job/run_manual_scrape.py
+    perché oggi contribuisce solo rumore filtrato via da is_valid_job_title,
+    sprecando una chiamata HTTP per città ad ogni run.
     """
     def __init__(self):
         super().__init__("Randstad")
 
     def scrape(self, city_name, city_config):
+        logging.warning(f"{self.portal_name}: scraper disabilitato (API non filtra più per titolo, verificato 2026-07-15).")
+        return []
+
+    def _scrape_graphql_unused(self, city_name, city_config):
+        """Implementazione originale, non più chiamata — vedi docstring della classe."""
         jobs = []
         url = "https://api.randstadservices.com/job/V1"
         headers = {
@@ -936,11 +992,11 @@ class RandstadScraper(BaseScraper):
             "content-type": "application/json",
             "accept": "application/json"
         }
-        
+
         # Coordinate per la città
         lat = city_config.get("lat", 44.449518)
         lon = city_config.get("lon", 8.892783)
-        
+
         search_query = {
             "query": """
             query ($search_mainSearchJobs: SearchInput, $query_mainSearchJobs: QueryInput, $opcoCodes_mainSearchJobs: [String!]!, $language_mainSearchJobs: LanguageCode!) {
@@ -991,7 +1047,7 @@ class RandstadScraper(BaseScraper):
                 "language_mainSearchJobs": "it"
             }
         }
-        
+
         try:
             response = requests.post(url, json=search_query, headers=headers, timeout=12)
             logging.info(f"{self.portal_name}: HTTP {response.status_code}")
@@ -1002,7 +1058,7 @@ class RandstadScraper(BaseScraper):
                 res2 = response.json()
                 jobs_data = (res2.get("data") or {}).get("search", {})
                 results = jobs_data.get("results", [])
-                
+
                 for res in results:
                     doc = res.get("document", {})
                     title = doc.get("jobTitle", "")
@@ -1014,16 +1070,16 @@ class RandstadScraper(BaseScraper):
                             continue
                         date = doc.get("postingDetail", {}).get("postingTime", "")
                         desc = doc.get("description", {}).get("shortDescription", "")
-                        
+
                         match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, desc)
                         jobs.append(ScrapedJob(
-                            title=title, 
-                            company=company, 
-                            portal=self.portal_name, 
+                            title=title,
+                            company=company,
+                            portal=self.portal_name,
                             link=link,
-                            date=date, 
+                            date=date,
                             snippet=desc,
-                            match_level=match_level, 
+                            match_level=match_level,
                             match_count=match_count,
                             city=city_name,
                             work_mode=work_mode,
@@ -1039,7 +1095,7 @@ class RandstadScraper(BaseScraper):
             logging.error(f"{self.portal_name}: timeout della richiesta")
         except Exception as e:
             logging.error(f"Errore scraping {self.portal_name}: {e}")
-            
+
         return jobs
 
 
@@ -1201,7 +1257,12 @@ class PagePersonnelScraper(BaseScraper):
 
 
 class ManpowerScraper(BaseScraper):
-    """Manpower IT — SSR con link /it/annuncio-lavoro/ e titoli h2. Cerca su Genova."""
+    """
+    Manpower IT — SSR con link /it/annuncio-lavoro/ e titoli h2.
+    Verificato 2026-07-15: il sito è stato ristrutturato, h2 e <a> non sono più
+    in relazione antenato/discendente (h2.find_parent("a") non trova più nulla)
+    — ora entrambi sono figli diretti dello stesso contenitore div.job-position.
+    """
     def __init__(self):
         super().__init__("Manpower")
 
@@ -1219,13 +1280,15 @@ class ManpowerScraper(BaseScraper):
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
                 
-                # Manpower usa h2 con link a /it/annuncio-lavoro/
-                for h2 in soup.find_all("h2"):
-                    parent_a = h2.find_parent("a", href=True)
-                    if parent_a and "/annuncio-lavoro/" in parent_a["href"]:
+                # Manpower: ogni annuncio è un div.job-position con h2 (titolo) e
+                # a[href*=annuncio-lavoro] come figli diretti (non annidati tra loro).
+                for card in soup.find_all("div", class_=lambda c: c and "job-position" in c):
+                    h2 = card.find("h2")
+                    a = card.find("a", href=lambda h: h and "/annuncio-lavoro/" in h)
+                    if h2 and a:
                         title = h2.get_text(strip=True)
                         if is_valid_job_title(title):
-                            link = parent_a["href"]
+                            link = a["href"]
                             if not link.startswith("http"):
                                 link = "https://www.manpower.it" + link
                             match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
@@ -1244,12 +1307,23 @@ class ManpowerScraper(BaseScraper):
 
 
 class IQMSelezioneScraper(BaseScraper):
-    """IQM Selezione — SSR PHP. Parsing dei link a dettaglio.php?annuncio=XXX nella pagina posizioni aperte."""
+    """
+    IQM Selezione — SSR PHP. Parsing dei link a dettaglio.php?annuncio=XXX nella
+    pagina posizioni aperte (unica pagina nazionale, non filtrata per città).
+    Verificato 2026-07-15: i titoli non contengono mai il nome della città
+    (es. "Docente Logistica e Magazzino", nessun riferimento geografico), quindi
+    il vecchio filtro `city_name.lower() in title.lower()` scartava sempre
+    tutto — scarica una sola volta (Genova, come MichaelPage/GiGroup) ed
+    etichetta le offerte come "Italia".
+    """
     def __init__(self):
         super().__init__("IQMSelezione")
 
     def scrape(self, city_name, city_config):
         jobs = []
+        # Pagina unica nazionale: scarica una sola volta per evitare 3x chiamate identiche
+        if city_name != "Genova":
+            return []
         url = "https://www.iqmselezione.it/posizioni-aperte-in-iqmselezione.php"
         headers = {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -1261,17 +1335,16 @@ class IQMSelezioneScraper(BaseScraper):
             logging.info(f"{self.portal_name}: HTTP {response.status_code}")
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
-                
+
                 for a in soup.find_all("a", href=lambda h: h and "dettaglio.php" in h):
                     title = a.get_text(strip=True)
-                    # Filtriamo brutalmente per città nel titolo o nel testo del link se presente
-                    if title and is_valid_job_title(title) and city_name.lower() in title.lower():
+                    if title and is_valid_job_title(title):
                         link = a["href"]
                         if not link.startswith("http"):
                             link = "https://www.iqmselezione.it/" + link
                         match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
                         jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                               match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                               match_level=match_level, match_count=match_count, city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
                 
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
@@ -1288,8 +1361,9 @@ class LhhScraper(BaseScraper):
         super().__init__("LHH")
 
     def scrape(self, city_name, city_config):
+        import urllib.parse as _urlparse
         jobs = []
-        keywords = ["marketing", "digital sales", "head of growth"]
+        keywords = SEARCH_KEYWORDS
         lhh_location = city_config.get("lhh_location", f"{city_name}%2C+Italia")
 
         url = "https://www.lhh.com/api/data/jobs/summarized"
@@ -1301,8 +1375,11 @@ class LhhScraper(BaseScraper):
         }
 
         for kw in keywords:
+            # queryString è un pseudo-querystring "&key=value&key=value" fatto a mano:
+            # kw va URL-encodato (quote_plus) perché una keyword con "&" letterale
+            # (es. "Responsabile Marketing & Sales") spezzerebbe il parsing lato server.
             payload = {
-                "queryString": f"&q={kw}&jobLocation={lhh_location}&radius=10&sort=PostedDate desc",
+                "queryString": f"&q={_urlparse.quote_plus(kw)}&jobLocation={lhh_location}&radius=10&sort=PostedDate desc",
                 "filtersToDisplay": "{AEEBD4FE-DCF4-4D9B-8895-6EE4C1C31F95}|{9D842325-FA99-45EE-9197-AC1749D579DF}|{F4AA5EF6-7E6B-4BBA-B1E3-38E840537688}|{A5D28A27-7525-4F9C-813F-53E1B58D955F}|{366A4861-5C5C-4C12-9776-8CE4789960E0}|{26CA3CFC-0C11-4919-883F-2C8DB522BADC}",
                 "range": 0,
                 "siteName": "lhh",
@@ -1507,7 +1584,12 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
 
 def get_job_id(link: str) -> str:
     """Restituisce un ID univoco per l'offerta basato sul link.
-    Per Google Jobs (che usa htidocid come parametro query) estrae il parametro specifico.
+    Per Google Jobs (che usa htidocid come parametro query) e per IQMSelezione
+    (che usa annuncio come parametro query, es. dettaglio.php?annuncio=123) si
+    estrae il parametro specifico che identifica l'annuncio — per questi portali
+    il path da solo è identico per TUTTI gli annunci, quindi rimuovere la query
+    string con .split("?")[0] collasserebbe ogni annuncio sullo stesso id e ne
+    lascerebbe passare solo il primo mai visto.
     Per gli altri portali rimuove semplicemente i parametri query per evitare duplicati da tracking.
     """
     if "google.com/search" in link or "google.it/search" in link:
@@ -1518,6 +1600,16 @@ def get_job_id(link: str) -> str:
             htidocid = params.get("htidocid", [""])[0]
             if htidocid:
                 return f"google_jobs_{htidocid}"
+        except Exception:
+            pass
+    if "iqmselezione.it" in link and "annuncio=" in link:
+        import urllib.parse as urlparse
+        try:
+            parsed = urlparse.urlparse(link)
+            params = urlparse.parse_qs(parsed.query)
+            annuncio_id = params.get("annuncio", [""])[0]
+            if annuncio_id:
+                return f"iqmselezione_{annuncio_id}"
         except Exception:
             pass
     return link.split("?")[0]
@@ -1532,8 +1624,10 @@ def esegui_scraping_job(orario_label):
         MichaelPageScraper(),
         PagePersonnelScraper(),
         WyserScraper(),
-        RandstadScraper(),
         LhhScraper(),
+        GiGroupScraper(),
+        ManpowerScraper(),
+        IQMSelezioneScraper(),
     ]
     
     tutte_le_offerte = []
