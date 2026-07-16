@@ -2,12 +2,19 @@ name: Scraping offerte
 
 on:
   schedule:
-    # Orari italiani estivi (CEST = UTC+2). In inverno aggiungere 1 ora.
-    # Minuto :17 per evitare il picco di carico GitHub a inizio ora (best practice)
-    - cron: '17 7 * * *'   # 09:17 CEST
+    # GitHub Actions cron è sempre in UTC, ma l'Italia alterna CEST (UTC+2, marzo-ottobre)
+    # e CET (UTC+1, ottobre-marzo). Per ogni orario italiano target ci sono quindi DUE
+    # cron entry (una per stagione): lo step "Verifica orario" più sotto controlla l'ora
+    # locale italiana reale ed esegue lo scraping solo se corrisponde a un orario target,
+    # così esattamente una delle due invocazioni gira per davvero in ciascuna stagione.
+    - cron: '17 7 * * *'   # 09:17 CEST (UTC+2, estate)
+    - cron: '17 8 * * *'   # 09:17 CET (UTC+1, inverno)
     - cron: '17 10 * * *'  # 12:17 CEST
+    - cron: '17 11 * * *'  # 12:17 CET
     - cron: '17 13 * * *'  # 15:17 CEST
-    - cron: '30 15 * * *'  # 17:30 CEST (già fuori picco)
+    - cron: '17 14 * * *'  # 15:17 CET
+    - cron: '30 15 * * *'  # 17:30 CEST
+    - cron: '30 16 * * *'  # 17:30 CET
   workflow_dispatch:        # avvio manuale dalla UI GitHub
 
 concurrency:
@@ -21,21 +28,45 @@ jobs:
   scrape:
     runs-on: ubuntu-latest
     steps:
+      - name: Verifica orario italiano (gestisce cambio ora legale/solare)
+        id: check_time
+        run: |
+          ORA_ITALIA=$(TZ='Europe/Rome' date +%H:%M)
+          echo "Ora locale Italia: $ORA_ITALIA"
+          SHOULD_RUN=false
+          ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
+          for TARGET in "09:17" "12:17" "15:17" "17:30"; do
+            TARGET_SEC=$(date -d "$TARGET" +%s)
+            TARGET_END_SEC=$((TARGET_SEC + 900))
+            if [ "$ORA_SEC" -ge "$TARGET_SEC" ] && [ "$ORA_SEC" -lt "$TARGET_END_SEC" ]; then
+              SHOULD_RUN=true
+            fi
+          done
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHOULD_RUN=true
+          fi
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "Esecuzione scraping: $SHOULD_RUN"
+
       - name: Checkout repo
+        if: steps.check_time.outputs.should_run == 'true'
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
+        if: steps.check_time.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Installa dipendenze
+        if: steps.check_time.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
       - name: Esegui scraping
+        if: steps.check_time.outputs.should_run == 'true'
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -44,6 +75,7 @@ jobs:
         run: python run_manual_scrape.py
 
       - name: Salva memoria (commit JSON)
+        if: steps.check_time.outputs.should_run == 'true'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"

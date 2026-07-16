@@ -2,13 +2,13 @@ import os
 import time
 import json
 import shutil
+import tempfile
 import logging
 from datetime import datetime
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 
-import schedule
 import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
@@ -39,6 +39,7 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 INCLUDE_UNVERIFIED = True
 PENDING_SCRAPER_EMAIL_FILE = "pending_scraper_email.json"
 SOGLIA_CV_PERSONALIZZATO = 80  # probabilita >= a questa soglia attiva la personalizzazione CV
+CV_PERSONALIZZAZIONE_BUDGET_SECONDI = 480  # tempo massimo totale dedicato alla personalizzazione CV per run email
 
 import sys
 
@@ -171,7 +172,9 @@ _anthropic_warning_shown = False
 def _get_anthropic_client():
     global _anthropic_client
     if _anthropic_client is None and ANTHROPIC_SDK_AVAILABLE and ANTHROPIC_API_KEY:
-        _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=30.0)
+        # timeout allineato a effort "high" (ragionamento più lento): 30s era troppo
+        # basso e causava fallback silenzioso all'euristica a keyword sotto carico normale
+        _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=120.0)
     return _anthropic_client
 
 MATCH_LLM_MODEL = "claude-sonnet-5"
@@ -220,7 +223,7 @@ def valuta_match_llm(job_text: str) -> tuple:
     try:
         response = client.messages.create(
             model=MATCH_LLM_MODEL,
-            max_tokens=1024,
+            max_tokens=4096,
             system=[{
                 "type": "text",
                 "text": system_prompt,
@@ -246,13 +249,15 @@ def valuta_match_llm(job_text: str) -> tuple:
                 },
             },
         )
-        testo_risposta = next(b.text for b in response.content if b.type == "text")
+        testo_risposta = next((b.text for b in response.content if b.type == "text"), None)
+        if testo_risposta is None:
+            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
         dati = json.loads(testo_risposta)
         probabilita = max(0, min(100, int(dati["probabilita"])))
         motivazione = dati["motivazione"].strip()
         return probabilita, motivazione
     except Exception as e:
-        logging.warning(f"Match LLM fallito, ricado sull'euristica a keyword: {e}")
+        logging.warning(f"Match LLM fallito, ricado sull'euristica a keyword: {type(e).__name__}: {e}")
         return None
 
 def valuta_match_candidato(job_text: str) -> tuple:
@@ -374,8 +379,13 @@ def detect_work_mode(text: str) -> str:
     return "unverified"
 
 def calcola_punteggio_e_modalita(url, snippet):
-    """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro."""
-    testo_originale = snippet
+    """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro.
+    Ritorna anche testo_originale (snippet + testo scaricato) come ultimo elemento,
+    così i chiamanti possono riusarlo (es. personalizzazione CV) senza doverlo
+    riscaricare da capo."""
+    # snippet può arrivare None quando un JSON-LD ha "description": null: senza
+    # questa guardia .lower() più sotto solleverebbe AttributeError non catturato.
+    testo_originale = snippet or ""
     fetch_status = "no_attempt"
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
@@ -403,11 +413,11 @@ def calcola_punteggio_e_modalita(url, snippet):
     probabilita, motivazione = valuta_match_candidato(testo_originale)
 
     if count >= 3:
-        return "Alto", count, work_mode, fetch_status, probabilita, motivazione
+        return "Alto", count, work_mode, fetch_status, probabilita, motivazione, testo_originale
     elif count >= 1:
-        return "Medio", count, work_mode, fetch_status, probabilita, motivazione
+        return "Medio", count, work_mode, fetch_status, probabilita, motivazione, testo_originale
     else:
-        return "Base", count, work_mode, fetch_status, probabilita, motivazione
+        return "Base", count, work_mode, fetch_status, probabilita, motivazione, testo_originale
 
 # ==========================================
 # TARGET JOB TITLES E MATCHER
@@ -495,6 +505,20 @@ TITLE_EXCLUSIONS = [
     "sales & marketing manager",
     "sales and marketing manager",
     "international marketing manager",
+    "responsabile marketing eventi",
+    "responsabile marketing di prodotto",
+    "responsabile marketing prodotto",
+    "responsabile marketing contenuti",
+    "responsabile marketing e comunicazione",
+    "responsabile marketing digitale social",
+    "responsabile social media",
+    "responsabile ufficio stampa",
+    "responsabile pubbliche relazioni",
+    "responsabile trade marketing",
+    "responsabile marketing canale",
+    "responsabile marketing affiliazioni",
+    "responsabile email marketing",
+    "responsabile marketing internazionale",
     "category manager",
     "store manager",
     "account manager",
@@ -549,6 +573,25 @@ def get_match_type(title: str) -> str:
 # ==========================================
 VISTE_MAX_AGE_DAYS = 90  # Pulisce automaticamente URL più vecchi di 90 giorni
 
+def _atomic_write_json(path, data, **json_kwargs):
+    """Scrive JSON in modo atomico: prima su un file temporaneo nella stessa
+    cartella, poi rename. Un run cancellato a metà scrittura (scraping.yml usa
+    concurrency: cancel-in-progress: true) non lascia mai il file di destinazione
+    troncato/corrotto — os.replace è atomico sia su POSIX che su Windows quando
+    sorgente e destinazione sono sullo stesso filesystem."""
+    directory = os.path.dirname(os.path.abspath(path)) or "."
+    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as f:
+            json.dump(data, f, **json_kwargs)
+        os.replace(tmp_path, path)
+    except Exception:
+        try:
+            os.remove(tmp_path)
+        except OSError:
+            pass
+        raise
+
 def load_viste() -> set:
     """Carica gli URL già visti come SET per lookup O(1)."""
     if not os.path.exists(VISTE_FILE):
@@ -589,9 +632,8 @@ def save_viste(viste: set):
         
         # Merge: mantieni timestamp originali, aggiungi nuovi con timestamp attuale
         merged = {url: existing.get(url, now) for url in viste}
-        
-        with open(VISTE_FILE, "w", encoding="utf-8") as f:
-            json.dump(merged, f)
+
+        _atomic_write_json(VISTE_FILE, merged)
     except Exception as e:
         logging.error(f"Errore save_viste: {e}")
 
@@ -602,8 +644,7 @@ def load_giornaliere():
         except json.JSONDecodeError: return []
 
 def save_giornaliere(jobs_dict_list):
-    with open(GIORNALIERE_FILE, "w", encoding="utf-8") as f:
-        json.dump(jobs_dict_list, f, indent=4)
+    _atomic_write_json(GIORNALIERE_FILE, jobs_dict_list, indent=4, ensure_ascii=False)
 
 def clear_giornaliere():
     save_giornaliere([])
@@ -613,7 +654,7 @@ def clear_giornaliere():
 # ==========================================
 
 class ScrapedJob:
-    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", match_type="esatto", probabilita=0, motivazione=""):
+    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", match_type="esatto", probabilita=0, motivazione="", testo_completo=""):
         self.title = title.strip()
         self.company = company.strip() if company else "Azienda non specificata"
         self.portal = portal
@@ -628,6 +669,10 @@ class ScrapedJob:
         self.match_type = match_type
         self.probabilita = probabilita
         self.motivazione = motivazione
+        # Testo integrale dell'annuncio già scaricato durante lo scoring: permette
+        # alla personalizzazione CV di riusarlo invece di riscaricare la pagina
+        # ore dopo (quando potrebbe essere stata rimossa/modificata).
+        self.testo_completo = testo_completo
 
     def to_dict(self):
         return {
@@ -645,6 +690,7 @@ class ScrapedJob:
             "match_type": self.match_type,
             "probabilita": self.probabilita,
             "motivazione": self.motivazione,
+            "testo_completo": self.testo_completo,
         }
 
     @classmethod
@@ -656,6 +702,7 @@ class ScrapedJob:
             data.get("city", ""), data.get("work_mode", "unverified"), data.get("fetch_status", "no_attempt"),
             data.get("match_type", "esatto"),
             data.get("probabilita", 0), data.get("motivazione", ""),
+            data.get("testo_completo", ""),
         )
 
 class BaseScraper:
@@ -728,11 +775,11 @@ class LinkedInScraper(BaseScraper):
                                     company = item.get("hiringOrganization", {}).get("name", "")
                                     date = item.get("datePosted", "")
                                     desc = item.get("description", "")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, desc)
+                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                            date=date, match_level=match_level,
                                                            match_count=match_count, city=city_name,
-                                                           work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                           work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                         except Exception:
                             pass
                     
@@ -754,10 +801,10 @@ class LinkedInScraper(BaseScraper):
                                     continue
                                 seen_links.add(link)
                                 company = company_elem.get_text(strip=True) if company_elem else ""
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, title)
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, title)
                                 jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                        match_level=match_level, match_count=match_count,
-                                                       city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                       city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 
                 time.sleep(2)
                 
@@ -817,11 +864,11 @@ class IndeedScraper(BaseScraper):
                             link = result.findtext("url", "")
                             date = result.findtext("date", "")
                             snippet = result.findtext("snippet", "")
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, snippet)
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
                             jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                    date=date, snippet=snippet[:150],
                                                    match_level=match_level, match_count=match_count,
-                                                   city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                   city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except ET.ParseError as e:
                         logging.error(f"{self.portal_name}: XML parse error: {e}")
                 else:
@@ -887,10 +934,10 @@ class MichaelPageScraper(BaseScraper):
                                 link = a["href"]
                                 if not link.startswith("http"):
                                     link = "https://www.michaelpage.it" + link
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                                 jobs.append(ScrapedJob(title, "", self.portal_name, link,
                                                        match_level=match_level, match_count=match_count,
-                                                       city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                       city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 else:
                     logging.error(f"{self.portal_name}: HTTP {response.status_code}")
             except requests.exceptions.Timeout:
@@ -915,9 +962,9 @@ class MichaelPageScraper(BaseScraper):
                             link = item.get("url", base_url)
                             company = item.get("hiringOrganization", {}).get("name", "")
                             date = item.get("datePosted", "")
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, item.get("description", ""))
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
                             jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                                   date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                   date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
             except Exception:
                 pass
         return jobs
@@ -982,10 +1029,10 @@ class GiGroupScraper(BaseScraper):
                         # nella sezione email di un'altra città senza aver mai applicato
                         # la sua policy work-mode (es. "solo ibrido" per Milano/Torino).
                         job_city = "Italia"
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                         jobs.append(ScrapedJob(title, "GiGroup", self.portal_name, link,
                                                match_level=match_level, match_count=match_count,
-                                               city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                               city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except Exception:
                         pass
             else:
@@ -1038,10 +1085,10 @@ class WyserScraper(BaseScraper):
                     if not link.startswith("http"):
                         link = "https://it.wyser-search.com" + link
                     date = date_elem.get_text(strip=True) if date_elem else ""
-                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                     jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
                                            match_level=match_level, match_count=match_count,
-                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
             else:
@@ -1089,8 +1136,8 @@ class GlassdoorScraper(BaseScraper):
                             if not link.startswith("http"):
                                 link = "https://www.glassdoor.it" + link
                             company = company_elem.get_text(strip=True) if company_elem else ""
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
-                            jobs.append(ScrapedJob(title, company, self.portal_name, link, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                            jobs.append(ScrapedJob(title, company, self.portal_name, link, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
             else:
@@ -1211,7 +1258,7 @@ class RandstadScraper(BaseScraper):
                         date = doc.get("postingDetail", {}).get("postingTime", "")
                         desc = doc.get("description", {}).get("shortDescription", "")
 
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, desc)
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                         jobs.append(ScrapedJob(
                             title=title,
                             company=company,
@@ -1225,7 +1272,7 @@ class RandstadScraper(BaseScraper):
                             work_mode=work_mode,
                             fetch_status=fetch_status,
                             probabilita=probabilita,
-                            motivazione=motivazione,
+                            motivazione=motivazione, testo_completo=testo_completo,
                         ))
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
@@ -1283,11 +1330,11 @@ class AdzunaScraper(BaseScraper):
                                     company = item.get("hiringOrganization", {}).get("name", "")
                                     date = item.get("datePosted", "")
                                     desc = item.get("description", "")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, desc)
+                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                                     jobs.append(ScrapedJob(title, company, self.portal_name,
                                                            link, date=date,
                                                            match_level=match_level, match_count=match_count,
-                                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except Exception:
                         pass
 
@@ -1309,11 +1356,11 @@ class AdzunaScraper(BaseScraper):
                     company = company_el.get_text(strip=True) if company_el else ""
                     snippet_el = article.find(class_="max-snippet-height")
                     snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
-                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, snippet)
+                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                            snippet=snippet[:150],
                                            match_level=match_level, match_count=match_count,
-                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
             else:
                 logging.error(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
           except requests.exceptions.Timeout:
@@ -1365,9 +1412,9 @@ class PagePersonnelScraper(BaseScraper):
                                     link = item.get("url", city_url)
                                     company = item.get("hiringOrganization", {}).get("name", "")
                                     date = item.get("datePosted", "")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, item.get("description", ""))
+                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                                           date=date, match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                           date=date, match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except Exception:
                         pass
                 
@@ -1382,9 +1429,9 @@ class PagePersonnelScraper(BaseScraper):
                                 link = a["href"]
                                 if not link.startswith("http"):
                                     link = "https://www.pagepersonnel.it" + link
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                                 jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                                       match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                       match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
             else:
@@ -1431,9 +1478,9 @@ class ManpowerScraper(BaseScraper):
                             link = a["href"]
                             if not link.startswith("http"):
                                 link = "https://www.manpower.it" + link
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                             jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                                   match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                                   match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
@@ -1482,9 +1529,9 @@ class IQMSelezioneScraper(BaseScraper):
                         link = a["href"]
                         if not link.startswith("http"):
                             link = "https://www.iqmselezione.it/" + link
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, "")
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                         jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                               match_level=match_level, match_count=match_count, city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione))
+                                               match_level=match_level, match_count=match_count, city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 
                 if not jobs:
                     logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
@@ -1544,7 +1591,7 @@ class LhhScraper(BaseScraper):
                         link = job.get("applyUri") or f"https://www.lhh.com/it-it/cerca-lavoro/job-description/?id={job.get('jobId')}"
                         date = job.get("postedDate", "")
                         desc = job.get("description", "") or ""
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(link, desc)
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                         if job.get("isRemote") and work_mode == "unverified":
                             work_mode = "da remoto"
                         jobs.append(ScrapedJob(
@@ -1560,12 +1607,17 @@ class LhhScraper(BaseScraper):
                             work_mode=work_mode,
                             fetch_status=fetch_status,
                             probabilita=probabilita,
-                            motivazione=motivazione,
+                            motivazione=motivazione, testo_completo=testo_completo,
                         ))
                 else:
                     logging.error(f"{self.portal_name}: Errore API HTTP {response.status_code}")
             except Exception as e:
                 logging.error(f"Errore scraping {self.portal_name} per '{kw}': {e}")
+
+            # Come GiGroup (vedi commento nel suo scraper): richieste consecutive
+            # senza delay sono andate in timeout dopo uso intensivo. Stesso pattern
+            # di carico (18 keyword x 3 città), stesso rischio.
+            time.sleep(2)
 
         return jobs
 
@@ -1594,6 +1646,13 @@ def invia_email(nuove_offerte):
     
     body = ""
     allegati_cv = []  # lista di dict {"docx_path": ..., "nome_file": ...} da allegare dopo il body
+    # Ogni CV personalizzato può richiedere fino a due chiamate LLM sequenziali
+    # (proposta + verifica) di diversi minuti ciascuna: con più offerte >=80% lo
+    # stesso giorno il tempo si somma senza limite. Questo budget evita che l'invio
+    # email si blocchi per troppo tempo — oltre la soglia, le offerte restanti
+    # vengono comunque incluse nell'email ma senza CV personalizzato allegato.
+    cv_personalizzazione_scadenza = time.monotonic() + CV_PERSONALIZZAZIONE_BUDGET_SECONDI
+    cv_budget_esaurito_loggato = False
     if not nuove_offerte:
         body += "Nessuna nuova offerta oggi.\n\n"
     else:
@@ -1635,9 +1694,17 @@ def invia_email(nuove_offerte):
                 if job.snippet:
                     body += f"   Snippet: {job.snippet}\n"
 
-                if CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO:
+                if CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO and time.monotonic() >= cv_personalizzazione_scadenza:
+                    if not cv_budget_esaurito_loggato:
+                        logging.warning(
+                            f"Budget di tempo per la personalizzazione CV esaurito "
+                            f"({CV_PERSONALIZZAZIONE_BUDGET_SECONDI}s): le offerte >= 80% restanti "
+                            f"vengono incluse nell'email senza CV personalizzato allegato."
+                        )
+                        cv_budget_esaurito_loggato = True
+                elif CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO:
                     try:
-                        risultato_cv = genera_cv_per_offerta(job.title, job.link, job_city=job.city)
+                        risultato_cv = genera_cv_per_offerta(job.title, job.link, job_city=job.city, job_text=job.testo_completo)
                     except Exception as e:
                         logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
                         risultato_cv = None
@@ -1888,63 +1955,11 @@ def invia_email_job():
         print(msg_err)
         sys.exit(1)
 
-def reset_notturno():
-    clear_giornaliere()
-    logging.info("[RESET 00:00] Svuotato file offerte_giornaliere.json come sicurezza.")
 
-# ==========================================
-# SCHEDULER
-# ==========================================
-if __name__ == "__main__":
-    if not valida_credenziali_email():
-        print("ERRORE: GMAIL_APP_PASSWORD non valida o mancante! Assicurati che sia lunga 16 caratteri senza spazi.")
-        sys.exit(1)
-
-    print("Sistema di scraping avviato.")
-    
-    # Import sicuri dei moduli opzionali
-    run_concorsi_module = None
-    run_prospect_module = None
-    
-    try:
-        from concorsi_module import run_concorsi_module
-        print("[OK] concorsi_module caricato")
-    except ImportError:
-        logging.warning("concorsi_module non trovato — modulo concorsi disabilitato")
-        print("[WARN] concorsi_module non trovato, ignorato")
-    
-    # try:
-    #     from company_prospect_module import run_prospect_module
-    #     print("[OK] company_prospect_module caricato")
-    # except ImportError:
-    #     logging.warning("company_prospect_module non trovato — prospecting disabilitato")
-    #     print("[WARN] company_prospect_module non trovato, ignorato")
-    run_prospect_module = None
-    
-    schedule.every().day.at("09:00").do(esegui_scraping_job, orario_label="09:00")
-    
-    if run_concorsi_module:
-        schedule.every().day.at("10:00").do(run_concorsi_module)
-    
-    schedule.every().day.at("12:00").do(esegui_scraping_job, orario_label="12:00")
-    schedule.every().day.at("15:00").do(esegui_scraping_job, orario_label="15:00")
-    schedule.every().day.at("17:30").do(esegui_scraping_job, orario_label="17:30")
-    
-    if run_prospect_module:
-        schedule.every().day.at("17:30").do(run_prospect_module)
-    
-    schedule.every().day.at("18:00").do(invia_email_job)
-    schedule.every().day.at("00:00").do(reset_notturno)
-    
-    print("\nProssimi eventi schedulati:")
-    jobs = schedule.get_jobs()
-    events = sorted([j.next_run for j in jobs])
-    
-    for i, ev in enumerate(events[:5], 1):
-        print(f" {i}. {ev.strftime('%Y-%m-%d %H:%M:%S')}")
-        
-    print("\nPremere Ctrl+C per interrompere.\n")
-    
-    while True:
-        schedule.run_pending()
-        time.sleep(60)
+# NOTA: non esiste un blocco scheduler `if __name__ == "__main__":` in questo file.
+# In produzione GitHub Actions invoca direttamente run_manual_scrape.py (scraping)
+# e run_email_job.py (invio email) via cron nei rispettivi workflow — `python
+# scraper.py` non viene mai eseguito. Un precedente blocco basato sulla libreria
+# `schedule` (polling loop + concorsi_module + reset notturno) è stato rimosso
+# perché non girava mai in CI e dava l'impressione fuorviante che concorsi_module
+# e un reset di sicurezza a mezzanotte fossero attivi.

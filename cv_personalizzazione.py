@@ -50,7 +50,7 @@ try:
 except ImportError:
     _ANTHROPIC_SDK_AVAILABLE = False
 
-load_dotenv()
+load_dotenv(override=True)
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CV_DOCX_TEMPLATE = os.path.join(_BASE_DIR, "cv_template", "Giovanni Ghigliotti CV___2026.docx")
@@ -95,8 +95,16 @@ def formatta_title_spaziato(titolo: str) -> str:
 
 def _sostituisci_testo_paragrafo(paragraph, nuovo_testo):
     """Sostituisce il testo di un paragrafo mantenendo la formattazione
-    (font, size, bold, colore) del primo run esistente."""
+    (font, size, bold, colore) del primo run esistente. Se il paragrafo non
+    ha run (caso anomalo per un template già compilato), il testo viene
+    comunque inserito ma con lo stile di default: la formattazione originale
+    NON è preservabile in quel caso, e la funzione lo segnala esplicitamente
+    invece di fallire in silenzio."""
     if not paragraph.runs:
+        logging.warning(
+            f"_sostituisci_testo_paragrafo: paragrafo senza run esistenti, "
+            f"formattazione originale non preservabile per il testo: {nuovo_testo[:60]!r}"
+        )
         paragraph.add_run(nuovo_testo)
         return
     primo = paragraph.runs[0]
@@ -385,24 +393,28 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
     return {"docx_path": docx_out, "riepilogo": riepilogo}
 
 
-def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, output_dir: str = None):
-    """Punto d'ingresso usato dallo scraper: riscarica il testo integrale
-    dell'annuncio da job_link (il testo usato per il match originale non
-    viene persistito in offerte_giornaliere.json) e genera il CV personalizzato.
+def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, output_dir: str = None, job_text: str = None):
+    """Punto d'ingresso usato dallo scraper. Se il chiamante passa già
+    job_text (il testo integrale scaricato durante lo scoring iniziale,
+    persistito in ScrapedJob.testo_completo), lo riusa senza riscaricare
+    l'annuncio: tra scraping ed email possono passare ore, nel frattempo
+    l'annuncio può essere stato rimosso o modificato. Riscarica da job_link
+    solo se job_text non è disponibile (fallback per compatibilità).
     Ritorna None su qualunque fallimento, senza sollevare eccezioni verso il chiamante."""
-    try:
-        import requests
-        from bs4 import BeautifulSoup
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
-        resp = requests.get(job_link, headers=headers, timeout=10)
-        if resp.status_code != 200:
-            logging.warning(f"Impossibile riscaricare l'annuncio per la personalizzazione CV ({job_link}): HTTP {resp.status_code}")
+    if not job_text or not job_text.strip():
+        try:
+            import requests
+            from bs4 import BeautifulSoup
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            resp = requests.get(job_link, headers=headers, timeout=10)
+            if resp.status_code != 200:
+                logging.warning(f"Impossibile riscaricare l'annuncio per la personalizzazione CV ({job_link}): HTTP {resp.status_code}")
+                return None
+            soup = BeautifulSoup(resp.text, "html.parser")
+            job_text = soup.get_text(" ", strip=True)
+        except Exception as e:
+            logging.warning(f"Errore riscaricamento annuncio per personalizzazione CV: {e}")
             return None
-        soup = BeautifulSoup(resp.text, "html.parser")
-        job_text = soup.get_text(" ", strip=True)
-    except Exception as e:
-        logging.warning(f"Errore riscaricamento annuncio per personalizzazione CV: {e}")
-        return None
 
     try:
         return genera_cv_personalizzato(job_title, job_text, job_city=job_city, output_dir=output_dir)

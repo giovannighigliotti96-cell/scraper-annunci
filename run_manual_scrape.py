@@ -16,7 +16,7 @@ from scraper import (
     IQMSelezioneScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta, get_match_type,
-    get_job_id, calcola_punteggio_e_modalita
+    get_job_id
 )
 
 if __name__ == "__main__":
@@ -83,14 +83,11 @@ if __name__ == "__main__":
         if snippet_sig and snippet_sig in seen_snippets:
             continue
 
-        match_level, match_count, work_mode, fetch_status, probabilita, motivazione = calcola_punteggio_e_modalita(job.link, job.snippet or "")
-        job.match_level = match_level
-        job.match_count = match_count
-        job.work_mode = work_mode
-        job.fetch_status = fetch_status
-        job.probabilita = probabilita
-        job.motivazione = motivazione
-
+        # match_level/work_mode/probabilita/motivazione sono già stati calcolati
+        # una volta dentro scraper.scrape(): ricalcolarli qui raddoppierebbe
+        # fetch HTTP e chiamate LLM e rischierebbe di sovrascriverli con un
+        # risultato diverso (calcolato su job.snippet, spesso più povero del
+        # testo originale già usato).
         nuove_offerte.append(job)
         viste.add(job_id)
         seen_titles.add(title_sig)

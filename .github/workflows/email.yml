@@ -2,7 +2,13 @@ name: Invio email giornaliera
 
 on:
   schedule:
-    - cron: '5 16 * * *'   # 18:05 CEST (UTC+2 estate, fuori picco)
+    # GitHub Actions cron è sempre in UTC, ma l'Italia alterna CEST (UTC+2, marzo-ottobre)
+    # e CET (UTC+1, ottobre-marzo). Due cron entry (una per stagione): lo step
+    # "Verifica orario" più sotto esegue l'invio solo se l'ora locale italiana reale
+    # corrisponde alle 18:05, così esattamente una delle due invocazioni gira per
+    # davvero in ciascuna stagione.
+    - cron: '5 16 * * *'   # 18:05 CEST (UTC+2, estate)
+    - cron: '5 17 * * *'   # 18:05 CET (UTC+1, inverno)
   workflow_dispatch:       # avvio manuale dalla UI GitHub
 
 permissions:
@@ -12,21 +18,51 @@ jobs:
   send_email:
     runs-on: ubuntu-latest
     steps:
+      - name: Verifica orario italiano (gestisce cambio ora legale/solare)
+        id: check_time
+        run: |
+          ORA_ITALIA=$(TZ='Europe/Rome' date +%H:%M)
+          echo "Ora locale Italia: $ORA_ITALIA"
+          SHOULD_RUN=false
+          ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
+          TARGET_SEC=$(date -d "18:05" +%s)
+          TARGET_END_SEC=$((TARGET_SEC + 900))
+          if [ "$ORA_SEC" -ge "$TARGET_SEC" ] && [ "$ORA_SEC" -lt "$TARGET_END_SEC" ]; then
+            SHOULD_RUN=true
+          fi
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            SHOULD_RUN=true
+          fi
+          echo "should_run=$SHOULD_RUN" >> "$GITHUB_OUTPUT"
+          echo "Esecuzione invio email: $SHOULD_RUN"
+
       - name: Checkout repo
+        if: steps.check_time.outputs.should_run == 'true'
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Python
+        if: steps.check_time.outputs.should_run == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
           cache: 'pip'
 
       - name: Installa dipendenze
+        if: steps.check_time.outputs.should_run == 'true'
         run: pip install -r requirements.txt
 
+      - name: Backup pre-invio (per il merge post-email)
+        if: steps.check_time.outputs.should_run == 'true'
+        run: |
+          # Cattura lo stato di offerte_giornaliere.json PRIMA dell'invio: sono
+          # esattamente le offerte che questa run sta per inviare/svuotare. Serve
+          # per il merge dopo il reset allo stato remoto più recente più sotto.
+          cp offerte_giornaliere.json /tmp/before_email.json 2>/dev/null || echo '[]' > /tmp/before_email.json
+
       - name: Invia email e svuota accumulo giornaliero
+        if: steps.check_time.outputs.should_run == 'true'
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -35,9 +71,50 @@ jobs:
         run: python run_email_job.py
 
       - name: Salva stato post-email
+        if: steps.check_time.outputs.should_run == 'true'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          git add offerte_giornaliere.json
+
+          # Aggiorna al commit più recente del remoto (uno scraping concorrente
+          # potrebbe aver pushato nuove offerte mentre l'email era in invio).
+          git fetch origin main
+          git reset --hard origin/main
+
+          # Merge intelligente: rimuove SOLO le offerte che questa run ha appena
+          # inviato via email (catturate nel backup pre-invio), preservando
+          # eventuali offerte arrivate nel frattempo da uno scraping concorrente
+          # (non ancora inviate, non vanno perse). Un semplice `git pull --rebase`
+          # qui rischierebbe un conflitto reale su questo file — verificato con un
+          # test dedicato — quindi il merge si fa a livello applicativo, come in
+          # scraping.yml.
+          python3 - <<'EOF'
+          import json
+
+          def load(path, default):
+              try:
+                  with open(path, encoding='utf-8') as f:
+                      return json.load(f)
+              except Exception:
+                  return default
+
+          inviate = load('/tmp/before_email.json', [])
+          link_inviati = {j.get('link') for j in inviate}
+
+          remote_gior = load('offerte_giornaliere.json', [])
+          rimanenti = [j for j in remote_gior if j.get('link') not in link_inviati]
+
+          with open('offerte_giornaliere.json', 'w', encoding='utf-8') as f:
+              json.dump(rimanenti, f, ensure_ascii=False, indent=2)
+
+          # daily_prospects.json non è toccato da nessun processo concorrente
+          # (il modulo prospector è attualmente disattivato): nessun merge necessario.
+          with open('daily_prospects.json', 'w', encoding='utf-8') as f:
+              json.dump([], f, ensure_ascii=False)
+
+          print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
+          EOF
+
+          git add offerte_giornaliere.json daily_prospects.json
           git diff --staged --quiet || git commit -m "chore: svuota giornaliere post-email [skip ci]"
           git push
