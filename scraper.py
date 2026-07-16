@@ -14,6 +14,11 @@ from dotenv import load_dotenv
 import PyPDF2
 import cloudscraper
 from curl_cffi import requests as curl_requests
+try:
+    import anthropic
+    ANTHROPIC_SDK_AVAILABLE = True
+except ImportError:
+    ANTHROPIC_SDK_AVAILABLE = False
 
 # ==========================================
 # CONFIGURAZIONE INIZIALE
@@ -23,6 +28,7 @@ load_dotenv(override=True)
 GMAIL_USER = os.getenv("GMAIL_USER", "").strip().lstrip('﻿').strip()
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").lstrip('﻿').strip()
 DESTINATION_EMAIL = os.getenv("DESTINATION_EMAIL", "").strip().lstrip('﻿').strip()
+ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 INCLUDE_UNVERIFIED = True
 PENDING_SCRAPER_EMAIL_FILE = "pending_scraper_email.json"
 
@@ -125,6 +131,131 @@ def estrai_keyword_cv(pdf_path):
 
 # Carica competenze dal CV all'avvio
 CV_SKILLS = estrai_keyword_cv(CV_FILE)
+
+def estrai_testo_cv(pdf_path):
+    """Estrae il testo integrale del CV (non solo le keyword), per il match
+    semantico via LLM in valuta_match_candidato(). Non abbassa il case: i nomi
+    propri/acronimi aiutano il modello a leggere meglio il documento."""
+    if not os.path.exists(pdf_path):
+        return ""
+    try:
+        testo_cv = ""
+        with open(pdf_path, "rb") as f:
+            reader = PyPDF2.PdfReader(f)
+            for page in reader.pages:
+                testo = page.extract_text()
+                if testo:
+                    testo_cv += testo + "\n"
+        return testo_cv.strip()
+    except Exception as e:
+        logging.error(f"Errore estrazione testo integrale CV: {e}")
+        return ""
+
+# Testo integrale del CV, caricato una sola volta all'avvio per il match LLM
+CV_TESTO_COMPLETO = estrai_testo_cv(CV_FILE)
+
+# ==========================================
+# MATCH SEMANTICO CV-ANNUNCIO VIA CLAUDE
+# ==========================================
+_anthropic_client = None
+_anthropic_warning_shown = False
+
+def _get_anthropic_client():
+    global _anthropic_client
+    if _anthropic_client is None and ANTHROPIC_SDK_AVAILABLE and ANTHROPIC_API_KEY:
+        _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=30.0)
+    return _anthropic_client
+
+MATCH_LLM_MODEL = "claude-sonnet-5"
+
+# Istruzioni di ruolo fisse + CV: separate dal testo dell'annuncio (che cambia
+# ad ogni chiamata) e messe nel system prompt con cache_control, così le ~5-6
+# chiamate al giorno condividono la cache invece di ripagare l'intero CV ogni volta.
+_MATCH_LLM_SYSTEM_TEMPLATE = """Sei un recruiter esperto che valuta la compatibilità tra un candidato e un'offerta di lavoro, leggendo l'intero testo di entrambi — non un confronto di parole chiave.
+
+Per ogni annuncio che ricevi, analizzalo nel suo complesso e valuta la compatibilità del candidato considerando:
+- Requisiti espliciti (titolo di studio, anni di esperienza, settore di provenienza specifico, hard skill) — se il CV non li soddisfa chiaramente, segnalalo come gap concreto, non ignorarlo
+- Valori o cultura aziendale menzionati nell'annuncio (es. "spirito imprenditoriale", "mentalità start-up", "orientamento al cliente") e se il CV li dimostra anche implicitamente, tramite esperienze equivalenti anche se descritte con parole diverse (es. aver fondato un'azienda dimostra imprenditorialità anche se quella parola non compare nel CV)
+- Esperienza trasferibile che risponde allo spirito della richiesta anche senza corrispondenza letterale di keyword
+
+Dai sempre un punteggio 0-100 di probabilità di essere richiamato per un colloquio, e una motivazione breve (massimo 3 righe, in italiano) che citi sia i punti di forza concreti sia eventuali gap reali rilevati nell'annuncio. Sii onesto sui gap: non gonfiare il punteggio per compiacere, un punteggio basso ben motivato è più utile di uno ottimistico e vago.
+
+CV DEL CANDIDATO:
+{cv_testo}"""
+
+def valuta_match_llm(job_text: str) -> tuple:
+    """Legge l'intero testo dell'annuncio (non solo keyword) e lo confronta con
+    l'intero CV tramite Claude, per cogliere anche match impliciti/qualitativi
+    (es. un valore aziendale come "spirito imprenditoriale" soddisfatto da
+    un'esperienza da founder, anche se la parola non compare nel CV) e segnalare
+    esplicitamente i requisiti che il candidato non soddisfa (settore di
+    provenienza, titolo di studio specifico, ecc.).
+    Ritorna (probabilita, motivazione) oppure None se la chiamata non è
+    disponibile o fallisce — il chiamante deve ricadere sull'euristica a
+    keyword in questo caso, per non bloccare mai lo scraping.
+    """
+    global _anthropic_warning_shown
+    client = _get_anthropic_client()
+    if client is None or not CV_TESTO_COMPLETO:
+        if not _anthropic_warning_shown:
+            if not ANTHROPIC_SDK_AVAILABLE:
+                logging.warning("Match LLM disabilitato: pacchetto 'anthropic' non installato, uso l'euristica a keyword.")
+            elif not ANTHROPIC_API_KEY:
+                logging.warning("Match LLM disabilitato: ANTHROPIC_API_KEY mancante, uso l'euristica a keyword.")
+            elif not CV_TESTO_COMPLETO:
+                logging.warning("Match LLM disabilitato: testo del CV non disponibile, uso l'euristica a keyword.")
+            _anthropic_warning_shown = True
+        return None
+
+    system_prompt = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_COMPLETO[:6000])
+
+    try:
+        response = client.messages.create(
+            model=MATCH_LLM_MODEL,
+            max_tokens=1024,
+            system=[{
+                "type": "text",
+                "text": system_prompt,
+                "cache_control": {"type": "ephemeral", "ttl": "1h"},
+            }],
+            messages=[{
+                "role": "user",
+                "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}",
+            }],
+            output_config={
+                "effort": "high",
+                "format": {
+                    "type": "json_schema",
+                    "schema": {
+                        "type": "object",
+                        "properties": {
+                            "probabilita": {"type": "integer"},
+                            "motivazione": {"type": "string"},
+                        },
+                        "required": ["probabilita", "motivazione"],
+                        "additionalProperties": False,
+                    },
+                },
+            },
+        )
+        testo_risposta = next(b.text for b in response.content if b.type == "text")
+        dati = json.loads(testo_risposta)
+        probabilita = max(0, min(100, int(dati["probabilita"])))
+        motivazione = dati["motivazione"].strip()
+        return probabilita, motivazione
+    except Exception as e:
+        logging.warning(f"Match LLM fallito, ricado sull'euristica a keyword: {e}")
+        return None
+
+def valuta_match_candidato(job_text: str) -> tuple:
+    """Punto d'ingresso unico per lo scoring di compatibilità: prova il match
+    semantico via LLM (valuta_match_llm) e, solo se non disponibile o fallito,
+    ricade sull'euristica a keyword esistente (calcola_probabilita_callback) —
+    così un problema con l'API Claude non blocca mai lo scraping."""
+    risultato_llm = valuta_match_llm(job_text)
+    if risultato_llm is not None:
+        return risultato_llm
+    return calcola_probabilita_callback(job_text.lower())
 
 # ==========================================
 # SCORING PROBABILITÀ RICHIAMATA
@@ -236,14 +367,14 @@ def detect_work_mode(text: str) -> str:
 
 def calcola_punteggio_e_modalita(url, snippet):
     """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro."""
-    testo_completo = snippet.lower()
+    testo_originale = snippet
     fetch_status = "no_attempt"
     try:
         headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
         resp = requests.get(url, headers=headers, timeout=5)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, "html.parser")
-            testo_completo += " " + soup.get_text(" ", strip=True).lower()
+            testo_originale += " " + soup.get_text(" ", strip=True)
             fetch_status = "ok"
         else:
             fetch_status = "http_error"
@@ -253,14 +384,15 @@ def calcola_punteggio_e_modalita(url, snippet):
     except Exception as e:
         fetch_status = "http_error"
         logging.warning(f"Impossibile scaricare testo completo per {url}: {e}")
-        
+
+    testo_completo = testo_originale.lower()
     count = 0
     for skill in CV_SKILLS:
         if skill in testo_completo:
             count += 1
-            
+
     work_mode = detect_work_mode(testo_completo)
-    probabilita, motivazione = calcola_probabilita_callback(testo_completo)
+    probabilita, motivazione = valuta_match_candidato(testo_originale)
 
     if count >= 3:
         return "Alto", count, work_mode, fetch_status, probabilita, motivazione
