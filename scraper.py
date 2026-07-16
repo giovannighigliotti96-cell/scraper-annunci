@@ -1,6 +1,7 @@
 import os
 import time
 import json
+import shutil
 import logging
 from datetime import datetime
 import smtplib
@@ -14,11 +15,17 @@ from dotenv import load_dotenv
 import PyPDF2
 import cloudscraper
 from curl_cffi import requests as curl_requests
+from email.mime.application import MIMEApplication
 try:
     import anthropic
     ANTHROPIC_SDK_AVAILABLE = True
 except ImportError:
     ANTHROPIC_SDK_AVAILABLE = False
+try:
+    from cv_personalizzazione import genera_cv_per_offerta
+    CV_PERSONALIZZAZIONE_DISPONIBILE = True
+except ImportError:
+    CV_PERSONALIZZAZIONE_DISPONIBILE = False
 
 # ==========================================
 # CONFIGURAZIONE INIZIALE
@@ -31,6 +38,7 @@ DESTINATION_EMAIL = os.getenv("DESTINATION_EMAIL", "").strip().lstrip('﻿').str
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 INCLUDE_UNVERIFIED = True
 PENDING_SCRAPER_EMAIL_FILE = "pending_scraper_email.json"
+SOGLIA_CV_PERSONALIZZATO = 80  # probabilita >= a questa soglia attiva la personalizzazione CV
 
 import sys
 
@@ -1566,6 +1574,12 @@ class LhhScraper(BaseScraper):
 # ==========================================
 # LOGICA EMAIL
 # ==========================================
+def re_sub_nome_file(testo: str) -> str:
+    """Riduce un nome azienda a uno slug sicuro per un nome file allegato."""
+    import re as _re
+    slug = _re.sub(r"[^a-zA-Z0-9]+", "_", (testo or "azienda").strip()).strip("_")
+    return slug[:40] if slug else "azienda"
+
 def invia_email(nuove_offerte):
     if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
         logging.error("Credenziali email mancanti. Controlla il file .env")
@@ -1579,6 +1593,7 @@ def invia_email(nuove_offerte):
     msg['Subject'] = f"[Job Alert] Nuove offerte Multi-City - {data_oggi}"
     
     body = ""
+    allegati_cv = []  # lista di dict {"pdf_path": ..., "nome_file": ...} da allegare dopo il body
     if not nuove_offerte:
         body += "Nessuna nuova offerta oggi.\n\n"
     else:
@@ -1589,9 +1604,9 @@ def invia_email(nuove_offerte):
             if citta not in offerte_per_citta:
                 offerte_per_citta[citta] = []
             offerte_per_citta[citta].append(job)
-            
+
         body += f"Trovate {len(nuove_offerte)} nuove offerte oggi, ordinate per affinità col CV:\n\n"
-        
+
         for citta, offerte_citta in offerte_per_citta.items():
             offerte_citta.sort(key=lambda x: x.probabilita, reverse=True)
             body += f"===============================\n"
@@ -1619,8 +1634,22 @@ def invia_email(nuove_offerte):
                 body += f"   Link: {job.link}\n"
                 if job.snippet:
                     body += f"   Snippet: {job.snippet}\n"
+
+                if CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO:
+                    try:
+                        risultato_cv = genera_cv_per_offerta(job.title, job.link)
+                    except Exception as e:
+                        logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
+                        risultato_cv = None
+                    if risultato_cv:
+                        indice_allegato = len(allegati_cv) + 1
+                        nome_file = f"CV_Ghigliotti_{indice_allegato}_{re_sub_nome_file(job.company)}.pdf"
+                        body += f"   📎 CV personalizzato allegato (allegato {indice_allegato}), modifiche:\n"
+                        for riga in risultato_cv["riepilogo"]:
+                            body += f"      - {riga}\n"
+                        allegati_cv.append({"pdf_path": risultato_cv["pdf_path"], "nome_file": nome_file})
                 body += "\n"
-            
+
     body += f"Totale offerte: {len(nuove_offerte)}.\n\n"
     
     # --- SEZIONE COMPANY PROSPECTOR ---
@@ -1649,7 +1678,26 @@ def invia_email(nuove_offerte):
             logging.error(f"Errore caricamento prospect: {e}")
             
     msg.attach(MIMEText(body, 'plain', 'utf-8'))
-    
+
+    for allegato in allegati_cv:
+        try:
+            with open(allegato["pdf_path"], "rb") as f:
+                parte = MIMEApplication(f.read(), _subtype="pdf")
+            parte.add_header("Content-Disposition", "attachment", filename=allegato["nome_file"])
+            msg.attach(parte)
+        except Exception as e:
+            logging.error(f"Errore allegato CV personalizzato ({allegato['nome_file']}): {e}")
+        finally:
+            # I file sono già letti in memoria dentro msg: la cartella temporanea
+            # con il CV personalizzato può essere ripulita subito, a prescindere
+            # dall'esito dell'invio.
+            try:
+                cartella = os.path.dirname(allegato["pdf_path"])
+                if cartella and os.path.basename(cartella).startswith("cv_personalizzato_"):
+                    shutil.rmtree(cartella, ignore_errors=True)
+            except Exception:
+                pass
+
     retry_delays = [5, 15, 30]
     for attempt, delay in enumerate(retry_delays):
         try:

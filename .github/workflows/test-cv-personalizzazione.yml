@@ -1,0 +1,74 @@
+name: Test personalizzazione CV
+
+on:
+  workflow_dispatch:  # avvio manuale dalla UI GitHub, per verificare la resa del CV personalizzato
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Verifica/installa LibreOffice
+        run: |
+          if ! command -v soffice &> /dev/null; then
+            sudo apt-get update -qq
+            sudo apt-get install -y --no-install-recommends libreoffice-writer
+          else
+            echo "LibreOffice già presente nel runner, salto l'installazione"
+          fi
+
+      - name: Installa i font del CV
+        run: |
+          mkdir -p ~/.local/share/fonts
+          cp fonts/*.ttf ~/.local/share/fonts/
+          fc-cache -f ~/.local/share/fonts
+
+      - name: Genera un CV personalizzato di test
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          python - <<'EOF'
+          import cv_personalizzazione as cp
+
+          annuncio_test = """
+          Digital Sales Manager - Scaleup SaaS B2B
+
+          Cerchiamo un Digital Sales Manager per guidare la crescita commerciale della nostra
+          piattaforma SaaS B2B in fase di scale-up.
+
+          Cosa cerchiamo:
+          - Esperienza comprovata nella costruzione di processi commerciali strutturati (pipeline, CRM)
+          - Gestione di persone e team cross-funzionali
+          - Esperienza in ambiente start-up/scale-up ad alta crescita
+          - Conoscenza di Salesforce (requisito preferenziale)
+          - Ownership su obiettivi di revenue e crescita clienti
+          """
+
+          risultato = cp.genera_cv_personalizzato("Digital Sales Manager", annuncio_test, output_dir="test_output")
+          if risultato is None:
+              raise SystemExit("Generazione fallita: controlla i log sopra (LibreOffice, font, o LLM).")
+
+          print("Generato con successo:")
+          print("  PDF:", risultato["pdf_path"])
+          print("  Riepilogo modifiche:")
+          for riga in risultato["riepilogo"]:
+              print("   -", riga)
+          EOF
+
+      - name: Carica il CV generato come artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cv-personalizzato-test
+          path: test_output/
+          retention-days: 7
