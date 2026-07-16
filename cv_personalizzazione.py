@@ -15,8 +15,15 @@ Vincoli non negoziabili:
   - ogni modifica proposta deve essere riconducibile a un'esperienza reale
     già presente nel CV originale — una seconda chiamata Claude fa da
     verificatore indipendente e scarta qualunque modifica non verificabile
-  - se una qualunque fase fallisce (LLM, LibreOffice, file mancanti) non
+  - se una qualunque fase fallisce (LLM, template mancante, ecc.) non
     viene generato/allegato nulla — mai un CV non verificato
+
+Il modulo genera solo il .docx personalizzato (semi-automatico): la
+conversione automatica in PDF via LibreOffice è stata provata e scartata
+(vedi nota sopra la funzione genera_cv_personalizzato) perché rompeva il
+layout a due colonne del documento. L'ultimo passaggio — apertura in
+Word ed esportazione in PDF — resta manuale per garantire la fedeltà
+grafica del CV inviato a un vero datore di lavoro.
 
 Il documento sorgente è cv_template/Giovanni Ghigliotti CV___2026.docx.
 Gli indici dei paragrafi bullet modificabili sono stati verificati
@@ -26,11 +33,8 @@ paragrafi della sidebar sinistra con quelli della colonna destra), quindi
 non è affidabile derivarli a runtime da un semplice range di indici.
 """
 import os
-import re
 import json
-import shutil
 import logging
-import subprocess
 import tempfile
 
 import docx
@@ -267,37 +271,21 @@ Verifica ogni elemento secondo le tue regole."""
 
 
 # ==========================================
-# STEP 3 — CONVERSIONE DOCX -> PDF (LibreOffice headless)
-# ==========================================
-def _converti_docx_in_pdf(docx_path, output_dir):
-    soffice = shutil.which("soffice") or shutil.which("libreoffice")
-    if not soffice:
-        logging.warning("LibreOffice (soffice) non trovato nel PATH: impossibile generare il PDF personalizzato.")
-        return None
-    try:
-        result = subprocess.run(
-            [soffice, "--headless", "--norestore", "--convert-to", "pdf", "--outdir", output_dir, docx_path],
-            capture_output=True, text=True, timeout=90,
-        )
-        if result.returncode != 0:
-            logging.error(f"Conversione LibreOffice fallita (codice {result.returncode}): {result.stderr}")
-            return None
-        base = os.path.splitext(os.path.basename(docx_path))[0]
-        pdf_path = os.path.join(output_dir, base + ".pdf")
-        return pdf_path if os.path.exists(pdf_path) else None
-    except Exception as e:
-        logging.error(f"Errore conversione docx->pdf: {e}")
-        return None
-
-
-# ==========================================
 # ORCHESTRAZIONE
 # ==========================================
+# NOTA: la conversione automatica .docx -> .pdf via LibreOffice è stata
+# provata e scartata (verificato in CI il 2026-07-16): il motore di
+# rendering di LibreOffice non riproduce fedelmente il layout a due
+# colonne/frame del documento sorgente — risultato un PDF di 4 pagine con
+# contenuti duplicati invece dell'originale a 1 pagina. Il flusso è quindi
+# semi-automatico: questo modulo genera e verifica il .docx, l'ultimo
+# passaggio (apertura in Word ed esportazione PDF) resta manuale per
+# garantire la fedeltà grafica del CV inviato a un vero datore di lavoro.
 def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = None):
-    """Genera un CV .docx + .pdf personalizzato per un annuncio specifico.
-    Ritorna {"pdf_path": ..., "docx_path": ..., "riepilogo": [righe leggibili]}
-    oppure None se una qualunque fase fallisce — in tal caso nessun file
-    viene generato/allegato, mai un CV non verificato."""
+    """Genera un CV .docx personalizzato per un annuncio specifico.
+    Ritorna {"docx_path": ..., "riepilogo": [righe leggibili]} oppure None
+    se una qualunque fase fallisce — in tal caso nessun file viene
+    generato/allegato, mai un CV non verificato."""
     if not os.path.exists(CV_DOCX_TEMPLATE):
         logging.warning(f"Template CV .docx non trovato: {CV_DOCX_TEMPLATE}")
         return None
@@ -368,11 +356,7 @@ def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = No
         logging.error(f"Errore salvataggio docx personalizzato: {e}")
         return None
 
-    pdf_path = _converti_docx_in_pdf(docx_out, output_dir)
-    if pdf_path is None:
-        return None
-
-    return {"pdf_path": pdf_path, "docx_path": docx_out, "riepilogo": riepilogo}
+    return {"docx_path": docx_out, "riepilogo": riepilogo}
 
 
 def genera_cv_per_offerta(job_title: str, job_link: str, output_dir: str = None):

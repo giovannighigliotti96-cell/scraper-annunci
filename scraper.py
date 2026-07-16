@@ -1593,7 +1593,7 @@ def invia_email(nuove_offerte):
     msg['Subject'] = f"[Job Alert] Nuove offerte Multi-City - {data_oggi}"
     
     body = ""
-    allegati_cv = []  # lista di dict {"pdf_path": ..., "nome_file": ...} da allegare dopo il body
+    allegati_cv = []  # lista di dict {"docx_path": ..., "nome_file": ...} da allegare dopo il body
     if not nuove_offerte:
         body += "Nessuna nuova offerta oggi.\n\n"
     else:
@@ -1643,11 +1643,11 @@ def invia_email(nuove_offerte):
                         risultato_cv = None
                     if risultato_cv:
                         indice_allegato = len(allegati_cv) + 1
-                        nome_file = f"CV_Ghigliotti_{indice_allegato}_{re_sub_nome_file(job.company)}.pdf"
-                        body += f"   📎 CV personalizzato allegato (allegato {indice_allegato}), modifiche:\n"
+                        nome_file = f"CV_Ghigliotti_{indice_allegato}_{re_sub_nome_file(job.company)}.docx"
+                        body += f"   📎 CV personalizzato allegato in Word (allegato {indice_allegato}) — apri in Word ed esporta in PDF prima di candidarti. Modifiche:\n"
                         for riga in risultato_cv["riepilogo"]:
                             body += f"      - {riga}\n"
-                        allegati_cv.append({"pdf_path": risultato_cv["pdf_path"], "nome_file": nome_file})
+                        allegati_cv.append({"docx_path": risultato_cv["docx_path"], "nome_file": nome_file})
                 body += "\n"
 
     body += f"Totale offerte: {len(nuove_offerte)}.\n\n"
@@ -1681,8 +1681,8 @@ def invia_email(nuove_offerte):
 
     for allegato in allegati_cv:
         try:
-            with open(allegato["pdf_path"], "rb") as f:
-                parte = MIMEApplication(f.read(), _subtype="pdf")
+            with open(allegato["docx_path"], "rb") as f:
+                parte = MIMEApplication(f.read(), _subtype="vnd.openxmlformats-officedocument.wordprocessingml.document")
             parte.add_header("Content-Disposition", "attachment", filename=allegato["nome_file"])
             msg.attach(parte)
         except Exception as e:
@@ -1692,7 +1692,7 @@ def invia_email(nuove_offerte):
             # con il CV personalizzato può essere ripulita subito, a prescindere
             # dall'esito dell'invio.
             try:
-                cartella = os.path.dirname(allegato["pdf_path"])
+                cartella = os.path.dirname(allegato["docx_path"])
                 if cartella and os.path.basename(cartella).startswith("cv_personalizzato_"):
                     shutil.rmtree(cartella, ignore_errors=True)
             except Exception:

@@ -1,7 +1,7 @@
 name: Test personalizzazione CV
 
 on:
-  workflow_dispatch:  # avvio manuale dalla UI GitHub, per verificare la resa del CV personalizzato
+  workflow_dispatch:  # avvio manuale dalla UI GitHub, per verificare la pipeline di personalizzazione CV
 
 jobs:
   test:
@@ -19,22 +19,7 @@ jobs:
       - name: Installa dipendenze
         run: pip install -r requirements.txt
 
-      - name: Verifica/installa LibreOffice
-        run: |
-          if ! command -v soffice &> /dev/null; then
-            sudo apt-get update -qq
-            sudo apt-get install -y --no-install-recommends libreoffice-writer
-          else
-            echo "LibreOffice già presente nel runner, salto l'installazione"
-          fi
-
-      - name: Installa i font del CV
-        run: |
-          mkdir -p ~/.local/share/fonts
-          cp fonts/*.ttf ~/.local/share/fonts/
-          fc-cache -f ~/.local/share/fonts
-
-      - name: Genera un CV personalizzato di test
+      - name: Genera un CV personalizzato di test (.docx)
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -57,16 +42,16 @@ jobs:
 
           risultato = cp.genera_cv_personalizzato("Digital Sales Manager", annuncio_test, output_dir="test_output")
           if risultato is None:
-              raise SystemExit("Generazione fallita: controlla i log sopra (LibreOffice, font, o LLM).")
+              raise SystemExit("Generazione fallita: controlla i log sopra (LLM o template mancante).")
 
           print("Generato con successo:")
-          print("  PDF:", risultato["pdf_path"])
+          print("  DOCX:", risultato["docx_path"])
           print("  Riepilogo modifiche:")
           for riga in risultato["riepilogo"]:
               print("   -", riga)
           EOF
 
-      - name: Carica il CV generato come artifact
+      - name: Carica il .docx generato come artifact
         uses: actions/upload-artifact@v4
         with:
           name: cv-personalizzato-test
