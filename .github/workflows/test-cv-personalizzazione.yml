@@ -40,7 +40,7 @@ jobs:
           - Ownership su obiettivi di revenue e crescita clienti
           """
 
-          risultato = cp.genera_cv_personalizzato("Digital Sales Manager", annuncio_test, output_dir="test_output")
+          risultato = cp.genera_cv_personalizzato("Digital Sales Manager", annuncio_test, job_city="Torino", output_dir="test_output")
           if risultato is None:
               raise SystemExit("Generazione fallita: controlla i log sopra (LLM o template mancante).")
 

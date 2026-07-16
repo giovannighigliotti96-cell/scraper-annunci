@@ -1637,7 +1637,7 @@ def invia_email(nuove_offerte):
 
                 if CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO:
                     try:
-                        risultato_cv = genera_cv_per_offerta(job.title, job.link)
+                        risultato_cv = genera_cv_per_offerta(job.title, job.link, job_city=job.city)
                     except Exception as e:
                         logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
                         risultato_cv = None

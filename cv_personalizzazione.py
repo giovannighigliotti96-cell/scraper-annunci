@@ -4,17 +4,21 @@ Personalizzazione CV per offerte ad alto match (>=80%).
 Attivato solo per le offerte che il match semantico di scraper.py ha già
 valutato >=80%. Per queste:
   1. il title sotto il nome diventa il titolo esatto dell'annuncio
-  2. il paragrafo PROFILO PROFESSIONALE viene riformulato nello stesso
+  2. il campo città nella sidebar (INFO E CONTACTS) diventa la città
+     dell'annuncio, se è una delle città seguite (Genova/Milano/Torino)
+  3. il paragrafo PROFILO PROFESSIONALE viene riformulato nello stesso
      framework (struttura di frase) ma calibrato sul job specifico
-  3. alcuni bullet delle esperienze vengono riformulati nella sostanza
-     esistente (mai aggiunti, mai inventati)
+  4. i titoli di ruolo mostrati per ciascuna esperienza (l'etichetta del
+     ruolo, non l'azienda) e i bullet delle esperienze vengono riformulati
+     liberamente in base a quanto propone l'LLM
 
-Vincoli non negoziabili:
-  - FORMAZIONE/CERTIFICAZIONI, titoli di ruolo/azienda storici e date NON
-    vengono mai toccati (sono fatti, non narrativa)
-  - ogni modifica proposta deve essere riconducibile a un'esperienza reale
-    già presente nel CV originale — una seconda chiamata Claude fa da
-    verificatore indipendente e scarta qualunque modifica non verificabile
+Vincoli non negoziabili (per scelta esplicita dell'utente, che fa una
+revisione personale prima di ogni candidatura):
+  - non si possono introdurre strumenti/tecnologie/sistemi nominati (es.
+    Salesforce, SAP) che non compaiono già nel CV originale — l'unico
+    controllo rigido della verifica
+  - azienda, periodo (date) e numeri/percentuali/importi non cambiano mai
+  - FORMAZIONE/CERTIFICAZIONI non vengono mai toccate
   - se una qualunque fase fallisce (LLM, template mancante, ecc.) non
     viene generato/allegato nulla — mai un CV non verificato
 
@@ -55,7 +59,10 @@ MATCH_LLM_MODEL = "claude-sonnet-5"
 
 # Indici verificati manualmente (vedi docstring del modulo).
 INDICE_TITLE = 15
+INDICE_CITTA = 13
 INDICE_INTRO = 18
+CITTA_SUPPORTATE = {"Genova", "Milano", "Torino"}
+INDICI_TITOLI_RUOLO = [20, 38, 53, 68, 82]
 INDICI_BULLET_MODIFICABILI = [
     35, 36, 37,
     48, 49, 50, 51,
@@ -63,6 +70,7 @@ INDICI_BULLET_MODIFICABILI = [
     75, 76, 77, 78, 79, 80, 81,
     88, 89, 90, 91, 92, 93, 94, 95, 96, 97,
 ]
+INDICI_MODIFICABILI = INDICI_TITOLI_RUOLO + INDICI_BULLET_MODIFICABILI
 
 _client = None
 
@@ -116,24 +124,29 @@ def _sostituisci_testo_paragrafo(paragraph, nuovo_testo):
 # ==========================================
 # STEP 1 — PROPOSTA MODIFICHE (Claude)
 # ==========================================
-_SYSTEM_PROPOSTA = """Sei un copywriter esperto di CV che riformula (senza mai inventare) i contenuti di un CV per allinearlo al linguaggio di un annuncio di lavoro specifico.
+_SYSTEM_PROPOSTA = """Sei un copywriter esperto di CV: il tuo compito è riformulare i contenuti di un CV per massimizzare l'allineamento con un annuncio di lavoro specifico, puntando a un match del 100%. L'utente farà una revisione personale di ogni proposta prima di usarla per candidarsi, quindi punta a un risultato incisivo e ben calibrato sull'annuncio, non a un cambiamento minimo.
 
-REGOLE ASSOLUTE:
-- Non puoi aggiungere fatti, competenze, strumenti, numeri o esperienze che non siano già presenti nel CV originale, nemmeno se l'annuncio li richiede. Se manca un requisito (es. l'annuncio chiede Salesforce e il CV non lo cita), NON aggiungerlo: ometti semplicemente quel punto.
-- Puoi invece rendere ESPLICITO ciò che nel CV è già vero ma implicito, usando il linguaggio dell'annuncio — es. se l'annuncio chiede "gestione di persone" e il candidato ha guidato team in più esperienze, puoi riformulare un bullet esistente per usare quel linguaggio, perché il fatto è già vero e documentato.
-- Ogni bullet che proponi di modificare deve restare sostanzialmente della stessa lunghezza dell'originale (max +/-15%): non stai aggiungendo contenuto, stai riformulando quello che c'è.
+Puoi riformulare liberamente: enfasi, linguaggio, ordine dei concetti, ed etichette di ruolo (i titoli di ciascuna esperienza) per usare terminologia più riconoscibile e allineata all'annuncio — restando comunque coerente con le responsabilità realmente descritte in quell'esperienza.
+
+L'UNICO VINCOLO RIGIDO: non introdurre strumenti, tecnologie, piattaforme o certificazioni nominate che non compaiono già da nessuna parte nel CV originale (es. se l'annuncio chiede Salesforce e il CV non lo cita in nessuna esperienza, non aggiungerlo — ometti semplicemente quel punto specifico, il resto della riformulazione procede normalmente).
+
+Altre regole pratiche:
 - Non toccare numeri, percentuali, importi o date: vanno riportati identici.
-- Per il paragrafo PROFILO PROFESSIONALE: mantieni la stessa struttura/framework della versione originale (stesso ordine di concetti: titolo professionale, track record, azioni chiave, chiusura su cosa cerca), riformulando solo l'enfasi e il linguaggio per allinearli all'annuncio.
-- Se un bullet è già ben allineato all'annuncio così com'è, non modificarlo — proponi solo le modifiche che hanno un impatto reale sul match.
+- Non toccare il nome dell'azienda in nessuna esperienza.
+- Per il paragrafo PROFILO PROFESSIONALE: mantieni lo stesso framework generale (titolo professionale, track record, azioni chiave, chiusura su cosa cerca), riformulando enfasi e linguaggio per allinearli all'annuncio.
+- Per i TITOLI DI RUOLO: puoi usare un'etichetta diversa per la stessa posizione realmente ricoperta (es. se l'annuncio cerca "Head of Growth" e un'esperienza reale copre effettivamente quelle responsabilità, puoi rietichettarla), ma non cambiare la sostanza del ruolo svolto.
 
-Per ogni modifica che proponi, spiega in "fonte" da quale punto esatto del CV originale deriva il fatto (per permettere una verifica indipendente)."""
+Per ogni modifica che proponi, spiega in "fonte" da quale punto del CV originale deriva (per la verifica indipendente che segue)."""
 
 def _proponi_modifiche_cv(job_title, job_text, intro_originale, bullet_originali):
     client = _get_client()
     if client is None:
         return None
 
-    bullet_elenco = "\n".join(f"[{idx}] {testo}" for idx, testo in bullet_originali.items())
+    bullet_elenco = "\n".join(
+        f"[{idx}] {'(TITOLO DI RUOLO) ' if idx in INDICI_TITOLI_RUOLO else ''}{testo}"
+        for idx, testo in bullet_originali.items()
+    )
     user_content = f"""TITOLO DELL'ANNUNCIO: {job_title}
 
 TESTO INTEGRALE DELL'ANNUNCIO:
@@ -142,10 +155,10 @@ TESTO INTEGRALE DELL'ANNUNCIO:
 PARAGRAFO PROFILO PROFESSIONALE ORIGINALE:
 {intro_originale}
 
-BULLET DELLE ESPERIENZE ORIGINALI (indice: testo):
+TITOLI DI RUOLO E BULLET DELLE ESPERIENZE ORIGINALI (indice: testo):
 {bullet_elenco}
 
-Proponi le riformulazioni che avvicinano il CV al linguaggio di questo annuncio, seguendo tutte le regole del tuo ruolo."""
+Proponi le riformulazioni che avvicinano il CV al linguaggio di questo annuncio, puntando al massimo allineamento possibile, seguendo tutte le regole del tuo ruolo."""
 
     try:
         with client.messages.stream(
@@ -192,13 +205,13 @@ Proponi le riformulazioni che avvicinano il CV al linguaggio di questo annuncio,
 # ==========================================
 # STEP 2 — VERIFICA ANTI-FABBRICAZIONE (Claude, ruolo separato)
 # ==========================================
-_SYSTEM_VERIFICA = """Sei un revisore scettico e indipendente. Il tuo unico compito è controllare che delle modifiche proposte a un CV non introducano NESSUN fatto, competenza, numero o affermazione che non sia già presente — anche solo implicitamente ma inequivocabilmente — nel testo integrale del CV originale che ti viene fornito.
+_SYSTEM_VERIFICA = """Sei un revisore indipendente. L'utente ha scelto esplicitamente di dare ampia libertà di riformulazione (enfasi, linguaggio, etichette di ruolo) e farà lui stesso una revisione finale prima di ogni candidatura — quindi APPROVA per default le riformulazioni stilistiche, di enfasi o le rietichettature di ruolo, anche se non sono una parafrasi letterale del CV originale.
 
-Per ogni modifica proposta:
-- Approvala SOLO se ogni singola affermazione nel nuovo testo è verificabile nel CV originale.
-- Se anche un solo dettaglio non è riconducibile con certezza al CV originale, respingila (approvato=false) e nel testo_finale riporta il testo ORIGINALE invariato (mai il tuo testo, mai quello proposto se scartato).
-- Sii scettico di default: in caso di dubbio, respingi. Meglio un CV meno ottimizzato che un CV con anche un solo dettaglio non verificabile.
-- Non correggere né migliorare il testo proposto: approvi o respingi così com'è."""
+L'UNICO MOTIVO PER RESPINGERE (approvato=false): il testo proposto nomina esplicitamente uno strumento, tecnologia, piattaforma o certificazione specifica (es. "Salesforce", "SAP", "AWS certificato", ecc.) che non compare da NESSUNA parte nel CV originale integrale fornito. In questo caso, e solo in questo caso, respingi e nel testo_finale riporta il testo ORIGINALE invariato.
+
+Respingi anche se il testo proposto cambia numeri, percentuali, importi, date o il nome di un'azienda rispetto all'originale — questi restano sempre invariati.
+
+Per tutto il resto (riformulazioni di enfasi, linguaggio, struttura, etichette di ruolo che restano coerenti con le responsabilità reali dell'esperienza) approva. Non correggere né migliorare il testo proposto: approvi o respingi così com'è."""
 
 def _verifica_modifiche_cv(cv_testo_completo, proposta):
     client = _get_client()
@@ -281,7 +294,7 @@ Verifica ogni elemento secondo le tue regole."""
 # semi-automatico: questo modulo genera e verifica il .docx, l'ultimo
 # passaggio (apertura in Word ed esportazione PDF) resta manuale per
 # garantire la fedeltà grafica del CV inviato a un vero datore di lavoro.
-def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = None):
+def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None, output_dir: str = None):
     """Genera un CV .docx personalizzato per un annuncio specifico.
     Ritorna {"docx_path": ..., "riepilogo": [righe leggibili]} oppure None
     se una qualunque fase fallisce — in tal caso nessun file viene
@@ -299,15 +312,15 @@ def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = No
         logging.error(f"Errore apertura template CV: {e}")
         return None
 
-    if len(doc.paragraphs) <= max(INDICI_BULLET_MODIFICABILI + [INDICE_TITLE, INDICE_INTRO]):
+    if len(doc.paragraphs) <= max(INDICI_MODIFICABILI + [INDICE_TITLE, INDICE_CITTA, INDICE_INTRO]):
         logging.error("Il template CV .docx non ha la struttura attesa (paragrafi mancanti) — personalizzazione annullata.")
         return None
 
-    bullet_originali = {i: doc.paragraphs[i].text.strip() for i in INDICI_BULLET_MODIFICABILI}
+    paragrafi_originali = {i: doc.paragraphs[i].text.strip() for i in INDICI_MODIFICABILI}
     intro_originale = doc.paragraphs[INDICE_INTRO].text.strip()
     cv_testo_completo = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
 
-    proposta = _proponi_modifiche_cv(job_title, job_text, intro_originale, bullet_originali)
+    proposta = _proponi_modifiche_cv(job_title, job_text, intro_originale, paragrafi_originali)
     if proposta is None:
         return None
 
@@ -322,26 +335,39 @@ def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = No
     _sostituisci_testo_paragrafo(doc.paragraphs[INDICE_TITLE], formatta_title_spaziato(job_title))
     riepilogo.append(f'Title aggiornato a: "{job_title}"')
 
+    # Città nella sidebar: dinamica solo per le città seguite, deterministica
+    # (non è un'affermazione su un'esperienza, non richiede verifica LLM)
+    if job_city and job_city in CITTA_SUPPORTATE:
+        citta_originale = doc.paragraphs[INDICE_CITTA].text.strip()
+        if job_city != citta_originale:
+            _sostituisci_testo_paragrafo(doc.paragraphs[INDICE_CITTA], job_city)
+            riepilogo.append(f'Città aggiornata a: "{job_city}"')
+
+    modifiche_llm_applicate = 0
+
     intro_info = verificata.get("intro", {})
     if intro_info.get("approvato") and intro_info.get("testo_finale", "").strip():
         nuovo_intro = intro_info["testo_finale"].strip()
         if nuovo_intro != intro_originale:
             _sostituisci_testo_paragrafo(doc.paragraphs[INDICE_INTRO], nuovo_intro)
             riepilogo.append("Profilo professionale riformulato per l'annuncio")
+            modifiche_llm_applicate += 1
 
     for voce in verificata.get("bullet", []):
         idx = voce.get("indice")
-        if idx not in INDICI_BULLET_MODIFICABILI or not voce.get("approvato"):
+        if idx not in INDICI_MODIFICABILI or not voce.get("approvato"):
             continue
         nuovo = voce.get("testo_finale", "").strip()
-        originale = bullet_originali.get(idx, "")
+        originale = paragrafi_originali.get(idx, "")
         if not nuovo or nuovo == originale:
             continue
         _sostituisci_testo_paragrafo(doc.paragraphs[idx], nuovo)
-        riepilogo.append(f'Bullet riformulato: "{originale[:70]}..." -> "{nuovo[:70]}..."')
+        etichetta = "Titolo di ruolo" if idx in INDICI_TITOLI_RUOLO else "Bullet"
+        riepilogo.append(f'{etichetta} riformulato: "{originale[:70]}..." -> "{nuovo[:70]}..."')
+        modifiche_llm_applicate += 1
 
-    if len(riepilogo) <= 1:
-        logging.info("Nessuna modifica verificata per questo annuncio (oltre al title) — CV personalizzato non generato.")
+    if modifiche_llm_applicate == 0:
+        logging.info("Nessuna modifica di contenuto verificata per questo annuncio — CV personalizzato non generato.")
         return None
 
     if output_dir is None:
@@ -359,7 +385,7 @@ def genera_cv_personalizzato(job_title: str, job_text: str, output_dir: str = No
     return {"docx_path": docx_out, "riepilogo": riepilogo}
 
 
-def genera_cv_per_offerta(job_title: str, job_link: str, output_dir: str = None):
+def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, output_dir: str = None):
     """Punto d'ingresso usato dallo scraper: riscarica il testo integrale
     dell'annuncio da job_link (il testo usato per il match originale non
     viene persistito in offerte_giornaliere.json) e genera il CV personalizzato.
@@ -379,7 +405,7 @@ def genera_cv_per_offerta(job_title: str, job_link: str, output_dir: str = None)
         return None
 
     try:
-        return genera_cv_personalizzato(job_title, job_text, output_dir=output_dir)
+        return genera_cv_personalizzato(job_title, job_text, job_city=job_city, output_dir=output_dir)
     except Exception as e:
         logging.error(f"Errore imprevisto nella generazione del CV personalizzato: {e}")
         return None
