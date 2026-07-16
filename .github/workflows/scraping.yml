@@ -68,9 +68,9 @@ jobs:
       - name: Esegui scraping
         if: steps.check_time.outputs.should_run == 'true'
         env:
-          GMAIL_USER: ${{ secrets.GMAIL_USER }}
-          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
-          DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
+          # run_manual_scrape.py non invia mai email (solo run_email_job.py lo fa):
+          # le credenziali Gmail non servono qui e non vanno esposte inutilmente
+          # a questo step. ANTHROPIC_API_KEY invece serve, per il match LLM durante lo scraping stesso.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python run_manual_scrape.py
 

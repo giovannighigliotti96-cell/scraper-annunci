@@ -1708,13 +1708,18 @@ def invia_email(nuove_offerte):
                     except Exception as e:
                         logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
                         risultato_cv = None
-                    if risultato_cv:
+                    docx_path = risultato_cv.get("docx_path") if risultato_cv else None
+                    if risultato_cv and docx_path:
                         indice_allegato = len(allegati_cv) + 1
                         nome_file = f"CV_Ghigliotti_{indice_allegato}_{re_sub_nome_file(job.company)}.docx"
                         body += f"   📎 CV personalizzato allegato in Word (allegato {indice_allegato}) — apri in Word ed esporta in PDF prima di candidarti. Modifiche:\n"
-                        for riga in risultato_cv["riepilogo"]:
+                        for riga in risultato_cv.get("riepilogo", []):
                             body += f"      - {riga}\n"
-                        allegati_cv.append({"docx_path": risultato_cv["docx_path"], "nome_file": nome_file})
+                        allegati_cv.append({"docx_path": docx_path, "nome_file": nome_file})
+                    elif risultato_cv:
+                        # risultato_cv presente ma senza docx_path: forma inattesa, non deve
+                        # mai far crashare invia_email (perderebbe l'intera email del giorno).
+                        logging.error(f"genera_cv_per_offerta ha ritornato una forma inattesa per '{job.title}': {risultato_cv!r}")
                 body += "\n"
 
     body += f"Totale offerte: {len(nuove_offerte)}.\n\n"
@@ -1824,8 +1829,12 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
             elif job.work_mode == "unverified" and INCLUDE_UNVERIFIED:
                 offerte_filtrate.append(job)
         else:
-            # Genova: in sede o ibrido, mai da remoto
-            if job.work_mode != "da remoto":
+            # Genova: in sede o ibrido, mai da remoto (unverified solo se INCLUDE_UNVERIFIED,
+            # come per Milano/Torino — la vecchia condizione "!= da remoto" includeva
+            # unverified incondizionatamente, ignorando il flag)
+            if job.work_mode in ("in sede", "ibrido"):
+                offerte_filtrate.append(job)
+            elif job.work_mode == "unverified" and INCLUDE_UNVERIFIED:
                 offerte_filtrate.append(job)
     return offerte_filtrate
 

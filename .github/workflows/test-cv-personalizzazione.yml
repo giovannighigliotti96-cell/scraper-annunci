@@ -3,6 +3,9 @@ name: Test personalizzazione CV
 on:
   workflow_dispatch:  # avvio manuale dalla UI GitHub, per verificare la pipeline di personalizzazione CV
 
+permissions:
+  contents: read  # solo checkout + upload artifact, nessuna scrittura sul repo
+
 jobs:
   test:
     runs-on: ubuntu-latest

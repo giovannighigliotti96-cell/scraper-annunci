@@ -11,6 +11,10 @@ on:
     - cron: '5 17 * * *'   # 18:05 CET (UTC+1, inverno)
   workflow_dispatch:       # avvio manuale dalla UI GitHub
 
+concurrency:
+  group: email
+  cancel-in-progress: false  # in coda, mai cancellare un invio già in corso né farne partire due in parallelo
+
 permissions:
   contents: write
 
