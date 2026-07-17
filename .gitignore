@@ -3,5 +3,4 @@ __pycache__/
 *.pyc
 *.pyo
 scraping_log.txt
-pending_scraper_email.json
 .vscode/

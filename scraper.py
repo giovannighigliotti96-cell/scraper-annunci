@@ -13,7 +13,6 @@ import requests
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 import PyPDF2
-import cloudscraper
 from curl_cffi import requests as curl_requests
 from email.mime.application import MIMEApplication
 try:
@@ -37,7 +36,6 @@ GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replac
 DESTINATION_EMAIL = os.getenv("DESTINATION_EMAIL", "").strip().lstrip('﻿').strip()
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 INCLUDE_UNVERIFIED = True
-PENDING_SCRAPER_EMAIL_FILE = "pending_scraper_email.json"
 SOGLIA_CV_PERSONALIZZATO = 80  # probabilita >= a questa soglia attiva la personalizzazione CV
 CV_PERSONALIZZAZIONE_BUDGET_SECONDI = 480  # tempo massimo totale dedicato alla personalizzazione CV per run email
 
@@ -86,7 +84,7 @@ def valida_credenziali_email():
     Ritorna True se valide, False altrimenti.
     Non chiama sys.exit() — chi la invoca decide come gestire il fallimento.
     """
-    pwd = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").strip()
+    pwd = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").lstrip('﻿').strip()
     if not pwd or len(pwd) != 16:
         logging.warning("ATTENZIONE: La GMAIL_APP_PASSWORD nel .env non è valida. Deve contenere esattamente 16 caratteri.")
         return False
@@ -131,7 +129,15 @@ def estrai_keyword_cv(pdf_path):
         for skill in TARGET_SKILLS:
             if skill in testo_cv:
                 cv_skills.add(skill)
-                
+
+        if not cv_skills:
+            # Estrazione riuscita ma zero keyword trovate (es. un problema di
+            # legature/kerning di PyPDF2 che spezza le parole): senza questo
+            # fallback CV_SKILLS resterebbe [] per l'intera durata del processo,
+            # forzando ogni offerta del giorno a match_level "Base".
+            logging.warning(f"Estrazione CV riuscita ma nessuna competenza trovata in {pdf_path}: uso la lista base completa come fallback.")
+            return TARGET_SKILLS
+
         logging.info(f"Trovate {len(cv_skills)} competenze nel CV: {', '.join(cv_skills)}")
         return list(cv_skills)
     except Exception as e:
@@ -173,8 +179,13 @@ def _get_anthropic_client():
     global _anthropic_client
     if _anthropic_client is None and ANTHROPIC_SDK_AVAILABLE and ANTHROPIC_API_KEY:
         # timeout allineato a effort "high" (ragionamento più lento): 30s era troppo
-        # basso e causava fallback silenzioso all'euristica a keyword sotto carico normale
-        _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=120.0)
+        # basso e causava fallback silenzioso all'euristica a keyword sotto carico normale.
+        # max_retries esplicito a 1 (invece del default 2, cioè 3 tentativi): questo
+        # loop gira una volta per ogni offerta scrapata, senza alcun budget di tempo
+        # complessivo — un max_retries più basso limita quanto una singola offerta
+        # lenta/rate-limitata può ritardare l'intero run di scraping (120*2=240s
+        # invece di 120*3=360s nel caso peggiore).
+        _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=120.0, max_retries=1)
     return _anthropic_client
 
 MATCH_LLM_MODEL = "claude-sonnet-5"
@@ -772,7 +783,7 @@ class LinkedInScraper(BaseScraper):
                                     if not link or link in seen_links:
                                         continue
                                     seen_links.add(link)
-                                    company = item.get("hiringOrganization", {}).get("name", "")
+                                    company = (item.get("hiringOrganization") or {}).get("name", "")
                                     date = item.get("datePosted", "")
                                     desc = item.get("description", "")
                                     match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
@@ -813,87 +824,6 @@ class LinkedInScraper(BaseScraper):
                 
         return jobs
 
-class IndeedScraper(BaseScraper):
-    """
-    Indeed IT — USA l'API ufficiale Indeed Publisher se INDEED_PUBLISHER_ID è nel .env.
-    Se la variabile non è presente, lo scraper si disabilita con un warning (no silent fail).
-    Registrazione gratuita: https://ads.indeed.com/jobroll/xmlfeed
-    """
-    def __init__(self):
-        super().__init__("Indeed")
-        self.publisher_id = os.getenv("INDEED_PUBLISHER_ID", "")
-        if not self.publisher_id:
-            logging.warning(
-                "IndeedScraper disabilitato: INDEED_PUBLISHER_ID mancante nel .env. "
-                "Registrati su https://ads.indeed.com/jobroll/xmlfeed per ottenerlo gratuitamente."
-            )
-
-    def scrape(self, city_name, city_config):
-        import xml.etree.ElementTree as ET
-        
-        if not self.publisher_id:
-            return []
-        
-        jobs = []
-        keywords = ["marketing manager", "head of growth", "responsabile marketing"]
-        
-        for kw in keywords:
-            try:
-                url = "https://api.indeed.com/ads/apisearch"
-                params = {
-                    "publisher": self.publisher_id,
-                    "q": kw,
-                    "l": city_name,
-                    "co": "it",
-                    "v": "2",
-                    "format": "xml",
-                    "limit": 25,
-                    "sort": "date",
-                }
-                response = requests.get(url, params=params, timeout=12)
-                logging.info(f"{self.portal_name} ({kw} - {city_name}): HTTP {response.status_code}")
-                
-                if response.status_code == 200:
-                    try:
-                        root = ET.fromstring(response.text)
-                        for result in root.findall(".//result"):
-                            title = result.findtext("jobtitle", "")
-                            if not is_valid_job_title(title):
-                                continue
-                            company = result.findtext("company", "")
-                            link = result.findtext("url", "")
-                            date = result.findtext("date", "")
-                            snippet = result.findtext("snippet", "")
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
-                            jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                                   date=date, snippet=snippet[:150],
-                                                   match_level=match_level, match_count=match_count,
-                                                   city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                    except ET.ParseError as e:
-                        logging.error(f"{self.portal_name}: XML parse error: {e}")
-                else:
-                    logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-                    
-                time.sleep(1)
-                
-            except Exception as e:
-                logging.error(f"Errore {self.portal_name} keyword '{kw}': {e}")
-                
-        return jobs
-
-class InfojobsScraper(BaseScraper):
-    """
-    Infojobs IT — DISABILITATO.
-    InfoJobs ha chiuso il servizio in Italia (pagina 'InfoJobs - Grazie Italia').
-    """
-    def __init__(self):
-        super().__init__("Infojobs")
-
-    def scrape(self, city_name, city_config):
-        logging.warning("InfojobsScraper: servizio chiuso in Italia, scraper disabilitato.")
-        return []
-
-
 class MichaelPageScraper(BaseScraper):
     """
     MichaelPage IT — gli URL per-città restituiscono 404.
@@ -925,7 +855,13 @@ class MichaelPageScraper(BaseScraper):
                 logging.info(f"{self.portal_name}: HTTP {response.status_code} ({url})")
                 if response.status_code == 200:
                     soup = BeautifulSoup(response.text, "html.parser")
-                    jobs.extend(self._parse_json_ld(soup, url, city_name))
+                    jobs_json_ld = self._parse_json_ld(soup, url, city_name)
+                    jobs.extend(jobs_json_ld)
+                    # Segna già "visti" i titoli trovati via JSON-LD: altrimenti il loop
+                    # sugli anchor /job-detail/ della STESSA pagina li riaggiunge come
+                    # duplicati (con company vuota, quindi non riconosciuti come lo stesso
+                    # annuncio dalla deduplica finale che include l'azienda nella chiave).
+                    seen.update(job.title for job in jobs_json_ld)
                     for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
                         title = a.get_text(strip=True)
                         if title and title != "Candidati" and title not in seen:
@@ -960,7 +896,7 @@ class MichaelPageScraper(BaseScraper):
                         title = item.get("title", "")
                         if is_valid_job_title(title):
                             link = item.get("url", base_url)
-                            company = item.get("hiringOrganization", {}).get("name", "")
+                            company = (item.get("hiringOrganization") or {}).get("name", "")
                             date = item.get("datePosted", "")
                             match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
                             jobs.append(ScrapedJob(title, company, self.portal_name, link,
@@ -1101,277 +1037,6 @@ class WyserScraper(BaseScraper):
 
 
 
-class GlassdoorScraper(BaseScraper):
-    """Glassdoor IT — usa cloudscraper per bypassare la protezione Cloudflare."""
-    def __init__(self):
-        super().__init__("Glassdoor")
-
-    def scrape(self, city_name, city_config):
-        jobs = []
-        url = city_config.get("glassdoor_url", f"https://www.glassdoor.it/Job/{city_name.lower()}-marketing-manager-jobs-SRCH_IL.0,6_KO7,24.htm")
-        try:
-            scraper = cloudscraper.create_scraper(
-                browser={'browser': 'chrome', 'platform': 'windows', 'desktop': True}
-            )
-            response = scraper.get(url, timeout=15)
-            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-                # Glassdoor usa li con data-test o article
-                cards = (
-                    soup.find_all("li", attrs={"data-test": True}) or
-                    soup.find_all("article") or
-                    soup.find_all("div", class_=lambda c: c and ("jobCard" in c or "JobCard" in c or "job-listing" in c))
-                )
-                for card in cards:
-                    title_elem = card.find(["a", "span", "h3"], attrs={"data-test": lambda v: v and "job-title" in v.lower()}) or \
-                                 card.find(["h3", "a"], class_=lambda c: c and ("title" in c.lower() or "jobTitle" in c.lower()))
-                    link_elem = card.find("a", href=True)
-                    company_elem = card.find(attrs={"data-test": lambda v: v and "employer-name" in v.lower()}) or \
-                                   card.find(class_=lambda c: c and "employer" in c.lower())
-                    if title_elem:
-                        title = title_elem.get_text(strip=True)
-                        if is_valid_job_title(title):
-                            link = link_elem["href"] if link_elem else url
-                            if not link.startswith("http"):
-                                link = "https://www.glassdoor.it" + link
-                            company = company_elem.get_text(strip=True) if company_elem else ""
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
-                            jobs.append(ScrapedJob(title, company, self.portal_name, link, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                if not jobs:
-                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
-            else:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-        except Exception as e:
-            logging.error(f"Errore scraping {self.portal_name}: {e}")
-        return jobs
-
-
-class RandstadScraper(BaseScraper):
-    """
-    Randstad IT — DISABILITATO (verificato 2026-07-15).
-    L'API GraphQL ufficiale (api.randstadservices.com) risponde 200 e la query
-    è sintatticamente valida, ma il campo searchValues non filtra più i
-    risultati per titolo: interrogando dal vivo "marketing manager" su Milano
-    (raggio 30km) si ottengono le stesse ~223-232 offerte generiche (agenti di
-    commercio, store manager, stage, ecc.) indipendentemente dal termine
-    cercato — su un campione di 100 risultati nessuno conteneva letteralmente
-    uno dei titoli target. Il codice sotto resta funzionante e viene lasciato
-    per un eventuale ripristino se Randstad corregge l'API, ma lo scraper è
-    rimosso dalla lista attiva in esegui_scraping_job/run_manual_scrape.py
-    perché oggi contribuisce solo rumore filtrato via da is_valid_job_title,
-    sprecando una chiamata HTTP per città ad ogni run.
-    """
-    def __init__(self):
-        super().__init__("Randstad")
-
-    def scrape(self, city_name, city_config):
-        logging.warning(f"{self.portal_name}: scraper disabilitato (API non filtra più per titolo, verificato 2026-07-15).")
-        return []
-
-    def _scrape_graphql_unused(self, city_name, city_config):
-        """Implementazione originale, non più chiamata — vedi docstring della classe."""
-        jobs = []
-        url = "https://api.randstadservices.com/job/V1"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "client-id": os.getenv("RANDSTAD_CLIENT_ID", "F9FB4BD32A4FADCF1B7E361227151"),
-            "content-type": "application/json",
-            "accept": "application/json"
-        }
-
-        # Coordinate per la città
-        lat = city_config.get("lat", 44.449518)
-        lon = city_config.get("lon", 8.892783)
-
-        search_query = {
-            "query": """
-            query ($search_mainSearchJobs: SearchInput, $query_mainSearchJobs: QueryInput, $opcoCodes_mainSearchJobs: [String!]!, $language_mainSearchJobs: LanguageCode!) {
-                search: searchJobs (search: $search_mainSearchJobs, query: $query_mainSearchJobs, opcoCodes: $opcoCodes_mainSearchJobs, language: $language_mainSearchJobs) {
-                    count
-                    results {
-                        document {
-                            jobTitle
-                            clientDetail {
-                                name
-                            }
-                            webDetails {
-                                postedUrl {
-                                    href
-                                }
-                            }
-                            postingDetail {
-                                postingTime
-                            }
-                            description {
-                                shortDescription
-                            }
-                        }
-                    }
-                }
-            }
-            """,
-            "variables": {
-                "search_mainSearchJobs": {
-                    "searchValues": ["marketing manager", "responsabile marketing", "head of growth", "head of marketing", "digital marketing manager", "digital sales manager"]
-                },
-                "query_mainSearchJobs": {
-                    "sort": {
-                        "type": ["Relevance"]
-                    },
-                    "location": {
-                        "latitude": lat,
-                        "longitude": lon,
-                        "distance": 30,
-                        "unit": "km"
-                    },
-                    "range": {
-                        "start": 0,
-                        "end": 50
-                    },
-                },
-                "opcoCodes_mainSearchJobs": ["IT-RS", "LOCAL-IT-RS"],
-                "language_mainSearchJobs": "it"
-            }
-        }
-
-        try:
-            response = requests.post(url, json=search_query, headers=headers, timeout=12)
-            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
-            if response.status_code in [401, 403]:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code} - client-id Randstad probabilmente scaduto/ruotato, verificare manualmente.")
-                return []
-            if response.status_code == 200:
-                res2 = response.json()
-                jobs_data = (res2.get("data") or {}).get("search", {})
-                results = jobs_data.get("results", [])
-
-                for res in results:
-                    doc = res.get("document", {})
-                    title = doc.get("jobTitle", "")
-                    if is_valid_job_title(title):
-                        company = doc.get("clientDetail", {}).get("name") or ""
-                        posted_urls = doc.get("webDetails", {}).get("postedUrl", [])
-                        link = posted_urls[0].get("href") if posted_urls else ""
-                        if not link:
-                            continue
-                        date = doc.get("postingDetail", {}).get("postingTime", "")
-                        desc = doc.get("description", {}).get("shortDescription", "")
-
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
-                        jobs.append(ScrapedJob(
-                            title=title,
-                            company=company,
-                            portal=self.portal_name,
-                            link=link,
-                            date=date,
-                            snippet=desc,
-                            match_level=match_level,
-                            match_count=match_count,
-                            city=city_name,
-                            work_mode=work_mode,
-                            fetch_status=fetch_status,
-                            probabilita=probabilita,
-                            motivazione=motivazione, testo_completo=testo_completo,
-                        ))
-                if not jobs:
-                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
-            else:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code} - Errore API Randstad GraphQL.")
-        except requests.exceptions.Timeout:
-            logging.error(f"{self.portal_name}: timeout della richiesta")
-        except Exception as e:
-            logging.error(f"Errore scraping {self.portal_name}: {e}")
-
-        return jobs
-
-
-class AdzunaScraper(BaseScraper):
-    """
-    Adzuna IT — i job sono in article[data-aid] (SSR, non lazy-loaded).
-    Struttura: h2 > a[data-js="jobLink"] per titolo+link,
-               div.ui-company per azienda, div.ui-location per città,
-               span.max-snippet-height per snippet.
-    JSON-LD non più presente nel DOM statico.
-    """
-    def __init__(self):
-        super().__init__("Adzuna")
-
-    def scrape(self, city_name, city_config):
-        import json as _json
-        import re as _re
-        jobs = []
-        search_keywords = ["marketing+manager", "digital+marketing+manager", "digital+sales+manager", "head+of+growth"]
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-            "Accept-Language": "it-IT,it;q=0.9",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        }
-        seen = set()
-        for kw in search_keywords:
-          url = f"https://www.adzuna.it/search?q={kw}&w={city_name}&sort_by=date"
-          try:
-            response = requests.get(url, headers=headers, timeout=12)
-            logging.info(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-
-                # --- Strategia 1: JSON-LD ---
-                for script in soup.find_all("script", type="application/ld+json"):
-                    try:
-                        data = _json.loads(script.string or "{}")
-                        items = data if isinstance(data, list) else [data]
-                        for item in items:
-                            if item.get("@type") == "JobPosting":
-                                title = item.get("title", "")
-                                link = item.get("url", url)
-                                if is_valid_job_title(title) and link not in seen:
-                                    seen.add(link)
-                                    company = item.get("hiringOrganization", {}).get("name", "")
-                                    date = item.get("datePosted", "")
-                                    desc = item.get("description", "")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
-                                    jobs.append(ScrapedJob(title, company, self.portal_name,
-                                                           link, date=date,
-                                                           match_level=match_level, match_count=match_count,
-                                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                    except Exception:
-                        pass
-
-                # --- Strategia 2: article[data-aid] ---
-                for article in soup.find_all("article", attrs={"data-aid": True}):
-                    title_a = article.find("h2").find("a", attrs={"data-js": "jobLink"}) if article.find("h2") else None
-                    if not title_a:
-                        continue
-                    title = _re.sub(r'\s+', ' ', title_a.get_text(" ", strip=True)).strip()
-                    link = title_a.get("href", "")
-                    if not title or not link or link in seen:
-                        continue
-                    if not link.startswith("http"):
-                        link = "https://www.adzuna.it" + link
-                    if not is_valid_job_title(title):
-                        continue
-                    seen.add(link)
-                    company_el = article.find(class_="ui-company")
-                    company = company_el.get_text(strip=True) if company_el else ""
-                    snippet_el = article.find(class_="max-snippet-height")
-                    snippet = snippet_el.get_text(" ", strip=True) if snippet_el else ""
-                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
-                    jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                           snippet=snippet[:150],
-                                           match_level=match_level, match_count=match_count,
-                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-            else:
-                logging.error(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
-          except requests.exceptions.Timeout:
-              logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
-          except Exception as e:
-              logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
-        if not jobs:
-            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
-        return jobs
-
-
 class PagePersonnelScraper(BaseScraper):
     """Page Personnel IT — SSR Drupal (stessa infrastruttura di MichaelPage). Parsing dei link /job-detail/."""
     def __init__(self):
@@ -1410,7 +1075,7 @@ class PagePersonnelScraper(BaseScraper):
                                 title = item.get("title", "")
                                 if is_valid_job_title(title):
                                     link = item.get("url", city_url)
-                                    company = item.get("hiringOrganization", {}).get("name", "")
+                                    company = (item.get("hiringOrganization") or {}).get("name", "")
                                     date = item.get("datePosted", "")
                                     match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
@@ -1683,7 +1348,7 @@ def invia_email(nuove_offerte):
                 body += f"{i}. {job.title}\n"
                 body += f"   Azienda: {job.company}\n"
                 body += f"   Città: {job.city}\n"
-                modalita_display = "Modalità non specificata nell'annuncio" if job.work_mode == "unverified" and job.fetch_status == "ok" else job.work_mode.upper()
+                modalita_display = "Modalità non specificata nell'annuncio" if job.work_mode == "unverified" else job.work_mode.upper()
                 body += f"   Modalità: {modalita_display}\n"
                 body += f"   Portale: {job.portal}\n"
                 body += f"   Probabilità richiamata: {prob}% — {prob_label}\n"
@@ -1725,7 +1390,11 @@ def invia_email(nuove_offerte):
     body += f"Totale offerte: {len(nuove_offerte)}.\n\n"
     
     # --- SEZIONE COMPANY PROSPECTOR ---
+    # Il file viene solo letto qui, MAI svuotato: se l'invio fallisse dopo aver
+    # già svuotato il file, i prospect andrebbero persi senza che siano mai stati
+    # recapitati. Lo svuotamento avviene solo dopo un invio SMTP riuscito, più sotto.
     prospects_file = "daily_prospects.json"
+    prospects_da_svuotare = False
     if os.path.exists(prospects_file):
         try:
             with open(prospects_file, "r", encoding="utf-8") as f:
@@ -1742,13 +1411,10 @@ def invia_email(nuove_offerte):
                     body += f"📩 Candidatura Spontanea: {p.get('spontaneous_application', 'N/D')}\n"
                     body += f"👤 Contatto Chiave (LinkedIn): {p.get('key_person', 'N/D')}\n"
                     body += "---------------------------------------------------------\n\n"
-                
-                # Svuota il file per non rimetterle domani
-                with open(prospects_file, "w", encoding="utf-8") as f:
-                    json.dump([], f)
+                prospects_da_svuotare = True
         except Exception as e:
             logging.error(f"Errore caricamento prospect: {e}")
-            
+
     msg.attach(MIMEText(body, 'plain', 'utf-8'))
 
     for allegato in allegati_cv:
@@ -1780,36 +1446,27 @@ def invia_email(nuove_offerte):
                 server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
                 server.send_message(msg)
             logging.info(f"Email inviata con successo a {DESTINATION_EMAIL}")
-            
-            if os.path.exists(PENDING_SCRAPER_EMAIL_FILE):
-                os.remove(PENDING_SCRAPER_EMAIL_FILE)
+            if prospects_da_svuotare:
+                try:
+                    with open(prospects_file, "w", encoding="utf-8") as f:
+                        json.dump([], f)
+                except Exception as e:
+                    logging.error(f"Errore svuotamento {prospects_file} dopo invio riuscito: {e}")
             return True
         except Exception as e:
             import traceback
             logging.warning(f"Tentativo {attempt+1}/{len(retry_delays)} invio email fallito: {e}\n{traceback.format_exc()}")
             if attempt < len(retry_delays) - 1:
                 time.sleep(delay)
-                
-    logging.error("Impossibile inviare l'email dopo tutti i tentativi. Salvataggio in pending.")
-    try:
-        with open(PENDING_SCRAPER_EMAIL_FILE, "w", encoding="utf-8") as f:
-            json.dump([job.to_dict() for job in nuove_offerte], f)
-    except Exception as e:
-        logging.error(f"Errore salvataggio pending email: {e}")
-    return False
 
-def tenta_invio_pending_email():
-    if os.path.exists(PENDING_SCRAPER_EMAIL_FILE):
-        try:
-            with open(PENDING_SCRAPER_EMAIL_FILE, "r", encoding="utf-8") as f:
-                pending_data = json.load(f)
-            if pending_data:
-                logging.info("Trovata email scraper in pending, tento l'invio...")
-                offerte = [ScrapedJob.from_dict(d) for d in pending_data]
-                success = invia_email(offerte) # will try again
-                # invia_email manages removing the file on success
-        except Exception as e:
-            logging.error(f"Errore retry pending email scraper: {e}")
+    # Non si salva un file "pending" separato: offerte_giornaliere.json non viene
+    # svuotato dal chiamante in caso di fallimento (vedi invia_email_job), quindi
+    # queste stesse offerte restano committate e verranno ritentate al prossimo
+    # invio pianificato. Un pending_scraper_email.json separato sarebbe comunque
+    # inutilizzabile in CI: è gitignored e ogni runner GitHub Actions è effimero,
+    # quindi non sopravvivrebbe mai da un run all'altro.
+    logging.error("Impossibile inviare l'email dopo tutti i tentativi. Le offerte restano in offerte_giornaliere.json per il prossimo tentativo.")
+    return False
 
 # ==========================================
 # MAIN JOB E SCHEDULING
@@ -1872,7 +1529,6 @@ def get_job_id(link: str) -> str:
 
 
 def esegui_scraping_job(orario_label):
-    tenta_invio_pending_email()
     print(f"[{datetime.now()}] Avvio scraping delle {orario_label} in corso...")
     
     scrapers = [
@@ -1949,7 +1605,14 @@ def esegui_scraping_job(orario_label):
 def invia_email_job():
     print(f"[{datetime.now()}] Avvio invio email report giornaliero...")
     giornaliere_dicts = load_giornaliere()
-    offerte_da_inviare = [ScrapedJob.from_dict(d) for d in giornaliere_dicts]
+    # Un singolo record malformato/legacy non deve mai far crashare l'invio
+    # dell'intera email del giorno: viene scartato con un log, non l'intero batch.
+    offerte_da_inviare = []
+    for d in giornaliere_dicts:
+        try:
+            offerte_da_inviare.append(ScrapedJob.from_dict(d))
+        except Exception as e:
+            logging.error(f"Voce malformata in offerte_giornaliere.json scartata: {e} — dati: {d!r}")
 
     success = invia_email(offerte_da_inviare)
 

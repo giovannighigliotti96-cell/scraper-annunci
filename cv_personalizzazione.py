@@ -72,12 +72,45 @@ INDICI_BULLET_MODIFICABILI = [
 ]
 INDICI_MODIFICABILI = INDICI_TITOLI_RUOLO + INDICI_BULLET_MODIFICABILI
 
+# Coppie (indice titolo di ruolo, azienda attesa nelle vicinanze), usate da
+# _valida_identita_indici per verificare che gli indici hardcoded puntino ancora
+# alle sezioni giuste. Un controllo di sola LUNGHEZZA (vedi genera_cv_personalizzato)
+# non basta: se il template viene modificato in Word in un punto che non cambia
+# il conteggio totale dei paragrafi, gli indici si spostano silenziosamente.
+_ANCORE_AZIENDA_RUOLO = [
+    (20, "TLC Web Solution"),
+    (38, "Dimhora"),
+    (53, "Audio Effetti"),
+    (68, "Koolstories"),
+    (82, "Lesson Boom"),
+]
+
+def _valida_identita_indici(doc):
+    """Verifica che i paragrafi vicini a ciascun indice di titolo-ruolo contengano
+    ancora il nome dell'azienda atteso. Ritorna (True, None) se tutto ok, altrimenti
+    (False, messaggio) — il chiamante deve annullare la personalizzazione, mai
+    scrivere testo generato dall'LLM in un paragrafo la cui identità non è verificata."""
+    for idx, azienda_attesa in _ANCORE_AZIENDA_RUOLO:
+        if idx >= len(doc.paragraphs):
+            return False, f"paragrafo {idx} (atteso per '{azienda_attesa}') non esiste nel documento"
+        finestra = "\n".join(doc.paragraphs[j].text for j in range(idx, min(idx + 6, len(doc.paragraphs))))
+        if azienda_attesa not in finestra:
+            return False, f"paragrafo {idx}: atteso '{azienda_attesa}' nelle vicinanze, non trovato — il template potrebbe essere stato modificato in Word"
+    return True, None
+
 _client = None
 
 def _get_client():
     global _client
     if _client is None and _ANTHROPIC_SDK_AVAILABLE and ANTHROPIC_API_KEY:
-        _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=180.0)
+        # timeout ridotto da 180s a 90s e max_retries esplicito a 1 (invece del default
+        # 2, cioè 3 tentativi): con due chiamate sequenziali (proposta+verifica) il
+        # caso peggiore per un singolo CV passa da 180*3*2=1080s a 90*2*2=360s — un
+        # limite reale che il budget CV_PERSONALIZZAZIONE_BUDGET_SECONDI (480s totali
+        # per run) può effettivamente far rispettare, invece di poter essere superato
+        # da una singola offerta lenta prima ancora che il controllo tra un job e
+        # l'altro possa intervenire.
+        _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=90.0, max_retries=1)
     return _client
 
 
@@ -203,10 +236,12 @@ Proponi le riformulazioni che avvicinano il CV al linguaggio di questo annuncio,
             },
         ) as stream:
             response = stream.get_final_message()
-        testo = next(b.text for b in response.content if b.type == "text")
+        testo = next((b.text for b in response.content if b.type == "text"), None)
+        if testo is None:
+            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
         return json.loads(testo)
     except Exception as e:
-        logging.warning(f"Proposta modifiche CV fallita: {e}")
+        logging.warning(f"Proposta modifiche CV fallita: {type(e).__name__}: {e}")
         return None
 
 
@@ -284,10 +319,12 @@ Verifica ogni elemento secondo le tue regole."""
             },
         ) as stream:
             response = stream.get_final_message()
-        testo = next(b.text for b in response.content if b.type == "text")
+        testo = next((b.text for b in response.content if b.type == "text"), None)
+        if testo is None:
+            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
         return json.loads(testo)
     except Exception as e:
-        logging.warning(f"Verifica modifiche CV fallita: {e}")
+        logging.warning(f"Verifica modifiche CV fallita: {type(e).__name__}: {e}")
         return None
 
 
@@ -322,6 +359,11 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
 
     if len(doc.paragraphs) <= max(INDICI_MODIFICABILI + [INDICE_TITLE, INDICE_CITTA, INDICE_INTRO]):
         logging.error("Il template CV .docx non ha la struttura attesa (paragrafi mancanti) — personalizzazione annullata.")
+        return None
+
+    identita_ok, errore_identita = _valida_identita_indici(doc)
+    if not identita_ok:
+        logging.error(f"Validazione identità indici del template CV fallita: {errore_identita} — personalizzazione annullata per non rischiare di scrivere nel paragrafo sbagliato.")
         return None
 
     paragrafi_originali = {i: doc.paragraphs[i].text.strip() for i in INDICI_MODIFICABILI}
@@ -361,9 +403,15 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
             riepilogo.append("Profilo professionale riformulato per l'annuncio")
             modifiche_llm_applicate += 1
 
+    # Indici realmente proposti nello stage 1: lo stage 2 (verifica) deve poter
+    # solo approvare/respingere quelli, mai introdurne di nuovi — altrimenti un
+    # indice mai passato dal controllo "fonte"-grounded anti-fabbricazione del
+    # primo stage potrebbe finire applicato al CV senza essere mai stato verificato.
+    indici_proposti = {m.get("indice") for m in proposta.get("modifiche_bullet", [])}
+
     for voce in verificata.get("bullet", []):
         idx = voce.get("indice")
-        if idx not in INDICI_MODIFICABILI or not voce.get("approvato"):
+        if idx not in INDICI_MODIFICABILI or idx not in indici_proposti or not voce.get("approvato"):
             continue
         nuovo = voce.get("testo_finale", "").strip()
         originale = paragrafi_originali.get(idx, "")

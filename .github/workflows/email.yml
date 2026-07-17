@@ -75,50 +75,78 @@ jobs:
         run: python run_email_job.py
 
       - name: Salva stato post-email
+        # Questo step gira solo se lo step precedente è andato a buon fine (comportamento
+        # di default di GitHub Actions): se l'invio fallisce, run_email_job.py NON svuota
+        # né offerte_giornaliere.json né daily_prospects.json (vedi invia_email_job/invia_email
+        # in scraper.py), quindi non c'è nulla da salvare — il prossimo invio pianificato
+        # ritenterà automaticamente con le stesse offerte, senza bisogno di un file "pending"
+        # separato (che sarebbe comunque inutilizzabile: gitignored, runner effimero).
         if: steps.check_time.outputs.should_run == 'true'
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          # Aggiorna al commit più recente del remoto (uno scraping concorrente
-          # potrebbe aver pushato nuove offerte mentre l'email era in invio).
-          git fetch origin main
-          git reset --hard origin/main
+          # Backup dello stato locale POST-invio (già corretto: run_email_job.py ha
+          # svuotato daily_prospects.json solo se conteneva prospect e l'invio è
+          # riuscito) prima che git reset --hard lo sovrascriva con la versione remota.
+          cp daily_prospects.json /tmp/prospects_after_run.json 2>/dev/null || echo '[]' > /tmp/prospects_after_run.json
 
-          # Merge intelligente: rimuove SOLO le offerte che questa run ha appena
-          # inviato via email (catturate nel backup pre-invio), preservando
-          # eventuali offerte arrivate nel frattempo da uno scraping concorrente
-          # (non ancora inviate, non vanno perse). Un semplice `git pull --rebase`
-          # qui rischierebbe un conflitto reale su questo file — verificato con un
-          # test dedicato — quindi il merge si fa a livello applicativo, come in
-          # scraping.yml.
-          python3 - <<'EOF'
-          import json
+          for i in 1 2 3; do
+            # Aggiorna al commit più recente del remoto (uno scraping concorrente
+            # potrebbe aver pushato nuove offerte mentre l'email era in invio).
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Merge intelligente: rimuove SOLO le offerte che questa run ha appena
+            # inviato via email (catturate nel backup pre-invio), preservando
+            # eventuali offerte arrivate nel frattempo da uno scraping concorrente
+            # (non ancora inviate, non vanno perse). load() distingue "file assente"
+            # da "file presente ma illeggibile" (errore fatale, non un default
+            # silenzioso), e la scrittura è atomica (temp file + rename).
+            python3 - <<'EOF'
+          import json, os, tempfile
 
           def load(path, default):
-              try:
-                  with open(path, encoding='utf-8') as f:
-                      return json.load(f)
-              except Exception:
+              if not os.path.exists(path):
                   return default
+              with open(path, encoding='utf-8') as f:
+                  return json.load(f)
+
+          def atomic_write(path, data, **kw):
+              directory = os.path.dirname(os.path.abspath(path)) or "."
+              fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
+              with os.fdopen(fd, "w", encoding="utf-8") as f:
+                  json.dump(data, f, **kw)
+              os.replace(tmp_path, path)
 
           inviate = load('/tmp/before_email.json', [])
           link_inviati = {j.get('link') for j in inviate}
 
           remote_gior = load('offerte_giornaliere.json', [])
           rimanenti = [j for j in remote_gior if j.get('link') not in link_inviati]
+          atomic_write('offerte_giornaliere.json', rimanenti, ensure_ascii=False, indent=2)
 
-          with open('offerte_giornaliere.json', 'w', encoding='utf-8') as f:
-              json.dump(rimanenti, f, ensure_ascii=False, indent=2)
-
-          # daily_prospects.json non è toccato da nessun processo concorrente
-          # (il modulo prospector è attualmente disattivato): nessun merge necessario.
-          with open('daily_prospects.json', 'w', encoding='utf-8') as f:
-              json.dump([], f, ensure_ascii=False)
+          # daily_prospects.json non è toccato da alcun processo concorrente (il
+          # modulo prospector è disattivato): si ripristina la verità locale calcolata
+          # da invia_email() dopo l'invio, che git reset --hard avrebbe altrimenti
+          # sovrascritto con la versione remota pre-invio.
+          prospects_locali = load('/tmp/prospects_after_run.json', [])
+          atomic_write('daily_prospects.json', prospects_locali, ensure_ascii=False)
 
           print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
           EOF
 
-          git add offerte_giornaliere.json daily_prospects.json
-          git diff --staged --quiet || git commit -m "chore: svuota giornaliere post-email [skip ci]"
-          git push
+            git add offerte_giornaliere.json daily_prospects.json
+            if git diff --staged --quiet; then
+              echo "Nessuna modifica da salvare."
+              exit 0
+            fi
+            git commit -m "chore: svuota giornaliere post-email [skip ci]"
+            if git push; then
+              echo "Push riuscito al tentativo $i."
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente), tentativo $i/3: riprovo il merge..."
+          done
+          echo "Push fallito dopo 3 tentativi." >&2
+          exit 1

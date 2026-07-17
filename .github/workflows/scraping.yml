@@ -84,20 +84,32 @@ jobs:
           cp offerte_viste.json /tmp/run_viste.json
           cp offerte_giornaliere.json /tmp/run_gior.json
 
-          # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
-          git fetch origin main
-          git reset --hard origin/main
+          for i in 1 2 3; do
+            # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
+            git fetch origin main
+            git reset --hard origin/main
 
-          # Merge intelligente: unisce i risultati di questo run con lo stato remoto
-          python3 - <<'EOF'
-          import json
+            # Merge intelligente: unisce i risultati di questo run con lo stato remoto.
+            # load() distingue "file assente" (default legittimo) da "file presente ma
+            # illeggibile/corrotto" (errore fatale, non un default silenzioso): un file
+            # remoto corrotto non deve mai essere silenziosamente sostituito da uno vuoto.
+            # La scrittura è atomica (temp file + rename) per non lasciare mai il file
+            # troncato se il runner viene ucciso a metà (concurrency: cancel-in-progress).
+            python3 - <<'EOF'
+          import json, os, tempfile
 
           def load(path, default):
-              try:
-                  with open(path, encoding='utf-8') as f:
-                      return json.load(f)
-              except Exception:
+              if not os.path.exists(path):
                   return default
+              with open(path, encoding='utf-8') as f:
+                  return json.load(f)
+
+          def atomic_write(path, data):
+              directory = os.path.dirname(os.path.abspath(path)) or "."
+              fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
+              with os.fdopen(fd, "w", encoding="utf-8") as f:
+                  json.dump(data, f, ensure_ascii=False, indent=2)
+              os.replace(tmp_path, path)
 
           remote_viste   = load('offerte_viste.json', {})
           remote_gior    = load('offerte_giornaliere.json', [])
@@ -108,14 +120,23 @@ jobs:
           existing_links = {j.get('link') for j in remote_gior}
           merged_gior = remote_gior + [j for j in our_gior if j.get('link') not in existing_links]
 
-          with open('offerte_viste.json', 'w', encoding='utf-8') as f:
-              json.dump(merged_viste, f, ensure_ascii=False, indent=2)
-          with open('offerte_giornaliere.json', 'w', encoding='utf-8') as f:
-              json.dump(merged_gior, f, ensure_ascii=False, indent=2)
+          atomic_write('offerte_viste.json', merged_viste)
+          atomic_write('offerte_giornaliere.json', merged_gior)
 
           print(f"Merge OK: {len(merged_viste)} URL visti, {len(merged_gior)} offerte oggi")
           EOF
 
-          git add offerte_viste.json offerte_giornaliere.json
-          git diff --staged --quiet || git commit -m "chore: aggiorna stato scraper [skip ci]"
-          git push
+            git add offerte_viste.json offerte_giornaliere.json
+            if git diff --staged --quiet; then
+              echo "Nessuna modifica da salvare."
+              exit 0
+            fi
+            git commit -m "chore: aggiorna stato scraper [skip ci]"
+            if git push; then
+              echo "Push riuscito al tentativo $i."
+              exit 0
+            fi
+            echo "Push rifiutato (probabile push concorrente), tentativo $i/3: riprovo il merge..."
+          done
+          echo "Push fallito dopo 3 tentativi." >&2
+          exit 1
