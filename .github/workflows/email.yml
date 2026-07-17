@@ -120,7 +120,11 @@ jobs:
               os.replace(tmp_path, path)
 
           inviate = load('/tmp/before_email.json', [])
-          link_inviati = {j.get('link') for j in inviate}
+          # Solo link non vuoti: un record senza link (None/"") non deve entrare nel
+          # set, altrimenti un'offerta arrivata nel frattempo da uno scraping
+          # concorrente con link altrettanto vuoto/mancante verrebbe rimossa per
+          # errore, anche se non è mai stata inviata.
+          link_inviati = {j.get('link') for j in inviate if j.get('link')}
 
           remote_gior = load('offerte_giornaliere.json', [])
           rimanenti = [j for j in remote_gior if j.get('link') not in link_inviati]
@@ -131,7 +135,7 @@ jobs:
           # da invia_email() dopo l'invio, che git reset --hard avrebbe altrimenti
           # sovrascritto con la versione remota pre-invio.
           prospects_locali = load('/tmp/prospects_after_run.json', [])
-          atomic_write('daily_prospects.json', prospects_locali, ensure_ascii=False)
+          atomic_write('daily_prospects.json', prospects_locali, ensure_ascii=False, indent=2)
 
           print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
           EOF

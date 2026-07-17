@@ -5,6 +5,7 @@ Simula l'esecuzione schedulata delle 09:00 o 12:00.
 """
 import sys
 import os
+import json
 from datetime import datetime
 import logging
 
@@ -15,7 +16,7 @@ from scraper import (
     WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
     IQMSelezioneScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
-    save_giornaliere, filtra_offerte_per_citta, get_match_type,
+    save_giornaliere, filtra_offerte_per_citta,
     get_job_id
 )
 
@@ -64,7 +65,6 @@ if __name__ == "__main__":
         return re.sub(r'[^a-z0-9]', '', str(text).lower())
 
     for job in tutte_le_offerte:
-        job.match_type = get_match_type(job.title)
         job_id = get_job_id(job.link)
 
         if job_id in viste:
@@ -100,6 +100,15 @@ if __name__ == "__main__":
     for job in nuove_offerte:
         giornaliere.append(job.to_dict())
     save_giornaliere(giornaliere)
+
+    # Delta di SOLE le offerte trovate in QUESTO run (non l'intero accumulo
+    # locale, che include offerte già presenti prima di questo run): il workflow
+    # lo usa per il merge invece di offerte_giornaliere.json intero, altrimenti
+    # riaggiungerebbe al remoto offerte già rimosse nel frattempo da un run
+    # email.yml concorrente (l'email.yml le rimuove dal remoto dopo l'invio,
+    # ma questo processo le aveva già caricate in memoria prima di quel momento).
+    with open("nuove_offerte_run.json", "w", encoding="utf-8") as f:
+        json.dump([job.to_dict() for job in nuove_offerte], f, ensure_ascii=False, indent=2)
 
     print()
     print("="*70)

@@ -80,9 +80,13 @@ jobs:
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
 
-          # Backup dei JSON prodotti da questo run
+          # Backup dei JSON prodotti da questo run. Per le offerte si usa il delta
+          # nuove_offerte_run.json (solo quelle trovate in QUESTO run), non l'intero
+          # offerte_giornaliere.json locale: quest'ultimo include anche offerte già
+          # presenti prima del run, che un email.yml concorrente potrebbe aver già
+          # rimosso dal remoto perché inviate — usarlo qui le "resusciterebbe".
           cp offerte_viste.json /tmp/run_viste.json
-          cp offerte_giornaliere.json /tmp/run_gior.json
+          cp nuove_offerte_run.json /tmp/run_gior.json
 
           for i in 1 2 3; do
             # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
@@ -96,7 +100,7 @@ jobs:
             # La scrittura è atomica (temp file + rename) per non lasciare mai il file
             # troncato se il runner viene ucciso a metà (concurrency: cancel-in-progress).
             python3 - <<'EOF'
-          import json, os, tempfile
+          import json, os, tempfile, time
 
           def load(path, default):
               if not os.path.exists(path):
@@ -117,6 +121,14 @@ jobs:
           our_gior       = load('/tmp/run_gior.json', [])
 
           merged_viste = {**remote_viste, **our_viste}
+          # Pulizia entry più vecchie di VISTE_MAX_AGE_DAYS (90, allineato a
+          # scraper.py): senza questo, il merge fa solo un'unione di dict e la
+          # pulizia applicata in load_viste() resta locale al singolo processo,
+          # non arriva mai al file effettivamente committato, che cresce senza limiti.
+          VISTE_MAX_AGE_DAYS = 90
+          cutoff = time.time() - (VISTE_MAX_AGE_DAYS * 86400)
+          merged_viste = {url: ts for url, ts in merged_viste.items() if ts > cutoff}
+
           existing_links = {j.get('link') for j in remote_gior}
           merged_gior = remote_gior + [j for j in our_gior if j.get('link') not in existing_links]
 

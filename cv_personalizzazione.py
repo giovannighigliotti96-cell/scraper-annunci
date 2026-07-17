@@ -40,6 +40,7 @@ import os
 import json
 import logging
 import tempfile
+import hashlib
 
 import docx
 from dotenv import load_dotenv
@@ -72,45 +73,38 @@ INDICI_BULLET_MODIFICABILI = [
 ]
 INDICI_MODIFICABILI = INDICI_TITOLI_RUOLO + INDICI_BULLET_MODIFICABILI
 
-# Coppie (indice titolo di ruolo, azienda attesa nelle vicinanze), usate da
-# _valida_identita_indici per verificare che gli indici hardcoded puntino ancora
-# alle sezioni giuste. Un controllo di sola LUNGHEZZA (vedi genera_cv_personalizzato)
-# non basta: se il template viene modificato in Word in un punto che non cambia
-# il conteggio totale dei paragrafi, gli indici si spostano silenziosamente.
-_ANCORE_AZIENDA_RUOLO = [
-    (20, "TLC Web Solution"),
-    (38, "Dimhora"),
-    (53, "Audio Effetti"),
-    (68, "Koolstories"),
-    (82, "Lesson Boom"),
-]
+# Hash SHA-256 dell'intera sequenza di testo dei paragrafi del template,
+# calcolato l'ultima volta che gli indici INDICE_*/INDICI_* sono stati
+# verificati manualmente contro il file reale (2026-07-17). La vecchia
+# validazione per "ancore" (5 coppie indice-titolo-ruolo/azienda-vicina)
+# copriva solo quei 5 indici, lasciando scoperti gli altri 27 indici bullet
+# e title/città/intro — la stragrande maggioranza di ciò che viene davvero
+# riscritto — dando una falsa sicurezza. L'hash copre l'INTERA struttura:
+# qualunque modifica al template, ovunque, lo cambia, bloccando la
+# personalizzazione finché gli indici non vengono ri-verificati a mano e
+# questa costante aggiornata di conseguenza (vedi _hash_template più sotto).
+_TEMPLATE_HASH_ATTESO = "7d67a356e02ee12ff4fe003a23dd18b529e8e36d9b725c3c92a7e164dcdb1552"
 
-def _valida_identita_indici(doc):
-    """Verifica che i paragrafi vicini a ciascun indice di titolo-ruolo contengano
-    ancora il nome dell'azienda atteso. Ritorna (True, None) se tutto ok, altrimenti
-    (False, messaggio) — il chiamante deve annullare la personalizzazione, mai
-    scrivere testo generato dall'LLM in un paragrafo la cui identità non è verificata."""
-    for idx, azienda_attesa in _ANCORE_AZIENDA_RUOLO:
-        if idx >= len(doc.paragraphs):
-            return False, f"paragrafo {idx} (atteso per '{azienda_attesa}') non esiste nel documento"
-        finestra = "\n".join(doc.paragraphs[j].text for j in range(idx, min(idx + 6, len(doc.paragraphs))))
-        if azienda_attesa not in finestra:
-            return False, f"paragrafo {idx}: atteso '{azienda_attesa}' nelle vicinanze, non trovato — il template potrebbe essere stato modificato in Word"
-    return True, None
+def _hash_template(doc):
+    """Hash della sequenza di testo di tutti i paragrafi, per rilevare qualunque
+    modifica al template — anche una che non cambia il conteggio totale dei
+    paragrafi e che quindi il vecchio controllo di sola lunghezza non vedrebbe."""
+    testi = [p.text for p in doc.paragraphs]
+    return hashlib.sha256("\n".join(testi).encode("utf-8")).hexdigest()
 
 _client = None
 
 def _get_client():
     global _client
     if _client is None and _ANTHROPIC_SDK_AVAILABLE and ANTHROPIC_API_KEY:
-        # timeout ridotto da 180s a 90s e max_retries esplicito a 1 (invece del default
-        # 2, cioè 3 tentativi): con due chiamate sequenziali (proposta+verifica) il
-        # caso peggiore per un singolo CV passa da 180*3*2=1080s a 90*2*2=360s — un
-        # limite reale che il budget CV_PERSONALIZZAZIONE_BUDGET_SECONDI (480s totali
-        # per run) può effettivamente far rispettare, invece di poter essere superato
-        # da una singola offerta lenta prima ancora che il controllo tra un job e
-        # l'altro possa intervenire.
-        _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=90.0, max_retries=1)
+        # timeout ridotto da 180s a 90s per limitare il caso peggiore di due chiamate
+        # sequenziali (proposta+verifica). max_retries lasciato al default SDK (2, cioè
+        # 3 tentativi): un giro precedente lo aveva ridotto a 1, ma quel limite di tempo
+        # non era comunque garantito (il budget CV_PERSONALIZZAZIONE_BUDGET_SECONDI
+        # controlla solo se avviare il job successivo, non una chiamata già in corso),
+        # mentre ridurre i retry peggiora misurabilmente la resilienza contro gli errori
+        # 529 Overloaded osservati realmente durante test su questo stesso progetto.
+        _client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=90.0)
     return _client
 
 
@@ -361,9 +355,15 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
         logging.error("Il template CV .docx non ha la struttura attesa (paragrafi mancanti) — personalizzazione annullata.")
         return None
 
-    identita_ok, errore_identita = _valida_identita_indici(doc)
-    if not identita_ok:
-        logging.error(f"Validazione identità indici del template CV fallita: {errore_identita} — personalizzazione annullata per non rischiare di scrivere nel paragrafo sbagliato.")
+    hash_attuale = _hash_template(doc)
+    if hash_attuale != _TEMPLATE_HASH_ATTESO:
+        logging.error(
+            f"Il template CV .docx risulta modificato rispetto all'ultima verifica manuale degli "
+            f"indici (hash atteso {_TEMPLATE_HASH_ATTESO[:12]}…, trovato {hash_attuale[:12]}…) — "
+            f"personalizzazione annullata per non rischiare di scrivere nel paragrafo sbagliato. "
+            f"Se il template è stato modificato intenzionalmente, ri-verificare manualmente tutti "
+            f"gli indici INDICE_*/INDICI_* e aggiornare _TEMPLATE_HASH_ATTESO."
+        )
         return None
 
     paragrafi_originali = {i: doc.paragraphs[i].text.strip() for i in INDICI_MODIFICABILI}
@@ -395,25 +395,30 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
 
     modifiche_llm_applicate = 0
 
+    # Il testo effettivamente scritto nel CV è SEMPRE quello della PROPOSTA (stage 1,
+    # passato dal controllo "fonte"-grounded anti-fabbricazione), mai il testo_finale
+    # della VERIFICA (stage 2): la verifica può solo approvare/respingere un indice,
+    # non riscriverne il contenuto — altrimenti una fabbricazione introdotta nello
+    # stage di verifica stesso aggirerebbe interamente il controllo anti-fabbricazione
+    # che è il vincolo rigido dichiarato di questo modulo.
     intro_info = verificata.get("intro", {})
-    if intro_info.get("approvato") and intro_info.get("testo_finale", "").strip():
-        nuovo_intro = intro_info["testo_finale"].strip()
-        if nuovo_intro != intro_originale:
+    if intro_info.get("approvato"):
+        nuovo_intro = (proposta.get("intro_riformulato") or "").strip()
+        if nuovo_intro and nuovo_intro != intro_originale:
             _sostituisci_testo_paragrafo(doc.paragraphs[INDICE_INTRO], nuovo_intro)
             riepilogo.append("Profilo professionale riformulato per l'annuncio")
             modifiche_llm_applicate += 1
 
-    # Indici realmente proposti nello stage 1: lo stage 2 (verifica) deve poter
-    # solo approvare/respingere quelli, mai introdurne di nuovi — altrimenti un
-    # indice mai passato dal controllo "fonte"-grounded anti-fabbricazione del
-    # primo stage potrebbe finire applicato al CV senza essere mai stato verificato.
-    indici_proposti = {m.get("indice") for m in proposta.get("modifiche_bullet", [])}
+    # Indici e testi realmente proposti nello stage 1: lo stage 2 (verifica) deve
+    # poter solo approvare/respingere quelli, mai introdurne di nuovi né riscriverne
+    # il contenuto (vedi commento sopra).
+    testi_proposti = {m.get("indice"): m.get("nuovo_testo", "") for m in proposta.get("modifiche_bullet", [])}
 
     for voce in verificata.get("bullet", []):
         idx = voce.get("indice")
-        if idx not in INDICI_MODIFICABILI or idx not in indici_proposti or not voce.get("approvato"):
+        if idx not in INDICI_MODIFICABILI or idx not in testi_proposti or not voce.get("approvato"):
             continue
-        nuovo = voce.get("testo_finale", "").strip()
+        nuovo = (testi_proposti[idx] or "").strip()
         originale = paragrafi_originali.get(idx, "")
         if not nuovo or nuovo == originale:
             continue
@@ -453,7 +458,11 @@ def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, o
         try:
             import requests
             from bs4 import BeautifulSoup
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"}
+            from scraper import _url_is_safe_to_fetch
+            if not _url_is_safe_to_fetch(job_link):
+                logging.warning(f"URL scartato (non http/https o punta a un indirizzo privato/interno): {job_link}")
+                return None
+            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
             resp = requests.get(job_link, headers=headers, timeout=10)
             if resp.status_code != 200:
                 logging.warning(f"Impossibile riscaricare l'annuncio per la personalizzazione CV ({job_link}): HTTP {resp.status_code}")

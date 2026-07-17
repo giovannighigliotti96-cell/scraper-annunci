@@ -3,4 +3,5 @@ __pycache__/
 *.pyc
 *.pyo
 scraping_log.txt
+nuove_offerte_run.json
 .vscode/
