@@ -17,7 +17,7 @@ from scraper import (
     IQMSelezioneScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
-    get_job_id
+    dedup_offerte
 )
 
 if __name__ == "__main__":
@@ -54,46 +54,11 @@ if __name__ == "__main__":
                 print(f"ERRORE: {str(e)[:80]}")
         print()
 
-    # Deduplicazione
+    # Deduplicazione (logica condivisa con esegui_scraping_job in scraper.py:
+    # match_level/work_mode/probabilita/motivazione sono già stati calcolati una
+    # volta dentro scraper.scrape(), dedup_offerte non li ricalcola).
     viste = load_viste()
-    nuove_offerte = []
-    seen_titles = set()
-    seen_snippets = set()
-
-    import re
-    def clean_sig(text):
-        return re.sub(r'[^a-z0-9]', '', str(text).lower())
-
-    for job in tutte_le_offerte:
-        job_id = get_job_id(job.link)
-
-        if job_id in viste:
-            continue
-
-        norm_title = clean_sig(job.title)
-        norm_company = clean_sig(job.company)
-        norm_city = clean_sig(job.city)
-        norm_snippet = clean_sig(job.snippet[:60]) if job.snippet else ""
-
-        title_sig = (norm_title, norm_company, norm_city)
-        snippet_sig = (norm_company, norm_city, norm_snippet) if norm_snippet else None
-
-        if title_sig in seen_titles:
-            continue
-        if snippet_sig and snippet_sig in seen_snippets:
-            continue
-
-        # match_level/work_mode/probabilita/motivazione sono già stati calcolati
-        # una volta dentro scraper.scrape(): ricalcolarli qui raddoppierebbe
-        # fetch HTTP e chiamate LLM e rischierebbe di sovrascriverli con un
-        # risultato diverso (calcolato su job.snippet, spesso più povero del
-        # testo originale già usato).
-        nuove_offerte.append(job)
-        viste.add(job_id)
-        seen_titles.add(title_sig)
-        if snippet_sig:
-            seen_snippets.add(snippet_sig)
-
+    nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
     save_viste(viste)
 
     giornaliere = load_giornaliere()

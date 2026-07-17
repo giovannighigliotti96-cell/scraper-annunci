@@ -44,6 +44,7 @@ import hashlib
 
 import docx
 from dotenv import load_dotenv
+import llm_utils
 
 try:
     import anthropic
@@ -230,9 +231,7 @@ Proponi le riformulazioni che avvicinano il CV al linguaggio di questo annuncio,
             },
         ) as stream:
             response = stream.get_final_message()
-        testo = next((b.text for b in response.content if b.type == "text"), None)
-        if testo is None:
-            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
+        testo = llm_utils.estrai_testo_risposta(response)
         return json.loads(testo)
     except Exception as e:
         logging.warning(f"Proposta modifiche CV fallita: {type(e).__name__}: {e}")
@@ -313,9 +312,7 @@ Verifica ogni elemento secondo le tue regole."""
             },
         ) as stream:
             response = stream.get_final_message()
-        testo = next((b.text for b in response.content if b.type == "text"), None)
-        if testo is None:
-            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
+        testo = llm_utils.estrai_testo_risposta(response)
         return json.loads(testo)
     except Exception as e:
         logging.warning(f"Verifica modifiche CV fallita: {type(e).__name__}: {e}")
@@ -458,11 +455,11 @@ def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, o
         try:
             import requests
             from bs4 import BeautifulSoup
-            from scraper import _url_is_safe_to_fetch
+            from scraper import _url_is_safe_to_fetch, USER_AGENT_CHROME
             if not _url_is_safe_to_fetch(job_link):
                 logging.warning(f"URL scartato (non http/https o punta a un indirizzo privato/interno): {job_link}")
                 return None
-            headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"}
+            headers = {"User-Agent": USER_AGENT_CHROME}
             resp = requests.get(job_link, headers=headers, timeout=10)
             if resp.status_code != 200:
                 logging.warning(f"Impossibile riscaricare l'annuncio per la personalizzazione CV ({job_link}): HTTP {resp.status_code}")

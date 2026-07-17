@@ -104,20 +104,12 @@ jobs:
             # da "file presente ma illeggibile" (errore fatale, non un default
             # silenzioso), e la scrittura è atomica (temp file + rename).
             python3 - <<'EOF'
-          import json, os, tempfile
-
-          def load(path, default):
-              if not os.path.exists(path):
-                  return default
-              with open(path, encoding='utf-8') as f:
-                  return json.load(f)
-
-          def atomic_write(path, data, **kw):
-              directory = os.path.dirname(os.path.abspath(path)) or "."
-              fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
-              with os.fdopen(fd, "w", encoding="utf-8") as f:
-                  json.dump(data, f, **kw)
-              os.replace(tmp_path, path)
+          # load()/atomic_write_json() vivono in state_io.py (nel checkout, zero
+          # dipendenze esterne): stessa implementazione usata da scraper.py e da
+          # scraping.yml, invece di duplicarla qui in un heredoc che può divergere
+          # silenziosamente (è già successo: le due copie precedenti avevano firme
+          # leggermente diverse).
+          from state_io import load_json_or_raise as load, atomic_write_json
 
           inviate = load('/tmp/before_email.json', [])
           # Solo link non vuoti: un record senza link (None/"") non deve entrare nel
@@ -128,14 +120,14 @@ jobs:
 
           remote_gior = load('offerte_giornaliere.json', [])
           rimanenti = [j for j in remote_gior if j.get('link') not in link_inviati]
-          atomic_write('offerte_giornaliere.json', rimanenti, ensure_ascii=False, indent=2)
+          atomic_write_json('offerte_giornaliere.json', rimanenti, ensure_ascii=False, indent=2)
 
           # daily_prospects.json non è toccato da alcun processo concorrente (il
           # modulo prospector è disattivato): si ripristina la verità locale calcolata
           # da invia_email() dopo l'invio, che git reset --hard avrebbe altrimenti
           # sovrascritto con la versione remota pre-invio.
           prospects_locali = load('/tmp/prospects_after_run.json', [])
-          atomic_write('daily_prospects.json', prospects_locali, ensure_ascii=False, indent=2)
+          atomic_write_json('daily_prospects.json', prospects_locali, ensure_ascii=False, indent=2)
 
           print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
           EOF

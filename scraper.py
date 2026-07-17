@@ -1,4 +1,5 @@
 import os
+import re
 import time
 import json
 import shutil
@@ -18,6 +19,8 @@ from dotenv import load_dotenv
 import PyPDF2
 from curl_cffi import requests as curl_requests
 from email.mime.application import MIMEApplication
+import state_io
+import llm_utils
 try:
     import anthropic
     ANTHROPIC_SDK_AVAILABLE = True
@@ -33,6 +36,12 @@ except ImportError:
 # CONFIGURAZIONE INIZIALE
 # ==========================================
 load_dotenv(override=True)
+
+# User-Agent condiviso da tutti gli scraper (e importato da cv_personalizzazione.py
+# per il suo fetch di fallback): prima era copiato in ~10 punti diversi, con almeno
+# una versione Chrome rimasta indietro (120 invece di 124) senza che nessuno se ne
+# accorgesse finché una code review non l'ha ritrovata.
+USER_AGENT_CHROME = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
 
 GMAIL_USER = os.getenv("GMAIL_USER", "").strip().lstrip('﻿').strip()
 GMAIL_APP_PASSWORD = os.getenv("GMAIL_APP_PASSWORD", "").replace(" ", "").replace('"', '').replace("'", "").lstrip('﻿').strip()
@@ -269,9 +278,7 @@ def valuta_match_llm(job_text: str) -> tuple:
                 },
             },
         )
-        testo_risposta = next((b.text for b in response.content if b.type == "text"), None)
-        if testo_risposta is None:
-            raise ValueError(f"nessun blocco di testo nella risposta (stop_reason={response.stop_reason})")
+        testo_risposta = llm_utils.estrai_testo_risposta(response)
         dati = json.loads(testo_risposta)
         probabilita = max(0, min(100, int(dati["probabilita"])))
         motivazione = dati["motivazione"].strip()
@@ -442,7 +449,7 @@ def calcola_punteggio_e_modalita(url, snippet):
         logging.warning(f"URL scartato (non http/https o punta a un indirizzo privato/interno): {url}")
         return "Base", 0, "unverified", "http_error", 0, "", testo_originale
     try:
-        headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
+        headers = {"User-Agent": USER_AGENT_CHROME}
         resp = requests.get(url, headers=headers, timeout=5)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, "html.parser")
@@ -626,24 +633,11 @@ def is_valid_job_title(title: str) -> bool:
 # ==========================================
 VISTE_MAX_AGE_DAYS = 90  # Pulisce automaticamente URL più vecchi di 90 giorni
 
-def _atomic_write_json(path, data, **json_kwargs):
-    """Scrive JSON in modo atomico: prima su un file temporaneo nella stessa
-    cartella, poi rename. Un run cancellato a metà scrittura (scraping.yml usa
-    concurrency: cancel-in-progress: true) non lascia mai il file di destinazione
-    troncato/corrotto — os.replace è atomico sia su POSIX che su Windows quando
-    sorgente e destinazione sono sullo stesso filesystem."""
-    directory = os.path.dirname(os.path.abspath(path)) or "."
-    fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            json.dump(data, f, **json_kwargs)
-        os.replace(tmp_path, path)
-    except Exception:
-        try:
-            os.remove(tmp_path)
-        except OSError:
-            pass
-        raise
+# La scrittura atomica vive in state_io.py (dipendenze zero, solo stdlib) così
+# gli step "Salva memoria"/"Salva stato post-email" dei workflow GitHub Actions
+# possono importare la STESSA implementazione invece di duplicarla — un fix
+# qui si applica automaticamente anche lì, senza bisogno di replicarlo a mano.
+_atomic_write_json = state_io.atomic_write_json
 
 def load_viste() -> set:
     """Carica gli URL già visti come SET per lookup O(1)."""
@@ -809,7 +803,7 @@ class LinkedInScraper(BaseScraper):
                 if city_config.get("filter_hybrid_only", False):
                     params["f_WT"] = "3"  # 3=Hybrid su LinkedIn
                 headers = {
-                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+                    "User-Agent": USER_AGENT_CHROME,
                     "Accept-Language": "it-IT,it;q=0.9",
                 }
                 response = requests.get(url, params=params, headers=headers, timeout=12)
@@ -885,7 +879,7 @@ class MichaelPageScraper(BaseScraper):
     def scrape(self, city_name, city_config):
         jobs = []
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -982,7 +976,7 @@ class GiGroupScraper(BaseScraper):
         jobs = []
         search_keywords = SEARCH_KEYWORDS
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -1052,7 +1046,7 @@ class WyserScraper(BaseScraper):
         wyser_slug = city_config.get("wyser_slug", f"{city_name.lower()}")
         url = f"https://it.wyser-search.com/offerte-lavoro/{wyser_slug}/?wy_position=MARKETING"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -1107,7 +1101,7 @@ class PagePersonnelScraper(BaseScraper):
     def scrape(self, city_name, city_config):
         jobs = []
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -1184,7 +1178,7 @@ class ManpowerScraper(BaseScraper):
         jobs = []
         url = f"https://www.manpower.it/it/trova-lavoro/citta/{city_name.lower()}"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -1240,7 +1234,7 @@ class IQMSelezioneScraper(BaseScraper):
             return []
         url = "https://www.iqmselezione.it/posizioni-aperte-in-iqmselezione.php"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
@@ -1282,7 +1276,7 @@ class LhhScraper(BaseScraper):
 
         url = "https://www.lhh.com/api/data/jobs/summarized"
         headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+            "User-Agent": USER_AGENT_CHROME,
             "Content-Type": "application/json",
             "Origin": "https://www.lhh.com",
             "Referer": "https://www.lhh.com/it-it/cerca-lavoro"
@@ -1617,9 +1611,55 @@ def get_job_id(link: str) -> str:
     return link.split("?")[0]
 
 
+def _pulisci_per_segnatura(text):
+    return re.sub(r'[^a-z0-9]', '', str(text).lower())
+
+
+def dedup_offerte(tutte_le_offerte, viste):
+    """Deduplica una lista di ScrapedJob: prima per job_id (URL/parametro univoco,
+    già visto in run precedenti tramite `viste`), poi per segnatura di contenuto
+    (titolo+azienda+città, o azienda+città+inizio-snippet) per intercettare
+    ripubblicazioni con URL diverso ma contenuto identico nello stesso run.
+    Muta `viste` in place aggiungendo i job_id delle nuove offerte. Ritorna la
+    lista delle nuove offerte (non ancora viste in nessuna forma).
+
+    Questa logica era duplicata quasi identica tra esegui_scraping_job (qui sotto)
+    e run_manual_scrape.py: un fix applicato a una copia non si propagava
+    automaticamente all'altra — centralizzarla qui lo risolve alla radice."""
+    nuove_offerte = []
+    seen_titles = set()
+    seen_snippets = set()
+
+    for job in tutte_le_offerte:
+        job_id = get_job_id(job.link)
+        if job_id in viste:
+            continue
+
+        norm_title = _pulisci_per_segnatura(job.title)
+        norm_company = _pulisci_per_segnatura(job.company)
+        norm_city = _pulisci_per_segnatura(job.city)
+        norm_snippet = _pulisci_per_segnatura(job.snippet[:60]) if job.snippet else ""
+
+        title_sig = (norm_title, norm_company, norm_city)
+        snippet_sig = (norm_company, norm_city, norm_snippet) if norm_snippet else None
+
+        if title_sig in seen_titles:
+            continue
+        if snippet_sig and snippet_sig in seen_snippets:
+            continue
+
+        nuove_offerte.append(job)
+        viste.add(job_id)
+        seen_titles.add(title_sig)
+        if snippet_sig:
+            seen_snippets.add(snippet_sig)
+
+    return nuove_offerte
+
+
 def esegui_scraping_job(orario_label):
     print(f"[{datetime.now()}] Avvio scraping delle {orario_label} in corso...")
-    
+
     scrapers = [
         LinkedInScraper(),
         MichaelPageScraper(),
@@ -1642,44 +1682,7 @@ def esegui_scraping_job(orario_label):
             tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
         
     viste = load_viste()  # ora è un set
-    nuove_offerte = []
-    
-    seen_titles = set()
-    seen_snippets = set()
-    
-    for job in tutte_le_offerte:
-        # Popola match_type in base al titolo
-        job.match_type = get_match_type(job.title)
-        job_id = get_job_id(job.link)
-        
-        if job_id in viste:
-            continue
-            
-        # Genera signature per deduplicazione di contenuti identici (stessa azienda + città + titolo/snippet)
-        import re
-        def clean_sig(text):
-            return re.sub(r'[^a-z0-9]', '', str(text).lower())
-            
-        norm_title = clean_sig(job.title)
-        norm_company = clean_sig(job.company)
-        norm_city = clean_sig(job.city)
-        norm_snippet = clean_sig(job.snippet[:60]) if job.snippet else ""
-        
-        title_sig = (norm_title, norm_company, norm_city)
-        snippet_sig = (norm_company, norm_city, norm_snippet) if norm_snippet else None
-        
-        if title_sig in seen_titles:
-            continue
-        if snippet_sig and snippet_sig in seen_snippets:
-            continue
-            
-        # Aggiunge alle offerte uniche
-        nuove_offerte.append(job)
-        viste.add(job_id)   # .add() invece di .append()
-        seen_titles.add(title_sig)
-        if snippet_sig:
-            seen_snippets.add(snippet_sig)
-            
+    nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
     save_viste(viste)
     
     giornaliere = load_giornaliere()

@@ -100,20 +100,11 @@ jobs:
             # La scrittura è atomica (temp file + rename) per non lasciare mai il file
             # troncato se il runner viene ucciso a metà (concurrency: cancel-in-progress).
             python3 - <<'EOF'
-          import json, os, tempfile, time
-
-          def load(path, default):
-              if not os.path.exists(path):
-                  return default
-              with open(path, encoding='utf-8') as f:
-                  return json.load(f)
-
-          def atomic_write(path, data):
-              directory = os.path.dirname(os.path.abspath(path)) or "."
-              fd, tmp_path = tempfile.mkstemp(dir=directory, prefix=".tmp_", suffix=".json")
-              with os.fdopen(fd, "w", encoding="utf-8") as f:
-                  json.dump(data, f, ensure_ascii=False, indent=2)
-              os.replace(tmp_path, path)
+          import time
+          # load()/atomic_write_json() vivono in state_io.py (nel checkout, zero
+          # dipendenze esterne): stessa implementazione usata da scraper.py, invece
+          # di duplicarla qui in un heredoc che può divergere silenziosamente.
+          from state_io import load_json_or_raise as load, atomic_write_json
 
           remote_viste   = load('offerte_viste.json', {})
           remote_gior    = load('offerte_giornaliere.json', [])
@@ -132,8 +123,8 @@ jobs:
           existing_links = {j.get('link') for j in remote_gior}
           merged_gior = remote_gior + [j for j in our_gior if j.get('link') not in existing_links]
 
-          atomic_write('offerte_viste.json', merged_viste)
-          atomic_write('offerte_giornaliere.json', merged_gior)
+          atomic_write_json('offerte_viste.json', merged_viste, ensure_ascii=False, indent=2)
+          atomic_write_json('offerte_giornaliere.json', merged_gior, ensure_ascii=False, indent=2)
 
           print(f"Merge OK: {len(merged_viste)} URL visti, {len(merged_gior)} offerte oggi")
           EOF
