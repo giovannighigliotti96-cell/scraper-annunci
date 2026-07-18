@@ -672,6 +672,19 @@ def _safe_str(d, key, default=""):
     val = d.get(key)
     return val if val else default
 
+def _eta_giorni_da_data(date_str: str):
+    """Età in giorni di una data ISO (YYYY-MM-DD, anche come prefisso di un
+    datetime completo tipo YYYY-MM-DDTHH:MM:SSZ). Ritorna None se mancante o
+    non parsabile — un formato inatteso non deve mai escludere un annuncio
+    per errore, solo non applicare il filtro di freschezza a quello specifico."""
+    if not date_str:
+        return None
+    try:
+        d = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
+        return (datetime.now().date() - d).days
+    except Exception:
+        return None
+
 def is_valid_job_title(title: str) -> bool:
     """
     Restituisce True se il titolo corrisponde a uno dei ruoli target.
@@ -880,8 +893,20 @@ class LinkedInScraper(BaseScraper):
     pageNum ora cicla su 2 pagine per keyword+città: verificato dal vivo che la
     pagina 1 aggiunge in media circa metà risultati validi in più rispetto alla
     sola pagina 0 (prima presa da sola).
+
+    MAX_ETA_GIORNI: la finestra di ricerca resta larga (7gg) per non perdere
+    annunci se un run di scraping salta, ma un annuncio più vecchio di questa
+    soglia viene scartato comunque prima di arrivare in email — candidarsi
+    entro i primi giorni dalla pubblicazione conta per entrare nel processo di
+    selezione. Verificato dal vivo (campione reale, finestra 7gg): quasi metà
+    dei titoli validi trovati avevano più di 3 giorni. La data usata è quella
+    reale della card (<time class="job-search-card__listdate" datetime="...">
+    per la Strategia 2, datePosted del JSON-LD per la Strategia 1) — LinkedIn
+    non distingue pubblicamente un annuncio nuovo da uno ripubblicato/rinnovato,
+    quindi questo filtra per età mostrata, non per "genuinamente nuovo".
     """
     MAX_PAGES = 2
+    MAX_ETA_GIORNI = 3
 
     def __init__(self):
         super().__init__("LinkedIn")
@@ -945,9 +970,12 @@ class LinkedInScraper(BaseScraper):
                                     link = _safe_str(item, "url")
                                     if not link or link in seen_links:
                                         continue
+                                    date = item.get("datePosted", "")
+                                    eta = _eta_giorni_da_data(date)
+                                    if eta is not None and eta > self.MAX_ETA_GIORNI:
+                                        continue
                                     seen_links.add(link)
                                     company = (item.get("hiringOrganization") or {}).get("name", "")
-                                    date = item.get("datePosted", "")
                                     desc = _safe_str(item, "description")
                                     match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
@@ -983,10 +1011,15 @@ class LinkedInScraper(BaseScraper):
                                 link = href.split("?")[0]
                                 if link in seen_links:
                                     continue
+                                time_elem = card.find("time", class_=lambda c: c and "listdate" in (c or ""))
+                                date = time_elem.get("datetime", "") if time_elem else ""
+                                eta = _eta_giorni_da_data(date)
+                                if eta is not None and eta > self.MAX_ETA_GIORNI:
+                                    continue
                                 seen_links.add(link)
                                 company = company_elem.get_text(strip=True) if company_elem else ""
                                 match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, title)
-                                jobs.append(ScrapedJob(title, company, self.portal_name, link,
+                                jobs.append(ScrapedJob(title, company, self.portal_name, link, date=date,
                                                        match_level=match_level, match_count=match_count,
                                                        city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                             except Exception as e:
