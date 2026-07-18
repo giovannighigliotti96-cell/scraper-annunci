@@ -74,6 +74,23 @@ INDICI_BULLET_MODIFICABILI = [
 ]
 INDICI_MODIFICABILI = INDICI_TITOLI_RUOLO + INDICI_BULLET_MODIFICABILI
 
+# Alcuni bullet del template sono in realtà spezzati su più paragrafi XML
+# consecutivi (verificato aprendo il documento reale: 75+76, 88+89 e 95+96
+# sono ciascuno un unico bullet visivo spezzato in due). Proposta e verifica
+# trattano ogni indice come indipendente: se un frammento viene approvato e
+# il suo gemello respinto (o semplicemente non riproposto), il .docx
+# risulterebbe con un frammento riscritto incollato a uno originale — un
+# bullet visibilmente rotto nel CV davvero inviato a un'azienda. Questi
+# gruppi vanno quindi applicati solo se OGNI indice del gruppo è approvato
+# con un nuovo testo valido, altrimenti l'intero gruppo resta nella versione
+# originale (vedi uso in genera_cv_personalizzato).
+GRUPPI_BULLET_FRAMMENTATI = [
+    (75, 76),
+    (88, 89),
+    (95, 96),
+]
+_INDICE_TO_GRUPPO_FRAMMENTATO = {idx: gruppo for gruppo in GRUPPI_BULLET_FRAMMENTATI for idx in gruppo}
+
 # Hash SHA-256 dell'intera sequenza di testo dei paragrafi del template,
 # calcolato l'ultima volta che gli indici INDICE_*/INDICI_* sono stati
 # verificati manualmente contro il file reale (2026-07-17). La vecchia
@@ -254,11 +271,17 @@ def _verifica_modifiche_cv(cv_testo_completo, proposta):
     if client is None:
         return None
 
-    modifiche_elenco = "\n".join(
-        f"[{m['indice']}] PROPOSTO: {m['nuovo_testo']}\n     FONTE DICHIARATA: {m['fonte']}"
-        for m in proposta.get("modifiche_bullet", [])
-    )
-    user_content = f"""CV ORIGINALE INTEGRALE (verità di riferimento):
+    try:
+        # Il subscripting su m['indice']/m['nuovo_testo']/m['fonte'] è dentro il
+        # try apposta: una entry malformata nell'output dello stage 1 deve finire
+        # nello stesso except "Verifica modifiche CV fallita" sotto, non sollevare
+        # un KeyError non gestito che scavalca quel log e si propaga al chiamante
+        # con meno diagnostica (niente type(e).__name__).
+        modifiche_elenco = "\n".join(
+            f"[{m['indice']}] PROPOSTO: {m['nuovo_testo']}\n     FONTE DICHIARATA: {m['fonte']}"
+            for m in proposta.get("modifiche_bullet", [])
+        )
+        user_content = f"""CV ORIGINALE INTEGRALE (verità di riferimento):
 {cv_testo_completo[:8000]}
 
 PROFILO PROFESSIONALE PROPOSTO (da verificare):
@@ -269,7 +292,6 @@ BULLET PROPOSTI (da verificare uno per uno):
 
 Verifica ogni elemento secondo le tue regole."""
 
-    try:
         with client.messages.stream(
             model=MATCH_LLM_MODEL,
             max_tokens=16000,
@@ -411,14 +433,32 @@ def genera_cv_personalizzato(job_title: str, job_text: str, job_city: str = None
     # il contenuto (vedi commento sopra).
     testi_proposti = {m.get("indice"): m.get("nuovo_testo", "") for m in proposta.get("modifiche_bullet", [])}
 
-    for voce in verificata.get("bullet", []):
-        idx = voce.get("indice")
-        if idx not in INDICI_MODIFICABILI or idx not in testi_proposti or not voce.get("approvato"):
-            continue
+    def _riscrittura_valida(idx):
+        if idx not in INDICI_MODIFICABILI or idx not in testi_proposti:
+            return False
         nuovo = (testi_proposti[idx] or "").strip()
         originale = paragrafi_originali.get(idx, "")
-        if not nuovo or nuovo == originale:
-            continue
+        return bool(nuovo) and nuovo != originale
+
+    approvati = {
+        voce.get("indice") for voce in verificata.get("bullet", [])
+        if voce.get("approvato") and _riscrittura_valida(voce.get("indice"))
+    }
+
+    # Un gruppo di frammenti dello stesso bullet visivo (vedi GRUPPI_BULLET_FRAMMENTATI)
+    # va applicato solo se OGNI indice del gruppo è approvato: altrimenti resta
+    # tutto invariato, per non lasciare un frammento orfano riscritto.
+    indici_da_applicare = set()
+    for idx in approvati:
+        gruppo = _INDICE_TO_GRUPPO_FRAMMENTATO.get(idx)
+        if gruppo is None:
+            indici_da_applicare.add(idx)
+        elif set(gruppo).issubset(approvati):
+            indici_da_applicare.update(gruppo)
+
+    for idx in sorted(indici_da_applicare):
+        nuovo = testi_proposti[idx].strip()
+        originale = paragrafi_originali.get(idx, "")
         _sostituisci_testo_paragrafo(doc.paragraphs[idx], nuovo)
         etichetta = "Titolo di ruolo" if idx in INDICI_TITOLI_RUOLO else "Bullet"
         riepilogo.append(f'{etichetta} riformulato: "{originale[:70]}..." -> "{nuovo[:70]}..."')
@@ -453,14 +493,13 @@ def genera_cv_per_offerta(job_title: str, job_link: str, job_city: str = None, o
     Ritorna None su qualunque fallimento, senza sollevare eccezioni verso il chiamante."""
     if not job_text or not job_text.strip():
         try:
-            import requests
             from bs4 import BeautifulSoup
-            from scraper import _url_is_safe_to_fetch, USER_AGENT_CHROME
+            from scraper import _url_is_safe_to_fetch, _safe_get, USER_AGENT_CHROME
             if not _url_is_safe_to_fetch(job_link):
                 logging.warning(f"URL scartato (non http/https o punta a un indirizzo privato/interno): {job_link}")
                 return None
             headers = {"User-Agent": USER_AGENT_CHROME}
-            resp = requests.get(job_link, headers=headers, timeout=10)
+            resp = _safe_get(job_link, headers=headers, timeout=10)
             if resp.status_code != 200:
                 logging.warning(f"Impossibile riscaricare l'annuncio per la personalizzazione CV ({job_link}): HTTP {resp.status_code}")
                 return None

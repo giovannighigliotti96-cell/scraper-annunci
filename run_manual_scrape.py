@@ -5,9 +5,7 @@ Simula l'esecuzione schedulata delle 09:00 o 12:00.
 """
 import sys
 import os
-import json
 from datetime import datetime
-import logging
 
 sys.path.insert(0, os.path.dirname(__file__))
 
@@ -19,6 +17,7 @@ from scraper import (
     save_giornaliere, filtra_offerte_per_citta,
     dedup_offerte
 )
+from state_io import atomic_write_json
 
 if __name__ == "__main__":
     print("="*70)
@@ -72,8 +71,7 @@ if __name__ == "__main__":
     # riaggiungerebbe al remoto offerte già rimosse nel frattempo da un run
     # email.yml concorrente (l'email.yml le rimuove dal remoto dopo l'invio,
     # ma questo processo le aveva già caricate in memoria prima di quel momento).
-    with open("nuove_offerte_run.json", "w", encoding="utf-8") as f:
-        json.dump([job.to_dict() for job in nuove_offerte], f, ensure_ascii=False, indent=2)
+    atomic_write_json("nuove_offerte_run.json", [job.to_dict() for job in nuove_offerte], ensure_ascii=False, indent=2)
 
     print()
     print("="*70)

@@ -3,7 +3,6 @@ import re
 import time
 import json
 import shutil
-import tempfile
 import logging
 import socket
 import ipaddress
@@ -436,6 +435,22 @@ def _url_is_safe_to_fetch(url: str) -> bool:
     except Exception:
         return False
 
+def _safe_get(url, headers, timeout, max_redirects=5):
+    """Come requests.get, ma con allow_redirects=False e ri-validazione manuale
+    di ogni hop: un url pubblico che supera _url_is_safe_to_fetch potrebbe
+    comunque rispondere con un 302 verso un indirizzo interno/privato, e
+    allow_redirects=True (default di requests) lo seguirebbe silenziosamente
+    senza mai ripassare dal controllo SSRF sulla destinazione reale."""
+    for _ in range(max_redirects):
+        if not _url_is_safe_to_fetch(url):
+            raise ValueError(f"URL non sicuro da scaricare: {url}")
+        resp = requests.get(url, headers=headers, timeout=timeout, allow_redirects=False)
+        if resp.is_redirect and resp.headers.get("Location"):
+            url = urllib.parse.urljoin(url, resp.headers["Location"])
+            continue
+        return resp
+    raise ValueError(f"Troppi redirect ({max_redirects}) seguendo: {url}")
+
 def calcola_punteggio_e_modalita(url, snippet):
     """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro.
     Ritorna anche testo_originale (snippet + testo scaricato) come ultimo elemento,
@@ -450,7 +465,7 @@ def calcola_punteggio_e_modalita(url, snippet):
         return "Base", 0, "unverified", "http_error", 0, "", testo_originale
     try:
         headers = {"User-Agent": USER_AGENT_CHROME}
-        resp = requests.get(url, headers=headers, timeout=5)
+        resp = _safe_get(url, headers=headers, timeout=5)
         if resp.status_code == 200:
             soup = BeautifulSoup(resp.text, "html.parser")
             testo_originale += " " + soup.get_text(" ", strip=True)
@@ -699,7 +714,14 @@ def load_giornaliere():
         return []
 
 def save_giornaliere(jobs_dict_list):
-    _atomic_write_json(GIORNALIERE_FILE, jobs_dict_list, indent=4, ensure_ascii=False)
+    # Come save_viste: un'eccezione qui non deve propagarsi e interrompere il
+    # chiamante (es. run_manual_scrape.py scriverebbe comunque nuove_offerte_run.json
+    # subito dopo, sulla base di `viste` già salvato — un crash a questo punto
+    # perderebbe quelle offerte, marcate "viste" ma mai registrate da nessuna parte).
+    try:
+        _atomic_write_json(GIORNALIERE_FILE, jobs_dict_list, indent=4, ensure_ascii=False)
+    except Exception as e:
+        logging.error(f"Errore save_giornaliere: {e}")
 
 def clear_giornaliere():
     save_giornaliere([])
@@ -716,20 +738,29 @@ class ScrapedJob:
         self.title = title.strip() if title else ""
         self.company = company.strip() if company else "Azienda non specificata"
         self.portal = portal
-        self.link = link
+        # Stessa guardia null di title/company/date/snippet, estesa a tutti i campi
+        # stringa: prima solo un sottoinsieme era protetto, un record legacy/corrotto
+        # con uno qualunque di questi a null (round-trip JSON) faceva crashare più
+        # avanti (es. link.split() in get_job_id, work_mode.upper() nell'email).
+        self.link = link if link else ""
         self.date = date.strip() if date else "Data non disponibile"
         self.snippet = snippet.strip() if snippet else ""
-        self.match_level = match_level
+        self.match_level = match_level if match_level else "Base"
         self.match_count = match_count
         self.city = city
-        self.work_mode = work_mode
-        self.fetch_status = fetch_status
-        self.probabilita = probabilita
-        self.motivazione = motivazione
+        self.work_mode = work_mode if work_mode else "unverified"
+        self.fetch_status = fetch_status if fetch_status else "no_attempt"
+        # probabilita è numerica (confrontata con >= altrove): un null/valore non
+        # convertibile deve degradare a 0, non propagarsi come None nei confronti.
+        try:
+            self.probabilita = int(probabilita)
+        except (TypeError, ValueError):
+            self.probabilita = 0
+        self.motivazione = motivazione if motivazione else ""
         # Testo integrale dell'annuncio già scaricato durante lo scoring: permette
         # alla personalizzazione CV di riusarlo invece di riscaricare la pagina
         # ore dopo (quando potrebbe essere stata rimossa/modificata).
-        self.testo_completo = testo_completo
+        self.testo_completo = testo_completo if testo_completo else ""
 
     def to_dict(self):
         return {
@@ -751,11 +782,15 @@ class ScrapedJob:
 
     @classmethod
     def from_dict(cls, data):
+        # _safe_str per "city": a differenza degli altri campi stringa qui sotto,
+        # non passa per un ulteriore `if x else default` dentro __init__, quindi un
+        # null esplicito persistito (round-trip JSON) sopravvivrebbe come None con
+        # un semplice data.get(..., default) invece di essere normalizzato.
         return cls(
             data["title"], data["company"], data["portal"], data["link"],
             data.get("date", ""), data.get("snippet", ""),
             data.get("match_level", "Base"), data.get("match_count", 0),
-            data.get("city", ""), data.get("work_mode", "unverified"), data.get("fetch_status", "no_attempt"),
+            _safe_str(data, "city", ""), data.get("work_mode", "unverified"), data.get("fetch_status", "no_attempt"),
             data.get("probabilita", 0), data.get("motivazione", ""),
             data.get("testo_completo", ""),
         )
@@ -818,7 +853,14 @@ class LinkedInScraper(BaseScraper):
                         try:
                             data = _json.loads(script.string or "{}")
                             items = data if isinstance(data, list) else [data]
-                            for item in items:
+                        except Exception:
+                            continue
+                        # Try/except per singolo item: un JobPosting con un campo di
+                        # tipo inatteso (es. title come lista invece di stringa, un
+                        # quirk reale di alcuni CMS JSON-LD) non deve far scartare
+                        # anche tutti gli altri JobPosting validi dello stesso blocco.
+                        for item in items:
+                            try:
                                 if item.get("@type") == "JobPosting":
                                     title = _safe_str(item, "title")
                                     if not is_valid_job_title(title):
@@ -829,29 +871,37 @@ class LinkedInScraper(BaseScraper):
                                     seen_links.add(link)
                                     company = (item.get("hiringOrganization") or {}).get("name", "")
                                     date = item.get("datePosted", "")
-                                    desc = item.get("description", "")
+                                    desc = _safe_str(item, "description")
                                     match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                            date=date, match_level=match_level,
                                                            match_count=match_count, city=city_name,
                                                            work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                        except Exception:
-                            pass
+                            except Exception:
+                                pass
                     
                     # Strategia 2: card HTML standard LinkedIn (classe base-card)
                     # Solo se QUESTA keyword non ha trovato nulla via JSON-LD — non deve
                     # dipendere dall'accumulatore globale, altrimenti una keyword precedente
                     # che trova anche un solo risultato disattiva il fallback per tutte le successive.
                     if len(jobs) == jobs_before_strategia1:
+                        # Try/except per singola card (come WyserScraper): un link_elem
+                        # senza attributo href (es. contenuto lazy-loaded via JS) non deve
+                        # scartare anche tutte le card successive della stessa keyword.
                         for card in soup.find_all("div", class_=lambda c: c and "base-card" in c):
-                            title_elem = card.find(class_=lambda c: c and "base-search-card__title" in (c or ""))
-                            company_elem = card.find(class_=lambda c: c and "base-search-card__subtitle" in (c or ""))
-                            link_elem = card.find("a", class_=lambda c: c and "base-card__full-link" in (c or ""))
-                            if title_elem and link_elem:
+                            try:
+                                title_elem = card.find(class_=lambda c: c and "base-search-card__title" in (c or ""))
+                                company_elem = card.find(class_=lambda c: c and "base-search-card__subtitle" in (c or ""))
+                                link_elem = card.find("a", class_=lambda c: c and "base-card__full-link" in (c or ""))
+                                if not title_elem or not link_elem:
+                                    continue
                                 title = title_elem.get_text(strip=True)
                                 if not is_valid_job_title(title):
                                     continue
-                                link = link_elem["href"].split("?")[0]
+                                href = link_elem.get("href", "")
+                                if not href:
+                                    continue
+                                link = href.split("?")[0]
                                 if link in seen_links:
                                     continue
                                 seen_links.add(link)
@@ -860,6 +910,8 @@ class LinkedInScraper(BaseScraper):
                                 jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                        match_level=match_level, match_count=match_count,
                                                        city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                            except Exception as e:
+                                logging.error(f"{self.portal_name}: card scartata per errore di parsing: {e}")
                 
                 time.sleep(2)
                 
@@ -936,18 +988,25 @@ class MichaelPageScraper(BaseScraper):
             try:
                 data = json.loads(script.string or "{}")
                 items = data if isinstance(data, list) else [data]
-                for item in items:
+            except Exception:
+                continue
+            # Try/except per singolo item: un JobPosting con un campo di tipo
+            # inatteso non deve far scartare anche gli altri item validi dello
+            # stesso blocco (vedi stesso fix in LinkedInScraper).
+            for item in items:
+                try:
                     if item.get("@type") == "JobPosting":
                         title = _safe_str(item, "title")
                         if is_valid_job_title(title):
                             link = _safe_str(item, "url", base_url)
                             company = (item.get("hiringOrganization") or {}).get("name", "")
                             date = item.get("datePosted", "")
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
+                            desc = _safe_str(item, "description")
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                             jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                    date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-            except Exception:
-                pass
+                except Exception:
+                    pass
         return jobs
 
 
@@ -1110,46 +1169,65 @@ class PagePersonnelScraper(BaseScraper):
         national_url = "https://www.pagepersonnel.it/jobs/marketing"
         try:
             response = requests.get(city_url, headers=headers, timeout=12)
+            effective_url = city_url
             if response.status_code == 404:
                 logging.info(f"{self.portal_name}: {city_url} → 404, fallback a URL nazionale")
                 response = requests.get(national_url, headers=headers, timeout=12)
                 effective_city = "Italia"
+                effective_url = national_url
             else:
                 effective_city = city_name
             logging.info(f"{self.portal_name}: HTTP {response.status_code}")
             if response.status_code == 200:
                 soup = BeautifulSoup(response.text, "html.parser")
-                
+
+                # Tiene i LINK già visti, non i titoli: due annunci distinti
+                # (aziende diverse) possono condividere lo stesso titolo generico
+                # — stessa infrastruttura e stesso fix di MichaelPageScraper.
+                seen = set()
+
                 # Prima prova: JSON-LD
                 import json as _json
                 for script in soup.find_all("script", type="application/ld+json"):
                     try:
                         data = _json.loads(script.string or "{}")
                         items = data if isinstance(data, list) else [data]
-                        for item in items:
+                    except Exception:
+                        continue
+                    # Try/except per singolo item: stesso fix di LinkedIn/MichaelPage.
+                    for item in items:
+                        try:
                             if item.get("@type") == "JobPosting":
                                 title = _safe_str(item, "title")
                                 if is_valid_job_title(title):
-                                    link = _safe_str(item, "url", city_url)
+                                    # Fallback su effective_url (non più city_url fisso):
+                                    # se c'è stato un 404 e si è passati a national_url, un
+                                    # item JSON-LD privo di "url" deve puntare lì, non alla
+                                    # pagina città che ha appena risposto 404.
+                                    link = _safe_str(item, "url", effective_url)
+                                    if link in seen:
+                                        continue
+                                    seen.add(link)
                                     company = (item.get("hiringOrganization") or {}).get("name", "")
                                     date = item.get("datePosted", "")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, item.get("description", ""))
+                                    desc = _safe_str(item, "description")
+                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                            date=date, match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                    except Exception:
-                        pass
-                
+                        except Exception:
+                            pass
+
                 # Seconda prova: link /job-detail/
                 if not jobs:
-                    seen = set()
                     for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
                         title = a.get_text(strip=True)
-                        if title and title != "Candidati" and title not in seen:
-                            seen.add(title)
+                        href = a.get("href", "")
+                        if not href:
+                            continue
+                        link = href if href.startswith("http") else "https://www.pagepersonnel.it" + href
+                        if title and title != "Candidati" and link not in seen:
+                            seen.add(link)
                             if is_valid_job_title(title):
-                                link = a["href"]
-                                if not link.startswith("http"):
-                                    link = "https://www.pagepersonnel.it" + link
                                 match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                                 jobs.append(ScrapedJob(title, "", self.portal_name, link,
                                                        match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
@@ -1355,8 +1433,7 @@ class LhhScraper(BaseScraper):
 # ==========================================
 def re_sub_nome_file(testo: str) -> str:
     """Riduce un nome azienda a uno slug sicuro per un nome file allegato."""
-    import re as _re
-    slug = _re.sub(r"[^a-zA-Z0-9]+", "_", (testo or "azienda").strip()).strip("_")
+    slug = re.sub(r"[^a-zA-Z0-9]+", "_", (testo or "azienda").strip()).strip("_")
     return slug[:40] if slug else "azienda"
 
 def invia_email(nuove_offerte):
@@ -1408,7 +1485,10 @@ def invia_email(nuove_offerte):
             body += f"===============================\n\n"
 
             for i, job in enumerate(offerte_citta, 1):
-                prob = job.probabilita
+                # Stessa conversione sicura della sort key sopra: job.probabilita non
+                # protetto qui bloccherebbe con TypeError l'intero invio email su un
+                # record legacy/corrotto con probabilita non numerica.
+                prob = _prob_ordinabile(job)
                 if prob >= 75:
                     prob_label = "🟢 ALTA"
                 elif prob >= 50:
@@ -1566,24 +1646,14 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
 
 def get_job_id(link: str) -> str:
     """Restituisce un ID univoco per l'offerta basato sul link.
-    Per Google Jobs (che usa htidocid come parametro query) e per IQMSelezione
-    (che usa annuncio come parametro query, es. dettaglio.php?annuncio=123) si
-    estrae il parametro specifico che identifica l'annuncio — per questi portali
-    il path da solo è identico per TUTTI gli annunci, quindi rimuovere la query
-    string con .split("?")[0] collasserebbe ogni annuncio sullo stesso id e ne
+    Per IQMSelezione (che usa annuncio come parametro query, es.
+    dettaglio.php?annuncio=123) si estrae il parametro specifico che
+    identifica l'annuncio — per questo portale il path da solo è identico
+    per TUTTI gli annunci, quindi rimuovere la query string con
+    .split("?")[0] collasserebbe ogni annuncio sullo stesso id e ne
     lascerebbe passare solo il primo mai visto.
     Per gli altri portali rimuove semplicemente i parametri query per evitare duplicati da tracking.
     """
-    if "google.com/search" in link or "google.it/search" in link:
-        import urllib.parse as urlparse
-        try:
-            parsed = urlparse.urlparse(link)
-            params = urlparse.parse_qs(parsed.query)
-            htidocid = params.get("htidocid", [""])[0]
-            if htidocid:
-                return f"google_jobs_{htidocid}"
-        except Exception:
-            pass
     if "iqmselezione.it" in link and "annuncio=" in link:
         import urllib.parse as urlparse
         try:
@@ -1631,28 +1701,40 @@ def dedup_offerte(tutte_le_offerte, viste):
     seen_snippets = set()
 
     for job in tutte_le_offerte:
-        job_id = get_job_id(job.link)
-        if job_id in viste:
-            continue
+        try:
+            job_id = get_job_id(job.link)
+            if job_id in viste:
+                continue
 
-        norm_title = _pulisci_per_segnatura(job.title)
-        norm_company = _pulisci_per_segnatura(job.company)
-        norm_city = _pulisci_per_segnatura(job.city)
-        norm_snippet = _pulisci_per_segnatura(job.snippet[:60]) if job.snippet else ""
+            norm_title = _pulisci_per_segnatura(job.title)
+            norm_company = _pulisci_per_segnatura(job.company)
+            norm_city = _pulisci_per_segnatura(job.city)
+            norm_snippet = _pulisci_per_segnatura(job.snippet[:60]) if job.snippet else ""
 
-        title_sig = (norm_title, norm_company, norm_city)
-        snippet_sig = (norm_company, norm_city, norm_snippet) if norm_snippet else None
+            # Con company vuota (alcuni scraper, es. IQMSelezione/Manpower e i
+            # fallback HTML di MichaelPage/PagePersonnel, non la valorizzano mai)
+            # la signature per titolo collasserebbe due offerte di aziende
+            # realmente diverse ma con lo stesso titolo generico nella stessa
+            # città: senza company a disambiguare, si salta la dedup per titolo
+            # e ci si affida solo a job_id e all'eventuale signature per snippet.
+            title_sig = (norm_title, norm_company, norm_city) if norm_company else None
+            snippet_sig = (norm_company, norm_city, norm_snippet) if norm_snippet else None
 
-        if title_sig in seen_titles:
-            continue
-        if snippet_sig and snippet_sig in seen_snippets:
-            continue
+            if title_sig and title_sig in seen_titles:
+                continue
+            if snippet_sig and snippet_sig in seen_snippets:
+                continue
 
-        nuove_offerte.append(job)
-        viste.add(job_id)
-        seen_titles.add(title_sig)
-        if snippet_sig:
-            seen_snippets.add(snippet_sig)
+            nuove_offerte.append(job)
+            viste.add(job_id)
+            if title_sig:
+                seen_titles.add(title_sig)
+            if snippet_sig:
+                seen_snippets.add(snippet_sig)
+        except Exception as e:
+            # Un'offerta malformata non deve far fallire la dedup dell'intero
+            # batch per entrambi i chiamanti (scraping.yml e run_manual_scrape.py).
+            logging.error(f"Errore dedup su un'offerta ({getattr(job, 'link', '?')}), la salto: {e}")
 
     return nuove_offerte
 
