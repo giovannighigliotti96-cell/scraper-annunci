@@ -33,23 +33,26 @@ jobs:
         run: |
           ORA_ITALIA=$(TZ='Europe/Rome' date +%H:%M)
           echo "Ora locale Italia: $ORA_ITALIA"
-          SHOULD_RUN=false
           ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
-          for TARGET in "09:17" "12:17" "15:17" "17:30"; do
-            TARGET_SEC=$(date -d "$TARGET" +%s)
-            # 7200s (2h), non più 900s (15min): osservato dal vivo il 17/07 che OGNI
-            # trigger cron nativo di giornata è arrivato con 1-2h+ di ritardo rispetto
-            # all'orario pianificato (limite noto di GitHub Actions su repository a
-            # basso traffico), quindi con 900s la finestra veniva sistematicamente
-            # mancata e lo scraping dipendeva solo dal workflow_dispatch di backup
-            # del repo esterno scraper-scheduler. Il gap minimo tra due target
-            # consecutivi (15:17→17:30) è 2h13m, quindi 2h di finestra non rischia
-            # di far scattare due volte lo stesso run per due target diversi.
-            TARGET_END_SEC=$((TARGET_SEC + 7200))
-            if [ "$ORA_SEC" -ge "$TARGET_SEC" ] && [ "$ORA_SEC" -lt "$TARGET_END_SEC" ]; then
-              SHOULD_RUN=true
-            fi
-          done
+          # Finestra UNICA e continua (09:17-19:30), non più 4 finestre separate di
+          # 2h attorno a ciascun target: quelle lasciavano dei "buchi" scoperti tra
+          # una finestra e l'altra (11:17-12:17, 14:17-15:17, 17:17-17:30) — osservato
+          # dal vivo il 18/07 un run reale caduto proprio in uno di questi buchi
+          # (11:47, should_run=false) nonostante il fix precedente. GitHub Actions
+          # su repository a basso traffico ritarda i cron anche di 1-2h+ in modo
+          # imprevedibile, quindi qualunque partizione fissa rischia di avere un
+          # buco che un ritardo reale può colpire. Una finestra unica sull'intero
+          # orario lavorativo (09:17-19:30) non ha buchi per costruzione: una delle
+          # 8 cron entry (4 target x 2 stagioni) che ricade, comunque ritardata,
+          # nell'orario locale italiano di questa fascia fa sempre scattare lo
+          # scraping — il dedup su viste rende innocuo un eventuale run ravvicinato.
+          INIZIO_SEC=$(date -d "09:17" +%s)
+          FINE_SEC=$(date -d "19:30" +%s)
+          if [ "$ORA_SEC" -ge "$INIZIO_SEC" ] && [ "$ORA_SEC" -lt "$FINE_SEC" ]; then
+            SHOULD_RUN=true
+          else
+            SHOULD_RUN=false
+          fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             SHOULD_RUN=true
           fi
