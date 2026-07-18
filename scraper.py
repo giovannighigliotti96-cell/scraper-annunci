@@ -76,7 +76,12 @@ CITIES = {
         "lat": 45.070312,
         "lon": 7.686856,
         "filter_hybrid_only": True,
-        "wyser_slug": "torino-to",
+        # Nessuno slug città Wyser: verificato dal vivo che "torino-to" non esiste
+        # nel menu reale del sito (Torino non è tra le città disponibili) — un
+        # slug non riconosciuto fa fallback silenzioso mostrando TUTTI gli annunci
+        # nazionali senza errore, causando offerte di altre città etichettate
+        # "Torino". WyserScraper gestisce wyser_slug assente scaricando la
+        # pagina nazionale e filtrando per "torino" nel campo città di ogni card.
         "linkedin_location": "Turin, Italy",
         "lhh_location": "Torino%2C+TO%2C+Italia",
         "glassdoor_url": "https://www.glassdoor.it/Lavoro/torino-marketing-manager-lavori-SRCH_IL.0,6_IC2810526_KO7,24.htm"
@@ -506,6 +511,13 @@ EXACT_TITLES = [
     # English target titles
     "digital sales and marketing manager",
     "digital sales & marketing manager",
+    # "sales and/& digital marketing manager": stesso ruolo di quello sopra ma
+    # con "digital" spostato dopo "sales" — verificato dal vivo (MichaelPage)
+    # che un titolo reale con questo ordine di parole ("Sales and Digital
+    # Marketing Manager") non veniva trovato dalla sola versione con "digital"
+    # in testa, essendo il match una sottostringa esatta non robusta all'ordine.
+    "sales and digital marketing manager",
+    "sales & digital marketing manager",
     "growth marketing manager",
     "head of growth",
     "digital marketing manager",
@@ -525,11 +537,40 @@ EXACT_TITLES = [
     "growth and gtm manager",
     "growth & gtm manager",
     "marketing manager",
-    
+
+    # Varianti "Director" degli stessi ruoli sopra: verificato dal vivo (MichaelPage)
+    # un annuncio reale "Director of Sales & Marketing" scartato perché nessuna
+    # variante con "Director" esisteva in questa lista — l'intero livello di
+    # seniority "Director" era strutturalmente escluso su tutti i portali.
+    # "sales and/& marketing director" (generico, non-digital) resta comunque
+    # escluso da TITLE_EXCLUSIONS più sotto, con la stessa eccezione digital di
+    # "sales and/& marketing manager": politica invariata, solo estesa a Director.
+    "digital sales and marketing director",
+    "digital sales & marketing director",
+    "sales and digital marketing director",
+    "sales & digital marketing director",
+    "growth marketing director",
+    "digital marketing director",
+    "revenue growth director",
+    "go to market director",
+    "go-to-market director",
+    "demand generation director",
+    "b2b marketing director",
+    "performance marketing director",
+    "customer acquisition director",
+    "crm and marketing automation director",
+    "crm & marketing automation director",
+    "commercial strategy director",
+    "digital sales director",
+    "growth and gtm director",
+    "growth & gtm director",
+    "marketing director",
+
     # Italian target titles
     "responsabile marketing & sales",
     "responsabile marketing e sales",
-    "responsabile marketing"
+    "responsabile marketing",
+    "direttore marketing",
 ]
 
 # Keyword di ricerca da inviare alle API/search box dei portali che supportano
@@ -558,6 +599,13 @@ SEARCH_KEYWORDS = [
     "Marketing Manager",
     "Responsabile Marketing & Sales",
     "Responsabile Marketing",
+    # Varianti "Director" aggiunte insieme al livello di seniority in EXACT_TITLES:
+    # solo un sottoinsieme mirato (non tutte le 20 varianti Manager sopra) per non
+    # raddoppiare il volume di richieste a LinkedIn/LHH, già aumentato dalla
+    # paginazione introdotta sugli stessi portali.
+    "Marketing Director",
+    "Digital Marketing Director",
+    "Digital Sales and Marketing Director",
 ]
 
 # Esclusioni esplicite: titoli che matchano le regole sopra ma NON vogliamo
@@ -576,6 +624,11 @@ TITLE_EXCLUSIONS = [
     "trade marketing manager",
     "sales & marketing manager",
     "sales and marketing manager",
+    # Stessa esclusione generica (non-digital) estesa al livello Director, con
+    # la stessa eccezione per la variante "digital" applicata più sotto in
+    # is_valid_job_title — coerente con la policy già esistente per "Manager".
+    "sales & marketing director",
+    "sales and marketing director",
     "international marketing manager",
     "responsabile marketing eventi",
     "responsabile marketing di prodotto",
@@ -629,10 +682,17 @@ def is_valid_job_title(title: str) -> bool:
     # 1. Controlla esclusioni prima di tutto
     for excl in TITLE_EXCLUSIONS:
         if excl in t:
-            # Eccezione per "sales and marketing manager" e "sales & marketing manager"
-            # se fanno parte dei nostri titoli target digitali
-            if excl in ("sales and marketing manager", "sales & marketing manager"):
-                if "digital sales and marketing manager" in t or "digital sales & marketing manager" in t:
+            # Eccezione per "sales and/& marketing manager/director" se fanno
+            # parte dei nostri titoli target digitali (in entrambi gli ordini
+            # di parole "digital sales..." / "sales...digital marketing...").
+            if excl in ("sales and marketing manager", "sales & marketing manager",
+                        "sales and marketing director", "sales & marketing director"):
+                if any(v in t for v in (
+                    "digital sales and marketing manager", "digital sales & marketing manager",
+                    "sales and digital marketing manager", "sales & digital marketing manager",
+                    "digital sales and marketing director", "digital sales & marketing director",
+                    "sales and digital marketing director", "sales & digital marketing director",
+                )):
                     continue
             return False
     
@@ -806,8 +866,23 @@ class LinkedInScraper(BaseScraper):
     """
     LinkedIn Jobs — usa l'endpoint HTML pubblico /jobs/search/ con parsing JSON-LD.
     NON usare /jobs-guest/jobs/api/seeMoreJobPostings/ (deprecato, HTTP 403).
-    Aggiunge 2s di delay tra le keyword per evitare rate limiting.
+    Aggiunge 2s di delay tra le richieste per evitare rate limiting.
+
+    f_TPR=r604800 (ultima settimana, non più r86400/24h): verificato dal vivo che
+    la finestra 24h perde annunci genuini più vecchi di un giorno — se un run di
+    scraping salta un giorno (es. per il guard DST), quegli annunci non vengono
+    mai più visti da nessun run futuro con la finestra stretta.
+    f_WT=3 (filtro Hybrid) rimosso: verificato dal vivo che sull'endpoint
+    anonimo/senza login non restringe in modo affidabile i risultati (a volte
+    nessun effetto, a volte risultati diversi da una richiesta identica a pochi
+    minuti di distanza) — il controllo reale sulla modalità di lavoro resta
+    comunque il testo (detect_work_mode) applicato a valle su ogni annuncio.
+    pageNum ora cicla su 2 pagine per keyword+città: verificato dal vivo che la
+    pagina 1 aggiunge in media circa metà risultati validi in più rispetto alla
+    sola pagina 0 (prima presa da sola).
     """
+    MAX_PAGES = 2
+
     def __init__(self):
         super().__init__("LinkedIn")
 
@@ -819,34 +894,35 @@ class LinkedInScraper(BaseScraper):
         keywords = SEARCH_KEYWORDS
 
         seen_links = set()
-        
+
         # LinkedIn geolocalizza in modo errato le città italiane con l'italiano.
         # "Milan, Italy" / "Turin, Italy" / "Genoa, Italy" funzionano correttamente.
         linkedin_location = city_config.get("linkedin_location", f"{city_name}, Italy")
 
         for kw in keywords:
-            try:
-                url = "https://www.linkedin.com/jobs/search/"
-                params = {
-                    "keywords": kw,
-                    "location": linkedin_location,
-                    "f_TPR": "r86400",  # ultime 24h
-                    "position": 1,
-                    "pageNum": 0,
-                }
-                # Per Milano/Torino: filtra direttamente su LinkedIn per lavoro ibrido
-                if city_config.get("filter_hybrid_only", False):
-                    params["f_WT"] = "3"  # 3=Hybrid su LinkedIn
-                headers = {
-                    "User-Agent": USER_AGENT_CHROME,
-                    "Accept-Language": "it-IT,it;q=0.9",
-                }
-                response = requests.get(url, params=params, headers=headers, timeout=12)
-                logging.info(f"{self.portal_name} ({kw} - {city_name}): HTTP {response.status_code}")
-                
-                if response.status_code == 200:
+            for page_num in range(self.MAX_PAGES):
+                try:
+                    url = "https://www.linkedin.com/jobs/search/"
+                    params = {
+                        "keywords": kw,
+                        "location": linkedin_location,
+                        "f_TPR": "r604800",  # ultima settimana
+                        "position": 1,
+                        "pageNum": page_num,
+                    }
+                    headers = {
+                        "User-Agent": USER_AGENT_CHROME,
+                        "Accept-Language": "it-IT,it;q=0.9",
+                    }
+                    response = requests.get(url, params=params, headers=headers, timeout=12)
+                    logging.info(f"{self.portal_name} ({kw} - {city_name}, pagina {page_num}): HTTP {response.status_code}")
+
+                    if response.status_code != 200:
+                        break
+
                     soup = BeautifulSoup(response.text, "html.parser")
                     jobs_before_strategia1 = len(jobs)
+                    card_count = 0
 
                     # Strategia 1: JSON-LD JobPosting
                     for script in soup.find_all("script", type="application/ld+json"):
@@ -860,6 +936,7 @@ class LinkedInScraper(BaseScraper):
                         # quirk reale di alcuni CMS JSON-LD) non deve far scartare
                         # anche tutti gli altri JobPosting validi dello stesso blocco.
                         for item in items:
+                            card_count += 1
                             try:
                                 if item.get("@type") == "JobPosting":
                                     title = _safe_str(item, "title")
@@ -879,16 +956,18 @@ class LinkedInScraper(BaseScraper):
                                                            work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                             except Exception:
                                 pass
-                    
+
                     # Strategia 2: card HTML standard LinkedIn (classe base-card)
-                    # Solo se QUESTA keyword non ha trovato nulla via JSON-LD — non deve
-                    # dipendere dall'accumulatore globale, altrimenti una keyword precedente
-                    # che trova anche un solo risultato disattiva il fallback per tutte le successive.
+                    # Solo se QUESTA pagina non ha trovato nulla via JSON-LD — non deve
+                    # dipendere dall'accumulatore globale, altrimenti una pagina/keyword
+                    # precedente che trova anche un solo risultato disattiva il fallback.
                     if len(jobs) == jobs_before_strategia1:
+                        cards = soup.find_all("div", class_=lambda c: c and "base-card" in c)
+                        card_count += len(cards)
                         # Try/except per singola card (come WyserScraper): un link_elem
                         # senza attributo href (es. contenuto lazy-loaded via JS) non deve
                         # scartare anche tutte le card successive della stessa keyword.
-                        for card in soup.find_all("div", class_=lambda c: c and "base-card" in c):
+                        for card in cards:
                             try:
                                 title_elem = card.find(class_=lambda c: c and "base-search-card__title" in (c or ""))
                                 company_elem = card.find(class_=lambda c: c and "base-search-card__subtitle" in (c or ""))
@@ -912,18 +991,33 @@ class LinkedInScraper(BaseScraper):
                                                        city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                             except Exception as e:
                                 logging.error(f"{self.portal_name}: card scartata per errore di parsing: {e}")
-                
-                time.sleep(2)
-                
-            except Exception as e:
-                logging.error(f"Errore {self.portal_name} keyword '{kw}': {e}")
-                
+
+                    # Nessuna card affatto su questa pagina (non solo "nessun match
+                    # valido"): è un segnale reale di fine risultati, si evita di
+                    # richiedere anche la pagina successiva per questa keyword.
+                    if card_count == 0:
+                        time.sleep(2)
+                        break
+
+                    time.sleep(2)
+
+                except Exception as e:
+                    logging.error(f"Errore {self.portal_name} keyword '{kw}' pagina {page_num}: {e}")
+                    break
+
         return jobs
 
 class MichaelPageScraper(BaseScraper):
     """
     MichaelPage IT — gli URL per-città restituiscono 404.
-    Usa /jobs/marketing e /jobs/sales-marketing (tutte offerte IT) e filtra per titolo.
+    Usa 3 categorie nazionali e filtra per titolo. "sales-marketing"/"commercial"
+    (usate in precedenza) sono URL morte: verificato via Archive.org che non
+    hanno mai avuto uno snapshot valido, mentre "marketing"/"sales"/
+    "digital-new-media" sono le categorie reali del menu del sito (200,
+    snapshot recenti) — "sales" da sola ha ~192 annunci mai interrogati prima.
+    Paginazione: Drupal Views standard con ?page=N (0-indexed, verificato dal
+    link "Pagination" nell'HTML); prima si prendeva sempre e solo la prima
+    pagina, perdendo l'84%+ dei risultati sulle categorie più popolate.
     """
     def __init__(self):
         super().__init__("MichaelPage")
@@ -940,24 +1034,30 @@ class MichaelPageScraper(BaseScraper):
             return []
         urls = [
             "https://www.michaelpage.it/jobs/marketing",
-            "https://www.michaelpage.it/jobs/sales-marketing",
-            "https://www.michaelpage.it/jobs/digital",
-            "https://www.michaelpage.it/jobs/commercial",
+            "https://www.michaelpage.it/jobs/sales",
+            "https://www.michaelpage.it/jobs/digital-new-media",
         ]
         # Tiene i LINK già visti, non i titoli: due annunci distinti (aziende
         # diverse) possono condividere lo stesso titolo generico (es. "Sales
         # Manager"), sia sulla stessa pagina sia su categorie diverse — il link
         # è l'unico identificativo affidabile del singolo annuncio.
         seen = set()
-        for url in urls:
-            try:
-                response = requests.get(url, headers=headers, timeout=12)
-                logging.info(f"{self.portal_name}: HTTP {response.status_code} ({url})")
-                if response.status_code == 200:
+        MAX_PAGES = 10
+        for base_url in urls:
+            for page in range(MAX_PAGES):
+                url = base_url if page == 0 else f"{base_url}?page={page}"
+                try:
+                    response = requests.get(url, headers=headers, timeout=12)
+                    logging.info(f"{self.portal_name}: HTTP {response.status_code} ({url})")
+                    if response.status_code != 200:
+                        if page == 0:
+                            logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+                        break
                     soup = BeautifulSoup(response.text, "html.parser")
-                    jobs_json_ld = self._parse_json_ld(soup, url, city_name)
-                    jobs.extend(jobs_json_ld)
-                    seen.update(job.link for job in jobs_json_ld)
+                    prima = len(seen)
+                    jobs_json_ld = self._parse_json_ld(soup, url)
+                    jobs.extend(j for j in jobs_json_ld if j.link not in seen)
+                    seen.update(j.link for j in jobs_json_ld)
                     for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
                         title = a.get_text(strip=True)
                         href = a.get("href", "")
@@ -971,17 +1071,21 @@ class MichaelPageScraper(BaseScraper):
                                 jobs.append(ScrapedJob(title, "", self.portal_name, link,
                                                        match_level=match_level, match_count=match_count,
                                                        city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                else:
-                    logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-            except requests.exceptions.Timeout:
-                logging.error(f"{self.portal_name}: timeout della richiesta ({url})")
-            except Exception as e:
-                logging.error(f"Errore scraping {self.portal_name}: {e}")
+                    # Nessun link nuovo su questa pagina: oltre l'ultima pagina reale
+                    # Drupal ripropone contenuto già visto invece di un 404 pulito.
+                    if len(seen) == prima:
+                        break
+                except requests.exceptions.Timeout:
+                    logging.error(f"{self.portal_name}: timeout della richiesta ({url})")
+                    break
+                except Exception as e:
+                    logging.error(f"Errore scraping {self.portal_name}: {e}")
+                    break
         if not jobs:
             logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
 
-    def _parse_json_ld(self, soup, base_url, city_name):
+    def _parse_json_ld(self, soup, base_url):
         import json
         jobs = []
         for script in soup.find_all("script", type="application/ld+json"):
@@ -1003,8 +1107,12 @@ class MichaelPageScraper(BaseScraper):
                             date = item.get("datePosted", "")
                             desc = _safe_str(item, "description")
                             match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                            # city="Italia" (non city_name, sempre "Genova" nella pratica
+                            # dato il guard sopra): coerente col percorso di fallback HTML
+                            # qui sotto, che etichetta "Italia" per lo stesso tipo di
+                            # contenuto nazionale non filtrato per città.
                             jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                                   date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                                                   date=date, match_level=match_level, match_count=match_count, city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                 except Exception:
                     pass
         return jobs
@@ -1095,26 +1203,44 @@ class WyserScraper(BaseScraper):
     Wyser — WordPress SSR. Ogni card è article.card-job con:
     - p.card-title (titolo) dentro a.dettaglio (link)
     - li.posto (città)
-    URL per-città già filtra i risultati; timeout 25s per connessione lenta.
+    Niente più wy_position=MARKETING: verificato dal vivo che è un campo di
+    ricerca testuale libera sul titolo, non un filtro di categoria — escludeva
+    strutturalmente qualunque titolo target che non contenesse letteralmente
+    "marketing" (es. "Digital Sales Manager", "Head of Growth"). Il filtro
+    reale resta is_valid_job_title() sui risultati non filtrati.
+    Paginazione: il sito pagina a 15 risultati/pagina via ?pages=N (verificato
+    dal vivo, senza questo si perdevano sistematicamente i risultati oltre la
+    prima pagina); si segue finché una pagina non risponde più 200 con card.
+    Torino non ha uno slug città sul sito (vedi CITIES): city_config non ha
+    "wyser_slug", quindi si scarica la pagina nazionale e si tengono solo le
+    card il cui campo città (li.posto) contiene il nome della città richiesta.
     """
     def __init__(self):
         super().__init__("Wyser")
 
     def scrape(self, city_name, city_config):
         jobs = []
-        wyser_slug = city_config.get("wyser_slug", f"{city_name.lower()}")
-        url = f"https://it.wyser-search.com/offerte-lavoro/{wyser_slug}/?wy_position=MARKETING"
+        wyser_slug = city_config.get("wyser_slug")
+        base_url = (f"https://it.wyser-search.com/offerte-lavoro/{wyser_slug}/"
+                    if wyser_slug else "https://it.wyser-search.com/offerte-lavoro/")
         headers = {
             "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        try:
-            response = requests.get(url, headers=headers, timeout=25)
-            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
-            if response.status_code == 200:
+        seen_links = set()
+        MAX_PAGES = 10
+        for page in range(1, MAX_PAGES + 1):
+            url = base_url if page == 1 else f"{base_url}?pages={page}"
+            try:
+                response = requests.get(url, headers=headers, timeout=25)
+                logging.info(f"{self.portal_name} (pagina {page}): HTTP {response.status_code}")
+                if response.status_code != 200:
+                    break
                 soup = BeautifulSoup(response.text, "html.parser")
                 cards = soup.find_all("article", class_=lambda c: c and "card-job" in c)
+                if not cards:
+                    break
                 for card in cards:
                     # Try/except per singola card: senza questo, un'eccezione su una
                     # card malformata (es. href mancante) troncava silenziosamente
@@ -1123,7 +1249,11 @@ class WyserScraper(BaseScraper):
                         link_elem = card.find("a", class_="dettaglio")
                         title_elem = card.find("p", class_=lambda c: c and "card-title" in (c or ""))
                         date_elem = card.find("p", class_=lambda c: c and "size-16" in (c or "") and "blue" in (c or ""))
+                        posto_elem = card.find("li", class_=lambda c: c and "posto" in (c or ""))
                         if not link_elem or not title_elem:
+                            continue
+                        posto = posto_elem.get_text(strip=True) if posto_elem else ""
+                        if wyser_slug is None and city_name.lower() not in posto.lower():
                             continue
                         title = title_elem.get_text(strip=True)
                         if not is_valid_job_title(title):
@@ -1133,6 +1263,9 @@ class WyserScraper(BaseScraper):
                             continue
                         if not link.startswith("http"):
                             link = "https://it.wyser-search.com" + link
+                        if link in seen_links:
+                            continue
+                        seen_links.add(link)
                         date = date_elem.get_text(strip=True) if date_elem else ""
                         match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                         jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
@@ -1140,106 +1273,105 @@ class WyserScraper(BaseScraper):
                                                city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except Exception as e:
                         logging.error(f"{self.portal_name}: card scartata per errore di parsing: {e}")
-                if not jobs:
-                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
-            else:
-                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
-        except requests.exceptions.Timeout:
-            logging.error(f"{self.portal_name}: timeout della richiesta")
-        except Exception as e:
-            logging.error(f"Errore scraping {self.portal_name}: {e}")
+            except requests.exceptions.Timeout:
+                logging.error(f"{self.portal_name}: timeout della richiesta (pagina {page})")
+                break
+            except Exception as e:
+                logging.error(f"Errore scraping {self.portal_name} (pagina {page}): {e}")
+                break
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
 
 
 
 class PagePersonnelScraper(BaseScraper):
-    """Page Personnel IT — SSR Drupal (stessa infrastruttura di MichaelPage). Parsing dei link /job-detail/."""
+    """Page Personnel IT — RITIRATO. Verificato dal vivo (curl diretto, curl_cffi
+    impersonate-Chrome, WebFetch da IP diverso) che pagepersonnel.it fa redirect
+    301 permanente su OGNI URL categoria verso michaelpage.it (il brand è stato
+    assorbito): /jobs/marketing/{città} redirige sempre a michaelpage.it/jobs/marketing
+    (già coperta da MichaelPageScraper), le altre categorie a una ricerca generica
+    senza filtro. requests segue il redirect quindi lo status finale non è mai 404,
+    e il vecchio controllo "404 -> fallback nazionale" non scattava mai: risultato,
+    ogni offerta veniva etichettata con la città richiesta anche se il contenuto
+    era in realtà quello nazionale non filtrato (mislabeling sistematico).
+    Dato che il sito non ha più contenuto proprio, questo scraper rileva il
+    redirect fuori dominio e si ferma, invece di produrre dati duplicati e
+    mal etichettati che MichaelPageScraper copre già correttamente."""
     def __init__(self):
         super().__init__("PagePersonnel")
 
     def scrape(self, city_name, city_config):
-        jobs = []
         headers = {
             "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        # Prova URL per-città; se 404 (es. Genova), fallback all'URL nazionale
-        city_url = f"https://www.pagepersonnel.it/jobs/marketing/{city_name.lower()}"
-        national_url = "https://www.pagepersonnel.it/jobs/marketing"
+        url = f"https://www.pagepersonnel.it/jobs/marketing/{city_name.lower()}"
         try:
-            response = requests.get(city_url, headers=headers, timeout=12)
-            effective_url = city_url
-            if response.status_code == 404:
-                logging.info(f"{self.portal_name}: {city_url} → 404, fallback a URL nazionale")
-                response = requests.get(national_url, headers=headers, timeout=12)
-                effective_city = "Italia"
-                effective_url = national_url
-            else:
-                effective_city = city_name
+            response = requests.get(url, headers=headers, timeout=12)
+            final_host = urllib.parse.urlparse(response.url).hostname or ""
+            if "pagepersonnel.it" not in final_host:
+                logging.info(f"{self.portal_name}: {url} reindirizza fuori dominio ({response.url}) — "
+                              f"il sito ha assorbito il brand, contenuto già coperto da MichaelPageScraper. Salto.")
+                return []
             logging.info(f"{self.portal_name}: HTTP {response.status_code}")
-            if response.status_code == 200:
-                soup = BeautifulSoup(response.text, "html.parser")
-
-                # Tiene i LINK già visti, non i titoli: due annunci distinti
-                # (aziende diverse) possono condividere lo stesso titolo generico
-                # — stessa infrastruttura e stesso fix di MichaelPageScraper.
-                seen = set()
-
-                # Prima prova: JSON-LD
-                import json as _json
-                for script in soup.find_all("script", type="application/ld+json"):
-                    try:
-                        data = _json.loads(script.string or "{}")
-                        items = data if isinstance(data, list) else [data]
-                    except Exception:
-                        continue
-                    # Try/except per singolo item: stesso fix di LinkedIn/MichaelPage.
-                    for item in items:
-                        try:
-                            if item.get("@type") == "JobPosting":
-                                title = _safe_str(item, "title")
-                                if is_valid_job_title(title):
-                                    # Fallback su effective_url (non più city_url fisso):
-                                    # se c'è stato un 404 e si è passati a national_url, un
-                                    # item JSON-LD privo di "url" deve puntare lì, non alla
-                                    # pagina città che ha appena risposto 404.
-                                    link = _safe_str(item, "url", effective_url)
-                                    if link in seen:
-                                        continue
-                                    seen.add(link)
-                                    company = (item.get("hiringOrganization") or {}).get("name", "")
-                                    date = item.get("datePosted", "")
-                                    desc = _safe_str(item, "description")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
-                                    jobs.append(ScrapedJob(title, company, self.portal_name, link,
-                                                           date=date, match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                        except Exception:
-                            pass
-
-                # Seconda prova: link /job-detail/
-                if not jobs:
-                    for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
-                        title = a.get_text(strip=True)
-                        href = a.get("href", "")
-                        if not href:
-                            continue
-                        link = href if href.startswith("http") else "https://www.pagepersonnel.it" + href
-                        if title and title != "Candidati" and link not in seen:
-                            seen.add(link)
-                            if is_valid_job_title(title):
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
-                                jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                                       match_level=match_level, match_count=match_count, city=effective_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                if not jobs:
-                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
-            else:
+            if response.status_code != 200:
                 logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+                return []
+            # Il sito non reindirizza (ha ancora contenuto proprio, scenario non
+            # osservato negli ultimi test ma gestito per non perdere dati se
+            # dovesse ripristinarsi): stesso parsing JSON-LD/fallback link usato
+            # da MichaelPageScraper.
+            jobs = []
+            soup = BeautifulSoup(response.text, "html.parser")
+            seen = set()
+            import json as _json
+            for script in soup.find_all("script", type="application/ld+json"):
+                try:
+                    data = _json.loads(script.string or "{}")
+                    items = data if isinstance(data, list) else [data]
+                except Exception:
+                    continue
+                for item in items:
+                    try:
+                        if item.get("@type") == "JobPosting":
+                            title = _safe_str(item, "title")
+                            if is_valid_job_title(title):
+                                link = _safe_str(item, "url", url)
+                                if link in seen:
+                                    continue
+                                seen.add(link)
+                                company = (item.get("hiringOrganization") or {}).get("name", "")
+                                date = item.get("datePosted", "")
+                                desc = _safe_str(item, "description")
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                                jobs.append(ScrapedJob(title, company, self.portal_name, link,
+                                                       date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                    except Exception:
+                        pass
+            if not jobs:
+                for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
+                    title = a.get_text(strip=True)
+                    href = a.get("href", "")
+                    if not href:
+                        continue
+                    link = href if href.startswith("http") else "https://www.pagepersonnel.it" + href
+                    if title and title != "Candidati" and link not in seen:
+                        seen.add(link)
+                        if is_valid_job_title(title):
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                            jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                                   match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+            if not jobs:
+                logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+            return jobs
         except requests.exceptions.Timeout:
             logging.error(f"{self.portal_name}: timeout della richiesta")
+            return []
         except Exception as e:
             logging.error(f"Errore scraping {self.portal_name}: {e}")
-        return jobs
+            return []
 
 
 class ManpowerScraper(BaseScraper):
@@ -1342,15 +1474,36 @@ class IQMSelezioneScraper(BaseScraper):
 
 
 class LhhScraper(BaseScraper):
-    """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized con filtro geo radius=10km."""
+    """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized.
+    Il filtro server jobLocation+radius NON funziona: verificato dal vivo che
+    pagination.total e il pool di annunci restituiti sono identici a parità di
+    keyword qualunque sia la città richiesta, e i cityName reali dei job sono
+    sparsi per tutta Italia (Verona, Napoli, Bari...) a prescindere dalla città
+    cercata. Per questo lo scraping gira una sola volta (durante l'iterazione
+    Genova, come MichaelPage/GiGroup/IQMSelezione) invece che 3 volte con lo
+    stesso identico pool nazionale, e la città di ogni offerta si determina dal
+    campo cityName della risposta invece che dal parametro di ricerca: se
+    corrisponde a Genova/Milano/Torino viene etichettata di conseguenza,
+    altrimenti "Italia" (stessa convenzione già usata per le altre offerte
+    nazionali di questo file, filtrate con la policy lenient di Genova).
+    Paginazione: la risposta espone pagination.total (risultati reali per la
+    query); prima si prendeva sempre e solo range=0 (i primi ~10), perdendo
+    fino al 90%+ dei risultati per keyword popolari. Ora si avanza range del
+    numero di job realmente restituiti a ogni chiamata, fino al totale reale
+    o a un tetto di sicurezza.
+    """
+    MAX_JOBS_PER_KEYWORD = 200  # tetto di sicurezza sulla paginazione
+
     def __init__(self):
         super().__init__("LHH")
 
     def scrape(self, city_name, city_config):
         import urllib.parse as _urlparse
         jobs = []
+        if city_name != "Genova":
+            return []
         keywords = SEARCH_KEYWORDS
-        lhh_location = city_config.get("lhh_location", f"{city_name}%2C+Italia")
+        citta_lookup = {c.lower(): c for c in CITIES.keys()}
 
         url = "https://www.lhh.com/api/data/jobs/summarized"
         headers = {
@@ -1359,69 +1512,96 @@ class LhhScraper(BaseScraper):
             "Origin": "https://www.lhh.com",
             "Referer": "https://www.lhh.com/it-it/cerca-lavoro"
         }
+        seen_links = set()
 
         for kw in keywords:
-            # queryString è un pseudo-querystring "&key=value&key=value" fatto a mano:
-            # kw va URL-encodato (quote_plus) perché una keyword con "&" letterale
-            # (es. "Responsabile Marketing & Sales") spezzerebbe il parsing lato server.
-            payload = {
-                "queryString": f"&q={_urlparse.quote_plus(kw)}&jobLocation={lhh_location}&radius=10&sort=PostedDate desc",
-                "filtersToDisplay": "{AEEBD4FE-DCF4-4D9B-8895-6EE4C1C31F95}|{9D842325-FA99-45EE-9197-AC1749D579DF}|{F4AA5EF6-7E6B-4BBA-B1E3-38E840537688}|{A5D28A27-7525-4F9C-813F-53E1B58D955F}|{366A4861-5C5C-4C12-9776-8CE4789960E0}|{26CA3CFC-0C11-4919-883F-2C8DB522BADC}",
-                "range": 0,
-                "siteName": "lhh",
-                "brand": "lhh",
-                "countryCode": "IT",
-                "languageCode": "it-IT"
-            }
+            range_offset = 0
+            while range_offset < self.MAX_JOBS_PER_KEYWORD:
+                # queryString è un pseudo-querystring "&key=value&key=value" fatto a mano:
+                # kw va URL-encodato (quote_plus) perché una keyword con "&" letterale
+                # (es. "Responsabile Marketing & Sales") spezzerebbe il parsing lato server.
+                # jobLocation/radius restano "Italia"/molto ampio: il filtro server è
+                # comunque inefficace (vedi docstring), meglio non fingere una precisione
+                # geografica che l'API non fornisce davvero.
+                payload = {
+                    "queryString": f"&q={_urlparse.quote_plus(kw)}&jobLocation=Italia&radius=1000&sort=PostedDate desc",
+                    "filtersToDisplay": "{AEEBD4FE-DCF4-4D9B-8895-6EE4C1C31F95}|{9D842325-FA99-45EE-9197-AC1749D579DF}|{F4AA5EF6-7E6B-4BBA-B1E3-38E840537688}|{A5D28A27-7525-4F9C-813F-53E1B58D955F}|{366A4861-5C5C-4C12-9776-8CE4789960E0}|{26CA3CFC-0C11-4919-883F-2C8DB522BADC}",
+                    "range": range_offset,
+                    "siteName": "lhh",
+                    "brand": "lhh",
+                    "countryCode": "IT",
+                    "languageCode": "it-IT"
+                }
 
-            try:
-                response = curl_requests.post(url, json=payload, headers=headers, impersonate="chrome124", timeout=15)
-                logging.info(f"{self.portal_name} ({kw} - {city_name}): HTTP {response.status_code}")
+                try:
+                    response = curl_requests.post(url, json=payload, headers=headers, impersonate="chrome124", timeout=15)
+                    logging.info(f"{self.portal_name} ({kw}, range={range_offset}): HTTP {response.status_code}")
 
-                if response.status_code == 200:
+                    if response.status_code != 200:
+                        logging.error(f"{self.portal_name}: Errore API HTTP {response.status_code}")
+                        break
+
                     data = response.json()
                     jobs_data = data.get("jobs", [])
-                    logging.info(f"{self.portal_name} ({city_name}): {len(jobs_data)} offerte dalla API")
+                    total = (data.get("pagination") or {}).get("total", len(jobs_data))
+                    logging.info(f"{self.portal_name} ({kw}): {len(jobs_data)}/{total} offerte dalla API a range={range_offset}")
+                    if not jobs_data:
+                        break
+
                     for job in jobs_data:
-                        title = _safe_str(job, "jobTitle")
-                        if not is_valid_job_title(title):
-                            continue
-                        company = job.get("brandName", "LHH")
-                        job_id_lhh = job.get("jobId")
-                        if not job.get("applyUri") and not job_id_lhh:
-                            # Senza applyUri né jobId non c'è nulla che identifichi
-                            # univocamente l'annuncio: costruire un link con "id=None"
-                            # farebbe collassare ogni offerta simile sullo stesso job_id.
-                            continue
-                        link = job.get("applyUri") or f"https://www.lhh.com/it-it/cerca-lavoro/job-description/?id={job_id_lhh}"
-                        date = job.get("postedDate", "")
-                        desc = job.get("description", "") or ""
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
-                        if job.get("isRemote") and work_mode == "unverified":
-                            work_mode = "da remoto"
-                        jobs.append(ScrapedJob(
-                            title=title,
-                            company=company,
-                            portal=self.portal_name,
-                            link=link,
-                            date=date,
-                            snippet=desc[:150] + "..." if desc else "",
-                            match_level=match_level,
-                            match_count=match_count,
-                            city=city_name,
-                            work_mode=work_mode,
-                            fetch_status=fetch_status,
-                            probabilita=probabilita,
-                            motivazione=motivazione, testo_completo=testo_completo,
-                        ))
-                else:
-                    logging.error(f"{self.portal_name}: Errore API HTTP {response.status_code}")
-            except Exception as e:
-                logging.error(f"Errore scraping {self.portal_name} per '{kw}': {e}")
+                        try:
+                            title = _safe_str(job, "jobTitle")
+                            if not is_valid_job_title(title):
+                                continue
+                            company = job.get("brandName", "LHH")
+                            job_id_lhh = job.get("jobId")
+                            if not job.get("applyUri") and not job_id_lhh:
+                                # Senza applyUri né jobId non c'è nulla che identifichi
+                                # univocamente l'annuncio: costruire un link con "id=None"
+                                # farebbe collassare ogni offerta simile sullo stesso job_id.
+                                continue
+                            link = job.get("applyUri") or f"https://www.lhh.com/it-it/cerca-lavoro/job-description/?id={job_id_lhh}"
+                            if link in seen_links:
+                                continue
+                            seen_links.add(link)
+                            citta_reale = citta_lookup.get(_safe_str(job, "cityName").lower().strip(), "Italia")
+                            date = job.get("postedDate", "")
+                            desc = job.get("description", "") or ""
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                            if job.get("isRemote") and work_mode == "unverified":
+                                work_mode = "da remoto"
+                            jobs.append(ScrapedJob(
+                                title=title,
+                                company=company,
+                                portal=self.portal_name,
+                                link=link,
+                                date=date,
+                                snippet=desc[:150] + "..." if desc else "",
+                                match_level=match_level,
+                                match_count=match_count,
+                                city=citta_reale,
+                                work_mode=work_mode,
+                                fetch_status=fetch_status,
+                                probabilita=probabilita,
+                                motivazione=motivazione, testo_completo=testo_completo,
+                            ))
+                        except Exception as e:
+                            logging.error(f"{self.portal_name}: offerta scartata per errore di parsing: {e}")
+
+                    range_offset += len(jobs_data)
+                    if range_offset >= total:
+                        break
+                except Exception as e:
+                    logging.error(f"Errore scraping {self.portal_name} per '{kw}' (range={range_offset}): {e}")
+                    break
+
+                # Tra pagine della stessa keyword: delay più breve di quello tra
+                # keyword diverse, per non allungare troppo il run totale.
+                time.sleep(1)
 
             # Come GiGroup (vedi commento nel suo scraper): richieste consecutive
             # senza delay sono andate in timeout dopo uso intensivo. Stesso pattern
-            # di carico (18 keyword x 3 città), stesso rischio.
+            # di carico (18 keyword, ora anche con più pagine ciascuna).
             time.sleep(2)
 
         return jobs
