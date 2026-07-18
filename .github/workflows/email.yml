@@ -30,14 +30,17 @@ jobs:
           SHOULD_RUN=false
           ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
           TARGET_SEC=$(date -d "18:05" +%s)
-          # 7200s (2h), non più 900s (15min): osservato dal vivo il 17/07 che OGNI
-          # trigger cron nativo di giornata è arrivato con 1-2h+ di ritardo rispetto
-          # all'orario pianificato (limite noto di GitHub Actions su repository a
-          # basso traffico), quindi con 900s la finestra veniva sistematicamente
-          # mancata e l'invio dipendeva solo dal workflow_dispatch di backup del
-          # repo esterno scraper-scheduler. Il prossimo target dopo le 18:05 è il
-          # giorno successivo, quindi non c'è rischio di sovrapposizione.
-          TARGET_END_SEC=$((TARGET_SEC + 7200))
+          # Finestra aperta fino a fine giornata (23:55), non più 2h fisse: verificato
+          # dal vivo che il 17/07, PRIMA di questo fix, il cron nativo delle 18:05 è
+          # arrivato in ritardo DUE volte (19:16 e 20:08) — la seconda già fuori dalla
+          # finestra di 2h introdotta lo stesso giorno — ed entrambe le volte
+          # should_run è risultato false. L'unica email di ieri è partita solo grazie
+          # al workflow_dispatch di backup del repo esterno scraper-scheduler: il cron
+          # nativo era di fatto già inutilizzabile appena un'ora dopo aver allargato
+          # la finestra a 2h. Dato che il prossimo target è il giorno successivo, non
+          # c'è rischio di sovrapposizione ad allargare fino a fine giornata: qualunque
+          # ritardo di GitHub Actions entro la mezzanotte fa comunque scattare l'invio.
+          TARGET_END_SEC=$(date -d "23:55" +%s)
           if [ "$ORA_SEC" -ge "$TARGET_SEC" ] && [ "$ORA_SEC" -lt "$TARGET_END_SEC" ]; then
             SHOULD_RUN=true
           fi
