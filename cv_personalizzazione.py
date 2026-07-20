@@ -57,7 +57,9 @@ load_dotenv(override=True)
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 CV_DOCX_TEMPLATE = os.path.join(_BASE_DIR, "cv_template", "Giovanni Ghigliotti CV___2026.docx")
 ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
-MATCH_LLM_MODEL = "claude-sonnet-5"
+# Sonnet 4.6 (non 5): scelta esplicita dell'utente dopo l'esaurimento crediti
+# Anthropic del 19-20/07, per contenere il consumo (già a effort "medium").
+MATCH_LLM_MODEL = "claude-sonnet-4-6"
 
 # Indici verificati manualmente (vedi docstring del modulo).
 INDICE_TITLE = 15

@@ -206,7 +206,9 @@ def _get_anthropic_client():
         _anthropic_client = anthropic.Anthropic(api_key=ANTHROPIC_API_KEY, timeout=120.0)
     return _anthropic_client
 
-MATCH_LLM_MODEL = "claude-sonnet-5"
+# Sonnet 4.6 (non 5) + effort "medium" (non "high"): scelta esplicita dell'utente
+# dopo l'esaurimento crediti Anthropic del 19-20/07, per contenere il consumo.
+MATCH_LLM_MODEL = "claude-sonnet-4-6"
 
 # Istruzioni di ruolo fisse + CV: separate dal testo dell'annuncio (che cambia
 # ad ogni chiamata) e messe nel system prompt con cache_control, così le ~5-6
@@ -253,9 +255,9 @@ def valuta_match_llm(job_text: str) -> tuple:
         response = client.messages.create(
             model=MATCH_LLM_MODEL,
             # 4096 era comunque stretto: nessun parametro thinking è impostato, quindi
-            # su Sonnet 5 il ragionamento adattivo è attivo di default e consuma lo
-            # stesso budget della risposta JSON finale a effort "high". 16000 allinea
-            # il margine reale a quello già usato in cv_personalizzazione.py.
+            # il ragionamento adattivo è attivo di default e consuma lo stesso budget
+            # della risposta JSON finale. 16000 allinea il margine reale a quello già
+            # usato in cv_personalizzazione.py.
             max_tokens=16000,
             system=[{
                 "type": "text",
@@ -267,7 +269,7 @@ def valuta_match_llm(job_text: str) -> tuple:
                 "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}",
             }],
             output_config={
-                "effort": "high",
+                "effort": "medium",
                 "format": {
                     "type": "json_schema",
                     "schema": {
