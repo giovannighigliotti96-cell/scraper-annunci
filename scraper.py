@@ -1536,6 +1536,98 @@ class IQMSelezioneScraper(BaseScraper):
         return jobs
 
 
+class PraxiScraper(BaseScraper):
+    """PRAXI Recruitment — SSR .NET. Una sola richiesta con ?AnnunciPerPagina=999
+    restituisce TUTTI gli annunci del sito in una pagina sola (verificato dal
+    vivo: il contatore dichiarato dal sito, "76 annunci", coincide esattamente
+    con le card estratte — nessuna paginazione necessaria).
+    Ogni card (div.annuncioSingolo) espone titolo, link, data di pubblicazione
+    reale (formato gg/mm/aaaa) e sede (es. "Genova", "MILANO", "Provincia di
+    Milano Nord-est") — a differenza di IQMSelezione/GiGroup, qui la città
+    reale è disponibile per ogni singolo annuncio, non solo a livello di sito.
+    Gira una sola volta (durante l'iterazione Genova, come MichaelPage/GiGroup/
+    IQMSelezione/LHH) invece che 3 volte sullo stesso identico set nazionale;
+    la città di ogni offerta si determina cercando il nome di una delle 3
+    città target come sottostringa case-insensitive nel campo sede (stesso
+    approccio usato per il fallback nazionale di WyserScraper), etichettando
+    "Italia" se nessuna delle 3 compare — così la policy work-mode di Genova
+    (la più permissiva) si applica solo alle offerte davvero non attribuibili
+    a una città specifica, non a quelle di un'altra città italiana qualsiasi.
+    """
+    def __init__(self):
+        super().__init__("PRAXI")
+
+    def scrape(self, city_name, city_config):
+        jobs = []
+        if city_name != "Genova":
+            return []
+        url = "https://recruitment.praxi/RicercheAperte/Ricerca?AnnunciPerPagina=999"
+        headers = {
+            "User-Agent": USER_AGENT_CHROME,
+            "Accept-Language": "it-IT,it;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        citta_lookup = {c.lower(): c for c in CITIES.keys()}
+        seen = set()
+        try:
+            response = requests.get(url, headers=headers, timeout=20)
+            logging.info(f"{self.portal_name}: HTTP {response.status_code}")
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.text, "html.parser")
+                for card in soup.find_all("div", class_="annuncioSingolo"):
+                    try:
+                        titolo_div = card.find("div", class_="titolo")
+                        a = titolo_div.find("a") if titolo_div else None
+                        if not a:
+                            continue
+                        title = a.get_text(strip=True)
+                        if not title or not is_valid_job_title(title):
+                            continue
+                        href = a.get("href", "")
+                        if not href:
+                            continue
+                        link = href if href.startswith("http") else "https://recruitment.praxi" + href
+                        if link in seen:
+                            continue
+                        seen.add(link)
+
+                        sede_elem = card.find("div", class_="sede")
+                        sede = sede_elem.get_text(strip=True) if sede_elem else ""
+                        sede_lower = sede.lower()
+                        job_city = "Italia"
+                        for nome_lower, nome in citta_lookup.items():
+                            if nome_lower in sede_lower:
+                                job_city = nome
+                                break
+
+                        date = ""
+                        for span in card.find_all("span", class_="fs20"):
+                            if span.contents and "Data pubblicazione" in str(span.contents[0]):
+                                strong = span.find("strong")
+                                date = strong.get_text(strip=True) if strong else ""
+                                break
+
+                        anteprima_elem = card.find("div", class_="anteprima")
+                        snippet = anteprima_elem.get_text(strip=True) if anteprima_elem else ""
+
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
+                        jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
+                                               snippet=snippet[:150] + "..." if snippet else "",
+                                               match_level=match_level, match_count=match_count,
+                                               city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                    except Exception as e:
+                        logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+                if not jobs:
+                    logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+            else:
+                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+        except requests.exceptions.Timeout:
+            logging.error(f"{self.portal_name}: timeout della richiesta")
+        except Exception as e:
+            logging.error(f"Errore scraping {self.portal_name}: {e}")
+        return jobs
+
+
 class LhhScraper(BaseScraper):
     """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized.
     Il filtro server jobLocation+radius NON funziona: verificato dal vivo che
@@ -1994,8 +2086,9 @@ def esegui_scraping_job(orario_label):
         GiGroupScraper(),
         ManpowerScraper(),
         IQMSelezioneScraper(),
+        PraxiScraper(),
     ]
-    
+
     tutte_le_offerte = []
     
     for city_name, city_config in CITIES.items():

@@ -12,7 +12,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from scraper import (
     LinkedInScraper, MichaelPageScraper, PagePersonnelScraper,
     WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
-    IQMSelezioneScraper,
+    IQMSelezioneScraper, PraxiScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
     dedup_offerte
@@ -34,6 +34,7 @@ if __name__ == "__main__":
         GiGroupScraper(),
         ManpowerScraper(),
         IQMSelezioneScraper(),
+        PraxiScraper(),
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")
