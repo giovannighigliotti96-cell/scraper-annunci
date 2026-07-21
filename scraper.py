@@ -1249,7 +1249,13 @@ class GiGroupScraper(BaseScraper):
               logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
           except Exception as e:
               logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
-          time.sleep(2)
+          # 4s, non più 2s: SEARCH_KEYWORDS è cresciuta da 18 (quando il delay di
+          # 2s fu validato il 2026-07-15) a 24 keyword, e il 21/07 si sono
+          # osservati timeout ricorrenti su più run nella stessa giornata,
+          # concentrati verso la seconda metà della sequenza di keyword — lo
+          # stesso pattern di rallentamento a uso intensivo già documentato
+          # sopra, solo con più richieste in sequenza a innescarlo prima.
+          time.sleep(4)
         if not jobs:
             logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
