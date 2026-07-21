@@ -521,6 +521,10 @@ EXACT_TITLES = [
     "sales and digital marketing manager",
     "sales & digital marketing manager",
     "growth marketing manager",
+    # "growth manager" puro (senza "marketing"): stesso ruolo scritto in forma
+    # più corta, visto ricorrere in annunci reali durante un giro di verifica
+    # dei titoli scartati — decisione esplicita dell'utente di includerlo.
+    "growth manager",
     "head of growth",
     "digital marketing manager",
     "revenue growth manager",
@@ -536,6 +540,17 @@ EXACT_TITLES = [
     "digital sales manager",
     "marketing and sales manager",
     "marketing & sales manager",
+    # "sales and/& marketing manager" (ordine invertito, generico non-digital):
+    # prima esclusa di default salvo qualificatore "digital" esplicito, perché
+    # un caso reale trovato nell'audit ("Director of Sales & Marketing - Luxury
+    # Hospitality") era chiaramente fuori target. Decisione esplicita
+    # dell'utente: non escludere più a priori per titolo, il doppio controllo
+    # sul settore lo fa già lo scoring a valle leggendo il testo integrale
+    # dell'annuncio (euristica a keyword su _CV_GAP "Settore Luxury/Fashion"
+    # ecc., o l'LLM che segnala il gap in motivazione) — verificato che questo
+    # meccanismo funziona già (es. gap "settore sportivo" per Volée Football).
+    "sales and marketing manager",
+    "sales & marketing manager",
     "growth and gtm manager",
     "growth & gtm manager",
     "marketing manager",
@@ -544,9 +559,6 @@ EXACT_TITLES = [
     # un annuncio reale "Director of Sales & Marketing" scartato perché nessuna
     # variante con "Director" esisteva in questa lista — l'intero livello di
     # seniority "Director" era strutturalmente escluso su tutti i portali.
-    # "sales and/& marketing director" (generico, non-digital) resta comunque
-    # escluso da TITLE_EXCLUSIONS più sotto, con la stessa eccezione digital di
-    # "sales and/& marketing manager": politica invariata, solo estesa a Director.
     "digital sales and marketing director",
     "digital sales & marketing director",
     "sales and digital marketing director",
@@ -567,11 +579,28 @@ EXACT_TITLES = [
     "growth and gtm director",
     "growth & gtm director",
     "marketing director",
+    # "sales and/& marketing director" (ordine invertito, generico): stessa
+    # decisione di cui sopra per il livello Manager, estesa a Director.
+    "sales and marketing director",
+    "sales & marketing director",
+    # "Director of X" (Director in testa, non in coda): pattern diverso da
+    # "X Director" sopra, non coperto dal semplice controllo per sottostringa.
+    # Aggiunto esplicitamente perché l'esempio reale discusso con l'utente
+    # ("Director of Sales & Marketing - Luxury Hospitality") usa proprio
+    # questo ordine.
+    "director of sales and marketing",
+    "director of sales & marketing",
+    "director of marketing and sales",
+    "director of marketing & sales",
 
     # Italian target titles
     "responsabile marketing & sales",
     "responsabile marketing e sales",
     "responsabile marketing",
+    # "responsabile sales & marketing" (ordine invertito): stessa decisione
+    # di cui sopra, versione italiana.
+    "responsabile sales & marketing",
+    "responsabile sales e marketing",
     "direttore marketing",
 ]
 
@@ -597,9 +626,12 @@ SEARCH_KEYWORDS = [
     "Commercial Strategy Manager",
     "Digital Sales Manager",
     "Marketing and Sales Manager",
+    "Sales & Marketing Manager",
     "Growth and GTM Manager",
+    "Growth Manager",
     "Marketing Manager",
     "Responsabile Marketing & Sales",
+    "Responsabile Sales & Marketing",
     "Responsabile Marketing",
     # Varianti "Director" aggiunte insieme al livello di seniority in EXACT_TITLES:
     # solo un sottoinsieme mirato (non tutte le 20 varianti Manager sopra) per non
@@ -624,13 +656,13 @@ TITLE_EXCLUSIONS = [
     "product marketing manager",
     "brand marketing manager",
     "trade marketing manager",
-    "sales & marketing manager",
-    "sales and marketing manager",
-    # Stessa esclusione generica (non-digital) estesa al livello Director, con
-    # la stessa eccezione per la variante "digital" applicata più sotto in
-    # is_valid_job_title — coerente con la policy già esistente per "Manager".
-    "sales & marketing director",
-    "sales and marketing director",
+    # "sales and/& marketing manager/director" (generico, non-digital) NON è
+    # più escluso qui: prima veniva scartato salvo qualificatore "digital",
+    # ma decisione esplicita dell'utente è di lasciarlo passare sempre e
+    # affidare il controllo settore allo scoring a valle (keyword _CV_GAP o
+    # LLM), che legge il testo integrale dell'annuncio invece del solo
+    # titolo — un doppio controllo più preciso di un'esclusione cieca sul
+    # titolo (vedi commento in EXACT_TITLES).
     "international marketing manager",
     "responsabile marketing eventi",
     "responsabile marketing di prodotto",
@@ -651,8 +683,10 @@ TITLE_EXCLUSIONS = [
     "account manager",
     "project manager",
     
-    # Seniority non target (junior/stage)
-    "stage", "tirocinio", "junior", "internship", "trainee", "entry level", "unpaid", "apprendistato", "apprendista",
+    # Seniority non target (junior/stage). "graduate" aggiunto insieme a
+    # "growth manager": senza, "Graduate Growth Manager" (visto in un annuncio
+    # reale durante un giro di verifica dei titoli scartati) sarebbe passato.
+    "stage", "tirocinio", "junior", "internship", "trainee", "entry level", "unpaid", "apprendistato", "apprendista", "graduate",
     
     # Ruoli retail/negozio/venditore non digital
     "commesso", "addetto vendita", "addetta vendita", "cassiere", "cassiera", "scaffalista",
@@ -697,18 +731,6 @@ def is_valid_job_title(title: str) -> bool:
     # 1. Controlla esclusioni prima di tutto
     for excl in TITLE_EXCLUSIONS:
         if excl in t:
-            # Eccezione per "sales and/& marketing manager/director" se fanno
-            # parte dei nostri titoli target digitali (in entrambi gli ordini
-            # di parole "digital sales..." / "sales...digital marketing...").
-            if excl in ("sales and marketing manager", "sales & marketing manager",
-                        "sales and marketing director", "sales & marketing director"):
-                if any(v in t for v in (
-                    "digital sales and marketing manager", "digital sales & marketing manager",
-                    "sales and digital marketing manager", "sales & digital marketing manager",
-                    "digital sales and marketing director", "digital sales & marketing director",
-                    "sales and digital marketing director", "sales & digital marketing director",
-                )):
-                    continue
             return False
     
     # 2. Match sui titoli target (sottostringa)
