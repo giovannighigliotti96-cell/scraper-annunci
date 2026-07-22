@@ -1628,6 +1628,127 @@ class PraxiScraper(BaseScraper):
         return jobs
 
 
+class AntalScraper(BaseScraper):
+    """Antal International — API nascosta POST /_sf/api/v1/jobs/search.json
+    (piattaforma SourceFlow, la stessa che serve le pagine del sito). Trovata
+    analizzando i bundle JS: i dati embedded staticamente nel bundle erano
+    incompleti (11 annunci Italia contro i 79 mostrati dall'interfaccia) e
+    NON vengono usati — questa è la vera API che il sito chiama dal vivo.
+    location={"address": "Italy"} filtra correttamente per paese (verificato:
+    100% dei risultati con region_code="IT" nel campo derived_info) — un
+    country/region esplicito nel payload dà invece "unpermitted parameter".
+    jobs_per_page è ignorato oltre 50 (la API tronca comunque a 50/richiesta),
+    quindi si pagina con offset finché non si raggiunge total_size.
+    La città di ogni annuncio si legge da
+    derived_info.locations[0].postal_address.locality quando presente — non
+    sempre: alcuni annunci sono specificati solo a livello Paese
+    (location_type="COUNTRY"), in quel caso restano "Italia" come per
+    MichaelPage/GiGroup/IQMSelezione/PRAXI. Antal usa a volte il nome inglese
+    della città (es. "Milan") a volte l'italiano ("Milano") per lo stesso
+    annuncio: la mappa alias sotto normalizza entrambi.
+    La risposta include già la description completa in HTML: viene ripulita
+    e passata direttamente come testo per lo scoring, senza bisogno di
+    riscaricare la pagina di dettaglio (diversamente da quasi tutti gli
+    altri scraper). Gira una sola volta durante l'iterazione Genova.
+    """
+    _ALIAS_CITTA = {
+        "genova": "Genova", "genoa": "Genova",
+        "milano": "Milano", "milan": "Milano",
+        "torino": "Torino", "turin": "Torino",
+    }
+
+    def __init__(self):
+        super().__init__("Antal")
+
+    def scrape(self, city_name, city_config):
+        jobs = []
+        if city_name != "Genova":
+            return []
+        url = "https://www.antal.com/_sf/api/v1/jobs/search.json"
+        headers = {
+            "User-Agent": USER_AGENT_CHROME,
+            "Content-Type": "application/json",
+        }
+        seen = set()
+        offset = 0
+        MAX_JOBS = 200  # tetto di sicurezza sulla paginazione
+        try:
+            while offset < MAX_JOBS:
+                payload = {
+                    "job_search": {
+                        "query": "",
+                        "location": {"address": "Italy"},
+                        "filters": {},
+                        "commute_filter": {},
+                        "offset": offset,
+                        "jobs_per_page": 50,
+                    }
+                }
+                response = requests.post(url, headers=headers, json=payload, timeout=15)
+                logging.info(f"{self.portal_name} (offset={offset}): HTTP {response.status_code}")
+                if response.status_code != 200:
+                    logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+                    break
+                data = response.json()
+                results = data.get("results", [])
+                total = data.get("total_size", len(results))
+                if not results:
+                    break
+                for item in results:
+                    try:
+                        job = item.get("job", {})
+                        title = _safe_str(job, "title")
+                        if not title or not is_valid_job_title(title):
+                            continue
+                        url_slug = job.get("url_slug", "")
+                        if not url_slug:
+                            continue
+                        link = f"https://www.antal.com/job-search/{url_slug}"
+                        if link in seen:
+                            continue
+                        seen.add(link)
+
+                        locations = (job.get("derived_info") or {}).get("locations") or []
+                        locality = ""
+                        if locations:
+                            locality = (locations[0].get("postal_address") or {}).get("locality", "") or ""
+                        job_city = self._ALIAS_CITTA.get(locality.lower().strip(), "Italia")
+
+                        desc_html = _safe_str(job, "description")
+                        desc_text = BeautifulSoup(desc_html, "html.parser").get_text(" ", strip=True) if desc_html else ""
+                        # published_at/created_at non sono sempre stringhe ISO: alcuni
+                        # annunci (verificato dal vivo) li espongono come timestamp Unix
+                        # in secondi (int) invece che come stringa — ScrapedJob si aspetta
+                        # sempre una stringa (chiama .strip() su date), quindi va convertito.
+                        date_raw = job.get("published_at") or job.get("created_at") or ""
+                        if isinstance(date_raw, (int, float)):
+                            try:
+                                date = datetime.fromtimestamp(date_raw).strftime("%Y-%m-%d")
+                            except Exception:
+                                date = ""
+                        else:
+                            date = str(date_raw)
+
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc_text)
+                        jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
+                                               snippet=desc_text[:150] + "..." if desc_text else "",
+                                               match_level=match_level, match_count=match_count,
+                                               city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                    except Exception as e:
+                        logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+                offset += len(results)
+                if offset >= total:
+                    break
+                time.sleep(1)
+            if not jobs:
+                logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+        except requests.exceptions.Timeout:
+            logging.error(f"{self.portal_name}: timeout della richiesta")
+        except Exception as e:
+            logging.error(f"Errore scraping {self.portal_name}: {e}")
+        return jobs
+
+
 class LhhScraper(BaseScraper):
     """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized.
     Il filtro server jobLocation+radius NON funziona: verificato dal vivo che
@@ -2087,6 +2208,7 @@ def esegui_scraping_job(orario_label):
         ManpowerScraper(),
         IQMSelezioneScraper(),
         PraxiScraper(),
+        AntalScraper(),
     ]
 
     tutte_le_offerte = []
