@@ -1749,6 +1749,88 @@ class AntalScraper(BaseScraper):
         return jobs
 
 
+class HaysScraper(BaseScraper):
+    """Hays Italia — Angular Universal, pagina di ricerca renderizzata
+    server-side (contenuto reale già nell'HTML iniziale, verificato dal vivo:
+    "Plant Manager"/"Fornovo" compaiono nell'HTML grezzo, non serve eseguire
+    JavaScript). L'app chiama poi un'API interna autenticata
+    (moat.hays.com/.../hla/int/s/.../master/browse/v1/jobs, richiede un
+    token via un endpoint separato) per paginazione/filtri lato client —
+    troppo complessa da replicare in modo affidabile, quindi non viene usata:
+    si legge invece direttamente l'HTML SSR, come per la maggior parte degli
+    altri scraper di questo file.
+
+    Limite noto, accettato: la pagina SSR mostra sempre e solo i primi 10
+    risultati (verificato dal vivo: nessun parametro page/pageSize/size/
+    count/limit/resultsPerPage cambia questo numero) — a differenza degli
+    altri portali qui non c'è paginazione accessibile senza l'API
+    autenticata. Per questo si combina "locationf" (filtro città ESCLUSIVO,
+    verificato dal vivo: 10/10 risultati sempre della città richiesta, a
+    differenza di "location" che fa solo boosting mescolato a risultati
+    generici) con ciascuna keyword di SEARCH_KEYWORDS come "q", così i 10
+    slot disponibili per città sono già mirati ai ruoli target invece che
+    ai primi 10 annunci generici di quella città.
+    """
+    def __init__(self):
+        super().__init__("Hays")
+
+    def scrape(self, city_name, city_config):
+        jobs = []
+        url = "https://www.hays.it/ricerca-offerte"
+        headers = {
+            "User-Agent": USER_AGENT_CHROME,
+            "Accept-Language": "it-IT,it;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        seen = set()
+        for kw in SEARCH_KEYWORDS:
+            try:
+                params = {"q": kw, "locationf": city_name}
+                response = requests.get(url, params=params, headers=headers, timeout=12)
+                logging.info(f"{self.portal_name} ({kw} - {city_name}): HTTP {response.status_code}")
+                # Anche 301 è un body valido con le card reali (verificato dal vivo:
+                # nessun header Location, il body è pagina HTML completa identica a
+                # una risposta 200 — sembra un artefatto della CDN/cache di Hays, non
+                # un vero redirect). Trattarlo come errore avrebbe scartato metà delle
+                # risposte reali osservate durante il test.
+                if response.status_code in (200, 301):
+                    soup = BeautifulSoup(response.text, "html.parser")
+                    for card in soup.select("div.job-listing div.job-container"):
+                        try:
+                            a = card.select_one("div.job-descp h3 a")
+                            if not a:
+                                continue
+                            title = a.get_text(strip=True)
+                            if not title or not is_valid_job_title(title):
+                                continue
+                            href = a.get("href", "")
+                            if not href:
+                                continue
+                            link = href.split("?")[0]
+                            if link in seen:
+                                continue
+                            seen.add(link)
+                            snippet_elem = card.select_one("div.job-descp p")
+                            snippet = snippet_elem.get_text(strip=True) if snippet_elem else ""
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
+                            jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                                   snippet=snippet[:150] + "..." if snippet else "",
+                                                   match_level=match_level, match_count=match_count,
+                                                   city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                        except Exception as e:
+                            logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+                else:
+                    logging.error(f"{self.portal_name} ({kw}): HTTP {response.status_code}")
+            except requests.exceptions.Timeout:
+                logging.error(f"{self.portal_name} ({kw}): timeout della richiesta")
+            except Exception as e:
+                logging.error(f"Errore scraping {self.portal_name} ({kw}): {e}")
+            time.sleep(2)
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+        return jobs
+
+
 class LhhScraper(BaseScraper):
     """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized.
     Il filtro server jobLocation+radius NON funziona: verificato dal vivo che
@@ -2209,6 +2291,7 @@ def esegui_scraping_job(orario_label):
         IQMSelezioneScraper(),
         PraxiScraper(),
         AntalScraper(),
+        HaysScraper(),
     ]
 
     tutte_le_offerte = []
