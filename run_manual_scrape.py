@@ -13,6 +13,7 @@ from scraper import (
     LinkedInScraper, MichaelPageScraper, PagePersonnelScraper,
     WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
     IQMSelezioneScraper, PraxiScraper, AntalScraper, HaysScraper,
+    ReverseGroupScraper, AdamiScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
     dedup_offerte
@@ -37,6 +38,8 @@ if __name__ == "__main__":
         PraxiScraper(),
         AntalScraper(),
         HaysScraper(),
+        ReverseGroupScraper(),
+        AdamiScraper(),
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")

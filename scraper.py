@@ -1831,6 +1831,197 @@ class HaysScraper(BaseScraper):
         return jobs
 
 
+class ReverseGroupScraper(BaseScraper):
+    """Reverse Group — React SSR (Vite, dati reali già nell'HTML iniziale,
+    verificato dal vivo). Piattaforma PAN-EUROPEA (Italia, Spagna, Francia
+    osservate direttamente negli annunci) senza alcun filtro geografico
+    testuale funzionante: "location"/"q"/"city"/"country" come query param
+    non cambiano mai i risultati — la ricerca per città nel sito usa Google
+    Places (chiave Maps API vista nell'HTML) per convertire il testo in
+    coordinate, meccanismo non replicabile in modo affidabile senza chiave
+    propria. "distance" (raggio) esiste ma senza coordinate non filtra nulla.
+
+    Per questo si scarica in sequenza fino a MAX_PAGES pagine (10 annunci
+    ciascuna, nessun parametro pageSize/perPage/limit/itemsPerPage le
+    aumenta, verificato dal vivo) e si filtra lato client — sia per titolo
+    che per città. La città si legge dall'ultima voce della lista dettagli
+    di ogni card (icona location): se corrisponde a una delle 3 città
+    target la si usa, se è letteralmente "Italy"/"Italia" (annunci
+    nazionali/remoti) si etichetta "Italia" — QUALSIASI altra città viene
+    scartata invece di ricadere su "Italia" come per gli altri scraper
+    nazionali: qui il fallback sarebbe pericoloso, dato che potrebbe
+    trattarsi di un annuncio spagnolo o francese (osservato dal vivo:
+    "Barcelona", "Paris" compaiono nello stesso flusso di risultati). Limite
+    noto e accettato: con 441 annunci totali su più paesi e nessun filtro
+    geografico, un tetto di pagine ragionevole non garantisce di vedere
+    tutti gli annunci italiani ad ogni run — si affida alla ripetizione dei
+    run (4-6 al giorno) e alla deduplica per accumulare copertura nel tempo.
+    Gira una sola volta durante l'iterazione Genova (nessun filtro città
+    server-side da sfruttare comunque).
+    """
+    MAX_PAGES = 15  # tetto di sicurezza: 150 annunci scansionati per run
+
+    def __init__(self):
+        super().__init__("ReverseGroup")
+
+    def scrape(self, city_name, city_config):
+        jobs = []
+        if city_name != "Genova":
+            return []
+        url = "https://public.reversegroup.hr/jobs"
+        headers = {
+            "User-Agent": USER_AGENT_CHROME,
+            "Accept-Language": "it-IT,it;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        citta_lookup = {c.lower(): c for c in CITIES.keys()}
+        seen = set()
+        for page in range(1, self.MAX_PAGES + 1):
+            try:
+                params = {"currentPage": page, "distance": 30}
+                response = requests.get(url, params=params, headers=headers, timeout=15)
+                logging.info(f"{self.portal_name} (pagina {page}): HTTP {response.status_code}")
+                if response.status_code != 200:
+                    logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+                    break
+                soup = BeautifulSoup(response.text, "html.parser")
+                cards = soup.find_all(class_="app-jobs-search-list-item")
+                if not cards:
+                    break
+                for card in cards:
+                    try:
+                        h3 = card.select_one("h3")
+                        a = card.select_one("a.app-jobs-search-list-item__link") or card.find("a")
+                        if not h3 or not a:
+                            continue
+                        title = h3.get_text(strip=True)
+                        if not title or not is_valid_job_title(title):
+                            continue
+                        href = a.get("href", "")
+                        if not href:
+                            continue
+                        link = href if href.startswith("http") else "https://public.reversegroup.hr" + href
+                        if link in seen:
+                            continue
+                        seen.add(link)
+
+                        recap_items = card.select("ul.app-job-details-recap li")
+                        citta_testo = recap_items[-1].get_text(strip=True) if recap_items else ""
+                        citta_lower = citta_testo.lower().strip()
+                        job_city = citta_lookup.get(citta_lower)
+                        if job_city is None:
+                            if citta_lower in ("italy", "italia"):
+                                job_city = "Italia"
+                            else:
+                                # Città non tra le 3 target e non genericamente "Italia":
+                                # potrebbe essere un annuncio di un altro paese (Spagna,
+                                # Francia osservati dal vivo sulla stessa piattaforma) —
+                                # scartato invece di rischiare un'etichetta sbagliata.
+                                continue
+
+                        desc_elem = card.select_one("div.app-jobs-search-list-item__description p")
+                        desc_text = desc_elem.get_text(" ", strip=True) if desc_elem else ""
+
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc_text)
+                        jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                               snippet=desc_text[:150] + "..." if desc_text else "",
+                                               match_level=match_level, match_count=match_count,
+                                               city=job_city, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                    except Exception as e:
+                        logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+                if len(cards) < 10:
+                    break
+            except requests.exceptions.Timeout:
+                logging.error(f"{self.portal_name}: timeout della richiesta (pagina {page})")
+                break
+            except Exception as e:
+                logging.error(f"Errore scraping {self.portal_name} (pagina {page}): {e}")
+                break
+            time.sleep(1)
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+        return jobs
+
+
+class AdamiScraper(BaseScraper):
+    """Adami & Associati — WordPress/Elementor, SSR (contenuto reale già
+    nell'HTML). Ogni annuncio (article.posizioni_aperte) ha la città già
+    incorporata come classe CSS "localita_posizioni-{slug}" — non serve
+    fuzzy matching sul testo: il sito espone un archivio di tassonomia
+    dedicato, /localita_posizioni/{slug}/, che filtra in modo REALE ed
+    ESCLUSIVO (verificato dal vivo: tutti gli annunci restituiti per
+    "milano" hanno davvero "localita_posizioni-milano" tra le classi).
+    Paginazione WordPress standard, .../page/{n}/ (verificato: Milano ha
+    6 pagine, Genova e Torino stanno su una sola pagina) — si segue finché
+    l'ultima pagina non ha meno di 23 articoli (il conteggio per pagina
+    osservato) o non c'è più nulla.
+    """
+    _RISULTATI_PER_PAGINA = 23
+
+    def __init__(self):
+        super().__init__("Adami")
+
+    def scrape(self, city_name, city_config):
+        jobs = []
+        slug = city_name.lower()
+        base_url = f"https://www.adamiassociati.com/localita_posizioni/{slug}/"
+        headers = {
+            "User-Agent": USER_AGENT_CHROME,
+            "Accept-Language": "it-IT,it;q=0.9",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        }
+        seen = set()
+        MAX_PAGES = 10
+        for page in range(1, MAX_PAGES + 1):
+            url = base_url if page == 1 else f"{base_url}page/{page}/"
+            try:
+                response = requests.get(url, headers=headers, timeout=15)
+                logging.info(f"{self.portal_name} ({city_name}, pagina {page}): HTTP {response.status_code}")
+                if response.status_code != 200:
+                    break
+                soup = BeautifulSoup(response.text, "html.parser")
+                articles = soup.find_all("article", class_="posizioni_aperte")
+                if not articles:
+                    break
+                for art in articles:
+                    try:
+                        h3 = art.find("h3", class_="elementor-post__title")
+                        a = h3.find("a") if h3 else None
+                        if not a:
+                            continue
+                        title = a.get_text(strip=True)
+                        if not title or not is_valid_job_title(title):
+                            continue
+                        link = a.get("href", "")
+                        if not link:
+                            continue
+                        link = link.split("?")[0]
+                        if link in seen:
+                            continue
+                        seen.add(link)
+                        excerpt_elem = art.select_one("div.elementor-post__excerpt p")
+                        snippet = excerpt_elem.get_text(strip=True) if excerpt_elem else ""
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
+                        jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                               snippet=snippet[:150] + "..." if snippet else "",
+                                               match_level=match_level, match_count=match_count,
+                                               city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                    except Exception as e:
+                        logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+                if len(articles) < self._RISULTATI_PER_PAGINA:
+                    break
+            except requests.exceptions.Timeout:
+                logging.error(f"{self.portal_name} ({city_name}): timeout della richiesta (pagina {page})")
+                break
+            except Exception as e:
+                logging.error(f"Errore scraping {self.portal_name} ({city_name}, pagina {page}): {e}")
+                break
+            time.sleep(1)
+        if not jobs:
+            logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
+        return jobs
+
+
 class LhhScraper(BaseScraper):
     """LHH (Lee Hecht Harrison) — API nascosta POST /api/data/jobs/summarized.
     Il filtro server jobLocation+radius NON funziona: verificato dal vivo che
@@ -2292,6 +2483,8 @@ def esegui_scraping_job(orario_label):
         PraxiScraper(),
         AntalScraper(),
         HaysScraper(),
+        ReverseGroupScraper(),
+        AdamiScraper(),
     ]
 
     tutte_le_offerte = []
