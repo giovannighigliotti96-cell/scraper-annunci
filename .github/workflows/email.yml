@@ -29,7 +29,7 @@ jobs:
           echo "Ora locale Italia: $ORA_ITALIA"
           SHOULD_RUN=false
           ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
-          TARGET_SEC=$(date -d "18:05" +%s)
+          TARGET_SEC=$(date -d "17:50" +%s)
           # Finestra aperta fino a fine giornata (23:55), non più 2h fisse: verificato
           # dal vivo che il 17/07, PRIMA di questo fix, il cron nativo delle 18:05 è
           # arrivato in ritardo DUE volte (19:16 e 20:08) — la seconda già fuori dalla
