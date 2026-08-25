@@ -101,11 +101,51 @@ class HistoryManager:
         print(f"[✓] Verifica completata. Rimossi: {len(removed)}\n")
         return len(removed)
 
+    def clean_expired_records(self, records: Dict[str, Dict[str, Any]]) -> List[str]:
+        """Controlla velocemente via HTTP gli URL dei record ed elimina quelli scaduti/reindirizzati."""
+        import urllib.request
+        removed = []
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'}
+
+        for key, rec in list(records.items()):
+            url = rec.get("url", "")
+            img = rec.get("image_url", "")
+            is_expired = False
+
+            if url:
+                try:
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req, timeout=5) as resp:
+                        final_url = resp.geturl()
+                        if "/lst/" in final_url or "/annunci/" not in final_url:
+                            is_expired = True
+                except Exception:
+                    is_expired = True
+
+            if not is_expired and img:
+                try:
+                    req_img = urllib.request.Request(img, headers=headers)
+                    with urllib.request.urlopen(req_img, timeout=5) as resp:
+                        if resp.status != 200:
+                            is_expired = True
+                except Exception:
+                    is_expired = True
+
+            if is_expired:
+                print(f"  [🗑️ Auto-Clean] Record scaduto rimosso: {key}")
+                removed.append(key)
+                del records[key]
+
+        return removed
+
     def update_records(self, best_deals: List[Dict[str, Any]]) -> Dict[str, Dict[str, Any]]:
-        """Aggiorna i record storici con eventuali nuovi prezzi minimi."""
+        """Aggiorna i record storici rimuovendo annunci scaduti ed inserendo nuovi minimi."""
         history = self.load_history()
         records = history.get("records", {})
         today = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        # Pulizia automatica record con link o foto scadute
+        self.clean_expired_records(records)
 
         # Reset flag is_new_record per tutti i record esistenti
         for key in records:
