@@ -1,5 +1,5 @@
 {
-  "last_updated": "2026-08-25 13:16",
+  "last_updated": "2026-08-25 13:19",
   "total_models_tracked": 15,
   "total_active_listings": 114,
   "records": [
@@ -49,7 +49,7 @@
       "image_url": "https://prod.pictures.autoscout24.net/listing-images/919b51c6-3dae-478f-9717-95153d075bc6_80766116-ef95-4e33-90c2-f32d9c479b98.jpg/250x188.webp",
       "url": "https://www.autoscout24.it/annunci/audi-a3-spb-40-tfsi-e-s-tronic-business-elettrica-benzina-bianco-cat_ma9mo1624-919b51c6-3dae-478f-9717-95153d075bc6",
       "record_date": "2026-08-25 13:16",
-      "is_new_record": true
+      "is_new_record": false
     },
     {
       "brand": "BMW",
@@ -81,7 +81,7 @@
       "image_url": "https://prod.pictures.autoscout24.net/listing-images/8e64f292-522c-4a75-a125-8f73382f5324_e4798b0b-4a12-41ea-9016-4ae6da1d5d05.jpg/250x188.webp",
       "url": "https://www.autoscout24.it/annunci/bmw-x2-f39-x2-xdrive25e-business-x-elettrica-benzina-nero-cat_ma13mo74769-8e64f292-522c-4a75-a125-8f73382f5324",
       "record_date": "2026-08-25 13:16",
-      "is_new_record": true
+      "is_new_record": false
     },
     {
       "brand": "BMW",
@@ -130,7 +130,7 @@
       "image_url": "https://prod.pictures.autoscout24.net/listing-images/cf8c073f-ca1d-48ef-923d-5b640ecdf679_1eed0c3d-715b-4b89-a708-ef8bf4d8d886.jpg/250x188.webp",
       "url": "https://www.autoscout24.it/annunci/cupra-formentor-1-4-e-hybrid-dsg-elettrica-benzina-bianco-cat_ma51802mo75545-cf8c073f-ca1d-48ef-923d-5b640ecdf679",
       "record_date": "2026-08-25 13:16",
-      "is_new_record": true
+      "is_new_record": false
     },
     {
       "brand": "Cupra",
@@ -178,7 +178,7 @@
       "image_url": "https://prod.pictures.autoscout24.net/listing-images/984dceae-7876-4dfe-8ac4-ebdaaac0c698_76cd56a4-b6d6-40e2-9dd0-d381a2e7f707.jpg/250x188.webp",
       "url": "https://www.autoscout24.it/annunci/mercedes-benz-b-200-automatic-sport-plus-elettrica-benzina-bianco-cat_ma47mo18609-984dceae-7876-4dfe-8ac4-ebdaaac0c698",
       "record_date": "2026-08-25 13:16",
-      "is_new_record": true
+      "is_new_record": false
     },
     {
       "brand": "Volkswagen",

@@ -33,22 +33,11 @@ async def main():
     scraper = AutoScoutScraper(config)
     best_deals = await scraper.run()
 
-    # 2. Verifica settimanale link record (se passati 7 giorni)
+    # 2. Verifica automatica immediata ed aggiornamento record (ad OGNI esecuzione)
     hm = HistoryManager()
-    if hm.should_verify_links():
-        async with async_playwright() as p:
-            try:
-                browser = await p.chromium.launch(headless=True, channel="chrome", args=["--no-sandbox"])
-            except Exception:
-                browser = await p.chromium.launch(headless=True, args=["--no-sandbox"])
-            page = await browser.new_page()
-            try:
-                await hm.verify_records(page)
-            finally:
-                await page.close()
-                await browser.close()
-
-    # 3. Aggiornamento record storici
+    print("\n==================================================")
+    print("🔍 VERIFICA AUTOMATICA ATTIVITÀ ANNUNCI AUTOSCOUT24")
+    print("==================================================")
     records = hm.update_records(best_deals)
 
     # 4. Export dati per Vercel Landing Page
