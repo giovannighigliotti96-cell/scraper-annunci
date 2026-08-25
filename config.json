@@ -1,0 +1,32 @@
+{
+  "search_criteria": {
+    "year_min": 2023,
+    "km_max": 50000,
+    "transmission": "A",
+    "fuels": ["B", "E", "2", "3"],
+    "condition": "U",
+    "only_super_price": true,
+    "brands": [
+      {
+        "name": "BMW",
+        "slug": "bmw"
+      },
+      {
+        "name": "Audi",
+        "slug": "audi"
+      },
+      {
+        "name": "Mercedes-Benz",
+        "slug": "mercedes-benz"
+      },
+      {
+        "name": "Volkswagen",
+        "slug": "volkswagen"
+      },
+      {
+        "name": "Cupra",
+        "slug": "cupra"
+      }
+    ]
+  }
+}

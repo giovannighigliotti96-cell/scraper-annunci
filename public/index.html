@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AutoScout24 Super Prezzo - Best Deals Tracker</title>
+  <meta name="description" content="Tracker automatico delle migliori offerte auto usate su AutoScout24 con badge Super Prezzo. BMW, Audi, Mercedes-Benz, Volkswagen, Cupra — Anno ≥ 2023, Max 50.000 KM, Cambio Automatico.">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏎️</text></svg>">
+  
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-content">
+      <div class="brand-logo">
+        <span style="font-size: 28px;">🏎️</span>
+        <div>
+          <h1>AutoScout24 Best Deals</h1>
+          <p style="font-size: 12px; color: var(--text-muted);">Migliori offerte usate <strong>Anno ≥ 2023 | Max 50.000 KM | Automatico</strong></p>
+        </div>
+      </div>
+      <div class="live-badge">
+        <span class="live-dot"></span>
+        <span id="last-updated-text">LIVE DATA</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    
+    <!-- Stats Banner -->
+    <section class="stats-banner">
+      <div class="stat-card">
+        <div class="stat-icon">🏆</div>
+        <div class="stat-info">
+          <div class="stat-val" id="stat-models">0</div>
+          <div class="stat-lbl">Modelli Tracciati</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">💰</div>
+        <div class="stat-info">
+          <div class="stat-val" id="stat-min-price">€ 0</div>
+          <div class="stat-lbl">Prezzo Minimo Assoluto</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🚗</div>
+        <div class="stat-info">
+          <div class="stat-val" id="stat-total-cars">0</div>
+          <div class="stat-lbl">Annunci Attivi Totali</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Controls & Search -->
+    <section class="controls-bar">
+      <div class="search-box">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="search-input" placeholder="Cerca modello o marca (es. Classe A, Golf, Formentor)...">
+      </div>
+      <div class="brand-chips" id="brand-chips">
+        <button class="chip active" data-brand="ALL">Tutti</button>
+        <button class="chip" data-brand="BMW">BMW</button>
+        <button class="chip" data-brand="Audi">Audi</button>
+        <button class="chip" data-brand="Mercedes-Benz">Mercedes-Benz</button>
+        <button class="chip" data-brand="Volkswagen">Volkswagen</button>
+        <button class="chip" data-brand="Cupra">Cupra</button>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="tabs-header">
+      <button class="tab-btn active" id="btn-tab-records">
+        <span>🏆</span> Record di Sempre (1 per Modello)
+      </button>
+      <button class="tab-btn" id="btn-tab-all">
+        <span>📋</span> Tutti gli Annunci (Divisi per Modello)
+      </button>
+    </nav>
+
+    <!-- Tab 1: Record di Sempre -->
+    <section id="tab-content-records">
+      <div class="cards-grid" id="records-grid"></div>
+    </section>
+
+    <!-- Tab 2: Tutti gli Annunci per Modello -->
+    <section id="tab-content-all" style="display: none;">
+      <div id="all-models-container"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    AutoScout24 Super Prezzo Notifier & Tracker — Pubblicato su Vercel per <strong>giovannighigliotti96-cell</strong>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>
