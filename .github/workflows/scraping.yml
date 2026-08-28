@@ -47,8 +47,8 @@ jobs:
           # nell'orario locale italiano di questa fascia fa sempre scattare lo
           # scraping — il dedup su viste rende innocuo un eventuale run ravvicinato.
           INIZIO_SEC=$(date -d "09:17" +%s)
-          FINE_SEC=$(date -d "19:30" +%s)
-          if [ "$ORA_SEC" -ge "$INIZIO_SEC" ] && [ "$ORA_SEC" -lt "$FINE_SEC" ]; then
+          FINE_SEC=$(date -d "06:00" +%s)
+          if [ "$ORA_SEC" -ge "$INIZIO_SEC" ] || [ "$ORA_SEC" -lt "$FINE_SEC" ]; then
             SHOULD_RUN=true
           else
             SHOULD_RUN=false
