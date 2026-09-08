@@ -1471,7 +1471,17 @@ class MichaelPageScraper(BaseScraper):
         if not (1 <= mese <= 12):
             return ""
         ultimo_giorno = calendar.monthrange(anno, mese)[1]
-        return f"{anno:04d}-{mese:02d}-{ultimo_giorno:02d}"
+        try:
+            data = datetime(anno, mese, ultimo_giorno).date()
+        except ValueError:
+            return ""
+        # Mai una data futura: per il mese CORRENTE la fine del mese non è ancora
+        # arrivata, e in email compariva "Data: 2026-09-30" su un'offerta ricevuta
+        # l'8 settembre (visto nella mail reale dell'08/09). Si taglia a oggi: la
+        # stima dell'età resta la più prudente possibile e la data mostrata resta
+        # una data plausibile di pubblicazione.
+        oggi = datetime.now().date()
+        return min(data, oggi).isoformat()
 
     def _parse_json_ld(self, soup, base_url):
         import json
