@@ -1,6 +1,7 @@
 import os
 import re
 import time
+import calendar
 import json
 import shutil
 import logging
@@ -1445,14 +1446,23 @@ class MichaelPageScraper(BaseScraper):
 
     @staticmethod
     def _data_da_ref(link):
-        """Data di pubblicazione approssimata (primo del mese) ricavata dal
-        riferimento nell'URL, es. ".../ref/jn-052026-7024452" -> maggio 2026.
-        Il percorso di fallback HTML di questo portale non espone alcuna data
-        (le pagine categoria non hanno JSON-LD, verificato dal vivo), quindi
-        senza questo il filtro di freschezza non potrebbe mai applicarsi a
-        MichaelPage — che è proprio il portale su cui si sono osservati annunci
-        di mesi prima presentati come nuovi. Ritorna "" se il ref non c'è o non
-        ha il formato atteso: nessuna data significa nessun filtro, mai uno scarto.
+        """Data di pubblicazione ricavata dal riferimento nell'URL, es.
+        ".../ref/jn-052026-7024452" -> maggio 2026. Il percorso di fallback HTML
+        di questo portale non espone alcuna data (le pagine categoria non hanno
+        JSON-LD, verificato dal vivo), quindi senza questo il filtro di
+        freschezza non potrebbe mai applicarsi a MichaelPage — che è proprio il
+        portale su cui si sono osservati annunci di mesi prima presentati come
+        nuovi. Ritorna "" se il ref manca o ha un formato inatteso: nessuna data
+        significa nessun filtro, mai uno scarto.
+
+        Si restituisce l'ULTIMO giorno del mese, non il primo: il ref dà solo la
+        precisione del mese, e approssimare al primo giorno gonfia l'età fino a
+        30 giorni: nel test dell'08/09/2026 tutti gli annunci di agosto
+        risultavano "di 38 giorni" e venivano scartati, mentre un annuncio del
+        30 agosto ne aveva 9. Con la fine del mese la stima dell'età è sempre la
+        più prudente possibile, quindi il filtro non scarta mai un annuncio che
+        potrebbe essere recente — continua invece a tagliare i mesi davvero
+        vecchi, che è ciò che serve.
         """
         match = re.search(r"/ref/jn-(\d{2})(\d{4})-", link or "")
         if not match:
@@ -1460,7 +1470,8 @@ class MichaelPageScraper(BaseScraper):
         mese, anno = int(match.group(1)), int(match.group(2))
         if not (1 <= mese <= 12):
             return ""
-        return f"{anno:04d}-{mese:02d}-01"
+        ultimo_giorno = calendar.monthrange(anno, mese)[1]
+        return f"{anno:04d}-{mese:02d}-{ultimo_giorno:02d}"
 
     def _parse_json_ld(self, soup, base_url):
         import json
