@@ -415,9 +415,79 @@ _CV_GAP = {
     "Adobe Analytics": ["adobe analytics", "adobe experience cloud", "adobe campaign"],
 }
 
+# ==========================================
+# REQUISITI BLOCCANTI E PENALITÀ
+# ==========================================
+# Il vecchio punteggio era una pura copertura di keyword:
+#     coverage = trovati / (trovati + gap);  score = 15 + coverage * 80
+# Contava le parole del CV presenti nell'annuncio, quindi un annuncio che ne
+# nominava molte e non intercettava alcun gap arrivava a 95 A PRESCINDERE dai
+# requisiti che il candidato non soddisfa. È così che un "Responsabile
+# Commerciale - INGLESE/TEDESCO" ha preso 95: nel testo c'erano B2B, budget,
+# KPI, stakeholder, e il tedesco non pesava nulla.
+# Le penalità qui sotto rendono il punteggio una stima di IDONEITÀ, non di
+# somiglianza: ogni requisito esplicito che il profilo non soddisfa sottrae
+# punti e finisce nella motivazione, così si vede subito perché.
+
+# Anni di esperienza richiesti dall'annuncio. Il CV copre il 2022-oggi con
+# ruoli manageriali (più la fondazione dell'azienda): oltre gli 8 anni la
+# richiesta non è soddisfatta.
+ANNI_ESPERIENZA_CV = 8
+_RE_ANNI_ESPERIENZA = re.compile(
+    r"(?:almeno\s+|minimo\s+|min\.?\s*|oltre\s+|)(\d{1,2})\s*\+?\s*"
+    r"(?:anni|years?)(?:\s+di)?\s*(?:esperienz|experience|seniority)",
+    re.IGNORECASE,
+)
+
+# Requisiti che, se presenti nell'annuncio, il profilo NON soddisfa.
+# Il peso è la penalità in punti percentuali.
+_PENALITA_REQUISITI = {
+    # Radici, non parole intere: gli annunci declinano al femminile ("ottima
+    # conoscenza della lingua tedesca") e con "tedesco" secco la penalita' non
+    # scattava — verificato con un caso reale che restava a 95.
+    "Lingua non posseduta": (25, [
+        "tedesc", "german", "deutsch", "frances", "french", "spagnol",
+        "spanish", "lingua russ", "cines", "chinese", "portoghes", "arab",
+    ]),
+    "Salesforce richiesto": (10, ["salesforce"]),
+    "Marketo / Eloqua / Adobe": (8, ["marketo", "eloqua", "adobe campaign", "adobe analytics"]),
+    "SQL / Python avanzati": (8, ["sql avanzato", "python", "power bi developer", "data engineering"]),
+    "Settore regolamentato o distante": (12, [
+        "farmaceut", "pharma", "dispositivi medici", "life science",
+        "bancario", "banking", "assicurativ", "credito al consumo",
+    ]),
+    "Settore luxury / fashion": (8, ["luxury", "alta moda", "haute couture"]),
+}
+
+# Segnali che l'annuncio cerca un profilo di seniority molto superiore. Non
+# sono un gap di competenza ma di scala: candidarsi non porta a nulla.
+_SEGNALI_SOVRA_SENIORITY = [
+    "chief executive officer", "amministratore delegato", "direttore generale",
+    "general manager", "vice president", "svp ", "evp ",
+]
+
+
+def _penalita_esperienza(testo: str):
+    """(penalità, etichetta) per gli anni di esperienza richiesti in eccesso.
+    Si prende la richiesta PIÙ ALTA presente nel testo: un annuncio che cita
+    più soglie ("3 anni nel ruolo, 10 nel settore") è vincolato dalla maggiore."""
+    anni_richiesti = [int(m) for m in _RE_ANNI_ESPERIENZA.findall(testo)]
+    anni_richiesti = [a for a in anni_richiesti if 1 <= a <= 30]
+    if not anni_richiesti:
+        return 0, None
+    massimo = max(anni_richiesti)
+    if massimo <= ANNI_ESPERIENZA_CV:
+        return 0, None
+    # 4 punti per ogni anno mancante, fino a un tetto di 20.
+    return min(20, (massimo - ANNI_ESPERIENZA_CV) * 4), f"{massimo} anni richiesti"
+
+
 def calcola_probabilita_callback(testo: str) -> tuple:
     """Stima la probabilità (0-100) di essere richiamato, confrontando il testo
-    dell'offerta con il profilo di Giovanni. Ritorna (probabilita, motivazione)."""
+    dell'offerta con il profilo di Giovanni. Ritorna (probabilita, motivazione).
+
+    Due componenti: quanto il profilo copre ciò che l'annuncio chiede, MENO le
+    penalità per i requisiti espliciti che non soddisfa."""
     t = testo.lower()
 
     trovati = [label for label, kws in _CV_HA.items() if any(kw in t for kw in kws)]
@@ -431,20 +501,48 @@ def calcola_probabilita_callback(testo: str) -> tuple:
     score = int(15 + coverage * 80)
     if len(trovati) >= 8:
         score = min(95, score + 5)
-    score = max(15, min(95, score))
+
+    # --- penalità ---
+    penalita = []
+    for etichetta, (peso, chiavi) in _PENALITA_REQUISITI.items():
+        if any(k in t for k in chiavi):
+            score -= peso
+            penalita.append(etichetta)
+
+    peso_anni, etichetta_anni = _penalita_esperienza(t)
+    if peso_anni:
+        score -= peso_anni
+        penalita.append(etichetta_anni)
+
+    if any(seg in t for seg in _SEGNALI_SOVRA_SENIORITY):
+        score -= 15
+        penalita.append("seniority molto superiore")
+
+    # Un annuncio che non nomina quasi nulla del profilo non merita un punteggio
+    # alto solo perché non ha gap: senza questo, tre keyword generiche e zero gap
+    # davano coverage 1.0 e quindi 95.
+    if len(trovati) <= 2:
+        score = min(score, 60)
+
+    score = max(5, min(95, score))
 
     ha_str = ", ".join(trovati[:4])
     if len(trovati) > 4:
         ha_str += f" (+{len(trovati) - 4} altri)"
 
-    if gap:
-        motivazione = f"Hai: {ha_str}. Gap: {', '.join(gap[:3])}"
-    elif trovati:
-        motivazione = f"Hai: {ha_str}. Nessun gap rilevato"
+    parti = []
+    if trovati:
+        parti.append(f"Hai: {ha_str}")
     else:
-        motivazione = "Nessuna competenza rilevata nel testo"
+        parti.append("Nessuna competenza rilevata nel testo")
+    if gap:
+        parti.append(f"Gap: {', '.join(gap[:3])}")
+    if penalita:
+        parti.append(f"Non soddisfi: {', '.join(penalita[:3])}")
+    if not gap and not penalita and trovati:
+        parti.append("Nessun gap rilevato")
 
-    return score, motivazione
+    return score, ". ".join(parti)
 
 
 def detect_work_mode(text: str) -> str:
@@ -901,9 +999,11 @@ TITLE_EXCLUSIONS = [
     # "gradito". Osservato dal vivo nella mail dell'08/09: "Responsabile
     # Commerciale - INGLESE/TEDESCO o FRANCESE/INGLESE" arrivava al 95%, ma
     # entrambe le combinazioni richiedono una lingua che il candidato non ha.
-    "tedesco", "german", "deutsch", "francese", "french", "spagnolo", "spanish",
-    "portoghese", "russo", "cinese", "chinese", "arabo", "arabic",
-    "olandese", "dutch", "polacco", "polish", "madrelingua", "native speaker",
+    # Radici anche qui, per coerenza con _PENALITA_REQUISITI: un titolo puo'
+    # declinare al femminile ("lingua tedesca") esattamente come il corpo.
+    "tedesc", "german", "deutsch", "frances", "french", "spagnol", "spanish",
+    "portoghes", "cines", "chinese", "arabo", "arabic",
+    "olandes", "dutch", "polacc", "polish", "madrelingua", "native speaker",
 
     # Ruoli di prodotto/settore finance e RevOps: fuori perimetro per esplicita
     # indicazione dell'utente ("digital payments non è una mia posizione, e
