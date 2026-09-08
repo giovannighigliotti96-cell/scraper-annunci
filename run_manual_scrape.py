@@ -16,7 +16,7 @@ from scraper import (
     ReverseGroupScraper, AdamiScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
-    dedup_offerte
+    dedup_offerte, aggiorna_stato_portali
 )
 from state_io import atomic_write_json
 
@@ -46,6 +46,11 @@ if __name__ == "__main__":
     print()
 
     tutte_le_offerte = []
+    # Conteggio delle offerte GREZZE per portale (prima dei filtri città/modalità),
+    # sommato sulle tre città: alimenta il canarino salute-portali che segnala in
+    # email un portale fermo a zero da troppi run — vedi aggiorna_stato_portali().
+    conteggi_grezzi = {s.portal_name: 0 for s in scrapers}
+    errori_portali = {}
 
     for city_name, city_config in CITIES.items():
         print(f"  {city_name}:")
@@ -53,11 +58,15 @@ if __name__ == "__main__":
             print(f"    {scraper.portal_name}...", end=" ", flush=True)
             try:
                 offerte_scraper = scraper.scrape(city_name, city_config)
+                conteggi_grezzi[scraper.portal_name] += len(offerte_scraper)
                 tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
                 print(f"OK {len(offerte_scraper)} offerte")
             except Exception as e:
+                errori_portali[scraper.portal_name] = f"{type(e).__name__}: {e}"
                 print(f"ERRORE: {str(e)[:80]}")
         print()
+
+    aggiorna_stato_portali(conteggi_grezzi, errori_portali)
 
     # Deduplicazione (logica condivisa con esegui_scraping_job in scraper.py:
     # match_level/work_mode/probabilita/motivazione sono già stati calcolati una

@@ -26,7 +26,8 @@ jobs:
         id: check_time
         run: |
           ORA_ITALIA=$(TZ='Europe/Rome' date +%H:%M)
-          echo "Ora locale Italia: $ORA_ITALIA"
+          OFFSET=$(TZ='Europe/Rome' date +%z)
+          echo "Ora locale Italia: $ORA_ITALIA (offset $OFFSET)"
           SHOULD_RUN=false
           ORA_SEC=$(date -d "$ORA_ITALIA" +%s)
           TARGET_SEC=$(date -d "17:50" +%s)
@@ -34,6 +35,23 @@ jobs:
           TARGET_END_SEC=$(date -d "06:00" +%s)
           if [ "$ORA_SEC" -ge "$TARGET_SEC" ] || [ "$ORA_SEC" -lt "$TARGET_END_SEC" ]; then
             SHOULD_RUN=true
+          fi
+
+          # Selezione della cron entry corretta per la stagione corrente. La finestra
+          # oraria sopra e' volutamente larghissima (17:50 -> 06:00) per tollerare i
+          # ritardi di GitHub Actions, ma cosi' ENTRAMBE le entry DST la superano e
+          # l'email viene inviata DUE volte al giorno (osservato dal vivo ogni giorno
+          # dal 29/08: due run "Invio email giornaliera", la seconda sempre vuota
+          # perche' la prima ha gia' svuotato offerte_giornaliere.json).
+          # Si esegue solo l'entry che corrisponde all'offset UTC reale di oggi:
+          # CEST (+0200, estate) -> '5 16', CET (+0100, inverno) -> '5 17'.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            SCHED="${{ github.event.schedule }}"
+            if [ "$OFFSET" = "+0200" ]; then ATTESA='5 16 * * *'; else ATTESA='5 17 * * *'; fi
+            if [ "$SCHED" != "$ATTESA" ]; then
+              echo "Cron entry '$SCHED' non e' quella della stagione corrente ('$ATTESA'): salto per non inviare due email."
+              SHOULD_RUN=false
+            fi
           fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             SHOULD_RUN=true
@@ -91,6 +109,12 @@ jobs:
           # svuotato daily_prospects.json solo se conteneva prospect e l'invio è
           # riuscito) prima che git reset --hard lo sovrascriva con la versione remota.
           cp daily_prospects.json /tmp/prospects_after_run.json 2>/dev/null || echo '[]' > /tmp/prospects_after_run.json
+          # Stesso motivo per lo storico delle offerte recapitate, che invia_email()
+          # aggiorna solo dopo un invio SMTP riuscito: senza questo backup il
+          # git reset --hard qui sotto lo riporterebbe alla versione remota
+          # pre-invio e la traccia di ciò che è stato mandato oggi andrebbe persa
+          # (è la lista da cui candidature.py fa scegliere cosa marcare).
+          cp storico_offerte.json /tmp/storico_after_run.json 2>/dev/null || echo '[]' > /tmp/storico_after_run.json
 
           for i in 1 2 3; do
             # Aggiorna al commit più recente del remoto (uno scraping concorrente
@@ -130,10 +154,28 @@ jobs:
           prospects_locali = load('/tmp/prospects_after_run.json', [])
           atomic_write_json('daily_prospects.json', prospects_locali, ensure_ascii=False, indent=2)
 
+          # storico_offerte.json: si riunisce lo storico locale post-invio con
+          # quello remoto per job_id, tenendo la voce locale in caso di conflitto
+          # e rispettando lo stesso tetto usato da scraper.py. L'unione (invece
+          # del semplice ripristino locale) protegge dal caso in cui il remoto
+          # contenga voci che questo runner non aveva al checkout.
+          STORICO_MAX = 400
+          storico_locale = load('/tmp/storico_after_run.json', [])
+          storico_remoto = load('storico_offerte.json', [])
+          visti = set()
+          storico_unito = []
+          for voce in storico_locale + storico_remoto:
+              chiave = voce.get('job_id')
+              if not chiave or chiave in visti:
+                  continue
+              visti.add(chiave)
+              storico_unito.append(voce)
+          atomic_write_json('storico_offerte.json', storico_unito[:STORICO_MAX], ensure_ascii=False, indent=2)
+
           print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
           EOF
 
-            git add offerte_giornaliere.json daily_prospects.json
+            git add offerte_giornaliere.json daily_prospects.json storico_offerte.json
             if git diff --staged --quiet; then
               echo "Nessuna modifica da salvare."
               exit 0

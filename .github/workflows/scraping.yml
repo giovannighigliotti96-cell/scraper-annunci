@@ -53,6 +53,28 @@ jobs:
           else
             SHOULD_RUN=false
           fi
+          # Selezione della cron entry corretta per la stagione corrente: la finestra
+          # unica e continua sopra (09:17 -> 06:00) e' superata da TUTTE e 8 le entry,
+          # quindi lo scraping girava 8 volte al giorno invece di 4 (verificato dal
+          # vivo: 8 run/giorno da ~24 minuti l'una). Ogni orario target ha una entry
+          # CEST (+0200) e una CET (+0100): si esegue solo quella dell'offset reale
+          # di oggi, mantenendo intatta la tolleranza ai ritardi di GitHub Actions.
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            OFFSET=$(TZ='Europe/Rome' date +%z)
+            SCHED="${{ github.event.schedule }}"
+            if [ "$OFFSET" = "+0200" ]; then
+              ENTRIES_STAGIONE="17 7 * * *|17 10 * * *|17 13 * * *|30 15 * * *"
+            else
+              ENTRIES_STAGIONE="17 8 * * *|17 11 * * *|17 14 * * *|30 16 * * *"
+            fi
+            case "|$ENTRIES_STAGIONE|" in
+              *"|$SCHED|"*) : ;;
+              *)
+                echo "Cron entry '$SCHED' non appartiene alla stagione corrente (offset $OFFSET): salto per non raddoppiare i run."
+                SHOULD_RUN=false
+                ;;
+            esac
+          fi
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             SHOULD_RUN=true
           fi
@@ -98,6 +120,10 @@ jobs:
           # rimosso dal remoto perché inviate — usarlo qui le "resusciterebbe".
           cp offerte_viste.json /tmp/run_viste.json
           cp nuove_offerte_run.json /tmp/run_gior.json
+          # Salute portali: stato locale appena calcolato da questo run. Va
+          # committato perché email.yml gira su un runner diverso e lo legge dal
+          # repo per segnalare i portali fermi a zero da giorni.
+          cp stato_portali.json /tmp/run_stato_portali.json 2>/dev/null || echo '{}' > /tmp/run_stato_portali.json
 
           for i in 1 2 3; do
             # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
@@ -137,10 +163,16 @@ jobs:
           atomic_write_json('offerte_viste.json', merged_viste, ensure_ascii=False, indent=2)
           atomic_write_json('offerte_giornaliere.json', merged_gior, ensure_ascii=False, indent=2)
 
+          # stato_portali.json: si prende la versione di QUESTO run così com'è.
+          # I contatori sono per-run e questo workflow ha concurrency di gruppo
+          # "scraping", quindi non ci sono due run di scraping concorrenti da
+          # fondere: l'ultimo che finisce ha lo stato più aggiornato.
+          atomic_write_json('stato_portali.json', load('/tmp/run_stato_portali.json', {}), ensure_ascii=False, indent=2)
+
           print(f"Merge OK: {len(merged_viste)} URL visti, {len(merged_gior)} offerte oggi")
           EOF
 
-            git add offerte_viste.json offerte_giornaliere.json
+            git add offerte_viste.json offerte_giornaliere.json stato_portali.json
             if git diff --staged --quiet; then
               echo "Nessuna modifica da salvare."
               exit 0
