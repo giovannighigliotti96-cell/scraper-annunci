@@ -4,6 +4,7 @@ import time
 import json
 import shutil
 import logging
+import html as html_lib
 import socket
 import ipaddress
 import urllib.parse
@@ -91,6 +92,26 @@ CITIES = {
 LOG_FILE = "scraping_log.txt"
 VISTE_FILE = "offerte_viste.json"
 GIORNALIERE_FILE = "offerte_giornaliere.json"
+# Salute dei portali: quante offerte GREZZE (prima dei filtri città/modalità) ha
+# restituito ciascun portale nell'ultimo run, e se ha sollevato un errore.
+# Serve da canarino: il modo in cui questa piattaforma si è rotta in passato non
+# è stato un crash ma il silenzio — Adami e IQMSelezione restituivano 0 offerte
+# da settimane per un selettore morto e una URL sbagliata, e nulla lo segnalava
+# perché "0 offerte" è indistinguibile da "oggi non c'era nulla" nei log.
+STATO_PORTALI_FILE = "stato_portali.json"
+
+# Storico delle offerte effettivamente RECAPITATE via email. Serve perché
+# offerte_giornaliere.json viene svuotato subito dopo ogni invio riuscito: senza
+# questo file non esisterebbe più, il giorno dopo, alcuna traccia di cosa è stato
+# proposto, e `candidature.py` non avrebbe una lista da cui far scegliere.
+STORICO_OFFERTE_FILE = "storico_offerte.json"
+STORICO_OFFERTE_MAX = 400  # tetto: tiene le più recenti, il file resta piccolo e committabile
+
+# Candidature inviate davvero, indicizzate per job_id. Le aggiorna `candidature.py`.
+CANDIDATURE_FILE = "candidature.json"
+
+# Quante offerte mostrare nella sezione "da guardare per prime" in cima all'email.
+TOP_OFFERTE_IN_EVIDENZA = 10
 CV_FILE = "cv_ghigliotti.pdf"
 
 def valida_credenziali_email():
@@ -127,8 +148,49 @@ TARGET_SKILLS = [
     "marketing automation", "revenue", "kpi", "team management"
 ]
 
+# Il CV .docx è la stessa versione del PDF ma con testo ESTRAIBILE PULITO.
+# PyPDF2 sul PDF restituisce testo spezzato dal kerning ("m arketing",
+# "R id e finizio ne", "b usine ss"): quel testo è la base sia delle keyword di
+# match sia del CV inviato all'LLM, quindi il danno si propaga a tutto lo
+# scoring — verificato dal vivo l'08/09/2026 confrontando le due estrazioni
+# ("marketing automation" e "crm" non risultavano presenti nel CV pur essendoci).
+# Si legge quindi il .docx quando disponibile, con il PDF come fallback.
+CV_DOCX_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "cv_template", "Giovanni Ghigliotti CV___2026.docx")
+
+
+def _estrai_testo_docx(docx_path):
+    """Testo integrale del CV dal .docx (paragrafi + tabelle). Ritorna "" se il
+    file non c'è o python-docx non è installato: chi chiama ricade sul PDF."""
+    if not os.path.exists(docx_path):
+        return ""
+    try:
+        import docx as _docx
+        documento = _docx.Document(docx_path)
+        parti = [p.text for p in documento.paragraphs if p.text and p.text.strip()]
+        for tabella in documento.tables:
+            for riga in tabella.rows:
+                for cella in riga.cells:
+                    if cella.text and cella.text.strip():
+                        parti.append(cella.text)
+        return "\n".join(parti).strip()
+    except Exception as e:
+        logging.warning(f"Estrazione CV da .docx fallita ({docx_path}): {e} — uso il PDF.")
+        return ""
+
+
 def estrai_keyword_cv(pdf_path):
     cv_skills = set()
+    testo_docx = _estrai_testo_docx(CV_DOCX_FILE)
+    if testo_docx:
+        testo_docx_lower = testo_docx.lower()
+        for skill in TARGET_SKILLS:
+            if skill in testo_docx_lower:
+                cv_skills.add(skill)
+        if cv_skills:
+            logging.info(f"Trovate {len(cv_skills)} competenze nel CV (.docx): {', '.join(sorted(cv_skills))}")
+            return list(cv_skills)
+
     if not os.path.exists(pdf_path):
         logging.warning(f"File CV {pdf_path} non trovato. Verrà usata la lista base completa.")
         return TARGET_SKILLS
@@ -166,7 +228,11 @@ CV_SKILLS = estrai_keyword_cv(CV_FILE)
 def estrai_testo_cv(pdf_path):
     """Estrae il testo integrale del CV (non solo le keyword), per il match
     semantico via LLM in valuta_match_candidato(). Non abbassa il case: i nomi
-    propri/acronimi aiutano il modello a leggere meglio il documento."""
+    propri/acronimi aiutano il modello a leggere meglio il documento.
+    Preferisce il .docx (testo pulito) al PDF, vedi _estrai_testo_docx."""
+    testo_docx = _estrai_testo_docx(CV_DOCX_FILE)
+    if testo_docx:
+        return testo_docx
     if not os.path.exists(pdf_path):
         return ""
     try:
@@ -405,10 +471,17 @@ def detect_work_mode(text: str) -> str:
     if any(p in t for p in remote_patterns):
         return "da remoto"
 
-    # In sede — "in presenza" rimosso perché ambiguo nei contratti ibridi
+    # In sede — "in presenza" rimosso perché ambiguo nei contratti ibridi.
+    # "sede di lavoro" e "presso la sede" RIMOSSI: non sono indicatori di modalità
+    # ma etichette di LUOGO presenti praticamente in ogni annuncio italiano
+    # ("Sede di lavoro: Milano"). Classificavano quindi come "in sede" la quasi
+    # totalità degli annunci, che filtra_offerte_per_citta scarta silenziosamente
+    # per Milano e Torino (filter_hybrid_only=True) — cioè i due mercati più
+    # grandi perdevano quasi tutte le offerte prima ancora di essere valutate.
+    # Restano solo i pattern che descrivono davvero la modalità di lavoro.
     onsite_patterns = ["in sede", "on-site", "onsite", "presenza obbligatoria",
                        "lavoro in ufficio", "presenza in ufficio", "giorni in ufficio",
-                       "giorni a settimana in ufficio", "presso la sede", "sede di lavoro",
+                       "giorni a settimana in ufficio",
                        "5 giorni su 5", "5 days"]
     if any(p in t for p in onsite_patterns):
         return "in sede"
@@ -602,6 +675,62 @@ EXACT_TITLES = [
     "responsabile sales & marketing",
     "responsabile sales e marketing",
     "direttore marketing",
+
+    # --- Livello "Head of" e C-level ---
+    # Verificato dal vivo (test end-to-end 08/09/2026, MichaelPage e Hays):
+    # "Head of Marketing" e "Head of Digital Marketing FMCG" venivano SCARTATI,
+    # pur essendo esattamente il livello del candidato — l'unica variante
+    # "head of" presente era "head of growth". Un intero livello di seniority
+    # (quello a cui il CV punta) era strutturalmente invisibile allo scraper.
+    "head of marketing",
+    "head of digital marketing",
+    "head of sales",
+    "head of sales and marketing",
+    "head of sales & marketing",
+    "head of marketing and sales",
+    "head of marketing & sales",
+    "head of business development",
+    "head of commercial",
+    "head of revenue",
+    "head of e-commerce",
+    "head of ecommerce",
+    "head of demand generation",
+    "head of performance marketing",
+    "head of b2b marketing",
+    "chief marketing officer",
+    "chief revenue officer",
+    "chief commercial officer",
+
+    # --- Business Development / Commerciale ---
+    # Il CV ha una linea intera "Digital Sales & Business Development Lead" e
+    # ownership su revenue/P&L: i ruoli BizDev e commerciali di livello manager
+    # sono target diretti, ma nessuna variante era in lista (osservati scartati
+    # dal vivo su Hays: "Business Development Manager", "Business Developer").
+    "business development manager",
+    "business development director",
+    "business development lead",
+    "business developer",
+    "sales director",
+    "commercial manager",
+    "commercial director",
+    "direttore commerciale",
+    "responsabile commerciale",
+    "responsabile sviluppo commerciale",
+    "responsabile business development",
+    "country manager",
+
+    # --- Digital / E-commerce / Revenue ---
+    "e-commerce manager",
+    "ecommerce manager",
+    "e-commerce director",
+    "digital manager",
+    "digital director",
+    "responsabile e-commerce",
+    "responsabile digital",
+    "revenue manager",
+    "revenue operations manager",
+    "marketing lead",
+    "growth lead",
 ]
 
 # Keyword di ricerca da inviare alle API/search box dei portali che supportano
@@ -612,35 +741,36 @@ EXACT_TITLES = [
 # Manpower, IQMSelezione) vedono già tutti i titoli tramite is_valid_job_title
 # e non hanno bisogno di questa lista.
 SEARCH_KEYWORDS = [
-    "Digital Sales and Marketing Manager",
-    "Growth Marketing Manager",
-    "Head of Growth",
+    # Query INVIATE ai portali con ricerca per testo (LinkedIn, LHH, Hays,
+    # GiGroup). Rifatta il 08/09/2026: la lista precedente aveva 24 voci quasi
+    # tutte long-tail ("Growth and GTM Manager", "CRM and Marketing Automation
+    # Manager", ...) che su motori a matching fuzzy restituiscono in pratica lo
+    # stesso set generico di "Marketing Manager" — costo pieno in richieste,
+    # recall aggiuntiva nulla — e nessuna copriva le famiglie di ruoli aggiunte
+    # a EXACT_TITLES (Head of / BizDev / commerciale / e-commerce), che quindi
+    # restavano invisibili proprio sui portali dove la ricerca la fa la query.
+    # Qui stanno solo query ampie, una per famiglia: il filtro fine lo applica
+    # comunque is_valid_job_title sui titoli che tornano.
+    "Marketing Manager",
+    "Marketing Director",
+    "Head of Marketing",
     "Digital Marketing Manager",
-    "Revenue Growth Manager",
-    "Go to Market Manager",
+    "Growth Manager",
+    "Head of Growth",
+    "Sales & Marketing Manager",
+    "Digital Sales Manager",
+    "Head of Sales",
+    "Business Development Manager",
     "Demand Generation Manager",
     "B2B Marketing Manager",
-    "Performance Marketing Manager",
-    "Customer Acquisition Manager",
-    "CRM and Marketing Automation Manager",
-    "Commercial Strategy Manager",
-    "Digital Sales Manager",
-    "Marketing and Sales Manager",
-    "Sales & Marketing Manager",
-    "Growth and GTM Manager",
-    "Growth Manager",
-    "Marketing Manager",
-    "Responsabile Marketing & Sales",
-    "Responsabile Sales & Marketing",
+    "E-commerce Manager",
+    "Chief Marketing Officer",
+    "Country Manager",
     "Responsabile Marketing",
-    # Varianti "Director" aggiunte insieme al livello di seniority in EXACT_TITLES:
-    # solo un sottoinsieme mirato (non tutte le 20 varianti Manager sopra) per non
-    # raddoppiare il volume di richieste a LinkedIn/LHH, già aumentato dalla
-    # paginazione introdotta sugli stessi portali.
-    "Marketing Director",
-    "Digital Marketing Director",
-    "Digital Sales and Marketing Director",
+    "Responsabile Commerciale",
+    "Direttore Commerciale",
 ]
+
 
 # Esclusioni esplicite: titoli che matchano le regole sopra ma NON vogliamo
 # Queste vengono controllate DOPO il match positivo
@@ -709,17 +839,56 @@ def _safe_str(d, key, default=""):
     return val if val else default
 
 def _eta_giorni_da_data(date_str: str):
-    """Età in giorni di una data ISO (YYYY-MM-DD, anche come prefisso di un
-    datetime completo tipo YYYY-MM-DDTHH:MM:SSZ). Ritorna None se mancante o
+    """Età in giorni di una data di pubblicazione. Ritorna None se mancante o
     non parsabile — un formato inatteso non deve mai escludere un annuncio
-    per errore, solo non applicare il filtro di freschezza a quello specifico."""
+    per errore, solo non applicare il filtro di freschezza a quello specifico.
+
+    Formati riconosciuti:
+    - ISO YYYY-MM-DD, anche come prefisso di un datetime (YYYY-MM-DDTHH:MM:SSZ)
+    - gg/mm/aaaa e gg-mm-aaaa, usati dai portali italiani (PRAXI pubblica
+      "Data pubblicazione: 03/09/2026"): prima venivano ignorati silenziosamente,
+      quindi la data c'era ma il filtro di freschezza non si applicava mai.
+    """
     if not date_str:
         return None
+    testo = str(date_str).strip()
+    oggi = datetime.now().date()
+
     try:
-        d = datetime.strptime(date_str[:10], "%Y-%m-%d").date()
-        return (datetime.now().date() - d).days
+        d = datetime.strptime(testo[:10], "%Y-%m-%d").date()
+        return (oggi - d).days
     except Exception:
-        return None
+        pass
+
+    match = re.search(r"(\d{1,2})[/-](\d{1,2})[/-](\d{4})", testo)
+    if match:
+        giorno, mese, anno = (int(g) for g in match.groups())
+        try:
+            return (oggi - datetime(anno, mese, giorno).date()).days
+        except ValueError:
+            return None
+    return None
+
+
+# Età massima di un annuncio perché arrivi in email, per i portali diversi da
+# LinkedIn (che ha una soglia propria, più stretta: vedi LinkedInScraper.MAX_ETA_GIORNI).
+# Le agenzie di ricerca e selezione lasciano gli annunci online per mesi anche
+# quando la ricerca è di fatto chiusa: verificato dal vivo l'08/09/2026 che tra
+# i risultati MichaelPage comparivano ancora ref "jn-052026", cioè annunci di
+# maggio, presentati come novità del giorno. Candidarsi a una ricerca vecchia di
+# mesi è tempo sprecato. Il filtro si applica SOLO quando la data è nota: un
+# annuncio senza data non viene mai scartato per questo motivo.
+MAX_ETA_GIORNI_ANNUNCIO = 30
+
+
+def offerta_troppo_vecchia(job) -> bool:
+    """True se l'annuncio ha una data di pubblicazione nota e più vecchia della
+    soglia. LinkedIn è escluso perché applica già la propria soglia (3 giorni)
+    a monte, dentro lo scraper."""
+    if job.portal == "LinkedIn":
+        return False
+    eta = _eta_giorni_da_data(job.date)
+    return eta is not None and eta > MAX_ETA_GIORNI_ANNUNCIO
 
 def is_valid_job_title(title: str) -> bool:
     """
@@ -822,6 +991,137 @@ def save_giornaliere(jobs_dict_list):
 
 def clear_giornaliere():
     save_giornaliere([])
+
+
+# Numero di run consecutivi a zero offerte grezze oltre il quale un portale viene
+# segnalato come probabilmente rotto nell'email. Con 4 run al giorno, 12 equivale
+# a circa tre giorni consecutivi senza che il portale restituisca NULLA: abbastanza
+# per escludere una giornata di mercato scarsa, abbastanza poco per accorgersene
+# entro pochi giorni invece che dopo settimane.
+RUN_A_ZERO_PER_ALLARME = 12
+
+
+def aggiorna_stato_portali(conteggi_grezzi, errori=None):
+    """Aggiorna il contatore di run consecutivi a zero per ogni portale.
+    `conteggi_grezzi` è {nome_portale: n_offerte_grezze} sommato su tutte le città
+    (grezze = prima dei filtri città/modalità: un portale che scarica annunci ma li
+    scarta tutti per titolo funziona, non è rotto).
+    """
+    try:
+        stato = state_io.load_json_or_raise(STATO_PORTALI_FILE, {})
+        if not isinstance(stato, dict):
+            stato = {}
+    except Exception as e:
+        logging.error(f"Errore lettura {STATO_PORTALI_FILE}, riparto da zero: {e}")
+        stato = {}
+
+    errori = errori or {}
+    for portale, n in conteggi_grezzi.items():
+        voce = stato.get(portale) or {}
+        voce["ultime_offerte"] = n
+        voce["run_a_zero"] = 0 if n > 0 else int(voce.get("run_a_zero", 0)) + 1
+        voce["ultimo_run"] = datetime.now().isoformat(timespec="seconds")
+        voce["ultimo_errore"] = errori.get(portale, "")
+        stato[portale] = voce
+
+    try:
+        _atomic_write_json(STATO_PORTALI_FILE, stato, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"Errore scrittura {STATO_PORTALI_FILE}: {e}")
+    return stato
+
+
+def carica_storico_offerte():
+    """Offerte già recapitate via email, dalla più recente. Lista di dict."""
+    try:
+        dati = state_io.load_json_or_raise(STORICO_OFFERTE_FILE, [])
+        return dati if isinstance(dati, list) else []
+    except Exception as e:
+        logging.error(f"Errore lettura {STORICO_OFFERTE_FILE}: {e}")
+        return []
+
+
+def registra_offerte_inviate(offerte):
+    """Aggiunge in testa allo storico le offerte appena recapitate, senza
+    duplicare quelle già presenti (stesso job_id) e tenendo solo le più recenti.
+    Chiamata SOLO dopo un invio SMTP riuscito: lo storico deve riflettere ciò che
+    è davvero arrivato nella casella, non ciò che si stava per inviare."""
+    storico = carica_storico_offerte()
+    gia_presenti = {voce.get("job_id") for voce in storico if isinstance(voce, dict)}
+    oggi = datetime.now().strftime("%Y-%m-%d")
+
+    nuove = []
+    for job in offerte:
+        try:
+            job_id = get_job_id(job.link)
+        except Exception:
+            continue
+        if not job_id or job_id in gia_presenti:
+            continue
+        gia_presenti.add(job_id)
+        nuove.append({
+            "job_id": job_id,
+            "data_invio": oggi,
+            "titolo": job.title,
+            "azienda": job.company,
+            "citta": job.city,
+            "portale": job.portal,
+            "probabilita": _prob_ordinabile(job),
+            "link": job.link,
+        })
+
+    if not nuove:
+        return storico
+    aggiornato = (nuove + storico)[:STORICO_OFFERTE_MAX]
+    try:
+        _atomic_write_json(STORICO_OFFERTE_FILE, aggiornato, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"Errore scrittura {STORICO_OFFERTE_FILE}: {e}")
+    return aggiornato
+
+
+def carica_candidature():
+    """Candidature inviate, come dict {job_id: dati}."""
+    try:
+        dati = state_io.load_json_or_raise(CANDIDATURE_FILE, {})
+        return dati if isinstance(dati, dict) else {}
+    except Exception as e:
+        logging.error(f"Errore lettura {CANDIDATURE_FILE}: {e}")
+        return {}
+
+
+def salva_candidature(candidature):
+    _atomic_write_json(CANDIDATURE_FILE, candidature, ensure_ascii=False, indent=2)
+
+
+def candidature_per_job_id():
+    """Come carica_candidature(), ma pensata per l'email: usata per segnalare
+    un'offerta che ricompare da un portale diverso (URL diverso, quindi non
+    intercettata dal dedup) e per cui però ti sei già candidato — senza questo
+    avviso si rischia una seconda candidatura alla stessa posizione."""
+    return carica_candidature()
+
+
+def portali_sospetti():
+    """Portali fermi a zero offerte grezze da troppi run consecutivi, cioè
+    probabilmente rotti (selettore cambiato, URL morta, blocco anti-bot).
+    Ritorna una lista di stringhe già pronte per l'email."""
+    try:
+        stato = state_io.load_json_or_raise(STATO_PORTALI_FILE, {})
+    except Exception:
+        return []
+    if not isinstance(stato, dict):
+        return []
+    righe = []
+    for portale, voce in sorted(stato.items()):
+        if not isinstance(voce, dict):
+            continue
+        zeri = int(voce.get("run_a_zero", 0) or 0)
+        if zeri >= RUN_A_ZERO_PER_ALLARME:
+            errore = voce.get("ultimo_errore") or ""
+            righe.append(f"{portale}: 0 offerte da {zeri} run consecutivi"
+                         + (f" (ultimo errore: {errore[:80]})" if errore else ""))
+    return righe
 
 # ==========================================
 # CLASSI SCRAPERS PER SINGOLI PORTALI
@@ -1126,6 +1426,7 @@ class MichaelPageScraper(BaseScraper):
                             if is_valid_job_title(title):
                                 match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
                                 jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                                       date=self._data_da_ref(link),
                                                        match_level=match_level, match_count=match_count,
                                                        city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     # Nessun link nuovo su questa pagina: oltre l'ultima pagina reale
@@ -1141,6 +1442,25 @@ class MichaelPageScraper(BaseScraper):
         if not jobs:
             logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
+
+    @staticmethod
+    def _data_da_ref(link):
+        """Data di pubblicazione approssimata (primo del mese) ricavata dal
+        riferimento nell'URL, es. ".../ref/jn-052026-7024452" -> maggio 2026.
+        Il percorso di fallback HTML di questo portale non espone alcuna data
+        (le pagine categoria non hanno JSON-LD, verificato dal vivo), quindi
+        senza questo il filtro di freschezza non potrebbe mai applicarsi a
+        MichaelPage — che è proprio il portale su cui si sono osservati annunci
+        di mesi prima presentati come nuovi. Ritorna "" se il ref non c'è o non
+        ha il formato atteso: nessuna data significa nessun filtro, mai uno scarto.
+        """
+        match = re.search(r"/ref/jn-(\d{2})(\d{4})-", link or "")
+        if not match:
+            return ""
+        mese, anno = int(match.group(1)), int(match.group(2))
+        if not (1 <= mese <= 12):
+            return ""
+        return f"{anno:04d}-{mese:02d}-01"
 
     def _parse_json_ld(self, soup, base_url):
         import json
@@ -1505,7 +1825,12 @@ class IQMSelezioneScraper(BaseScraper):
         # Pagina unica nazionale: scarica una sola volta per evitare 3x chiamate identiche
         if city_name != "Genova":
             return []
-        url = "https://www.iqmselezione.it/posizioni-aperte-in-iqmselezione.php"
+        # ricerche-in-corso.php, NON posizioni-aperte-in-iqmselezione.php:
+        # quest'ultima (usata fin qui) è la pagina delle posizioni aperte DENTRO
+        # IQM stessa e contiene un solo annuncio, mentre l'elenco delle ricerche
+        # svolte per i clienti — quello che serve — sta su ricerche-in-corso.php.
+        # Verificato dal vivo l'08/09/2026: 196 annunci contro 1.
+        url = "https://www.iqmselezione.it/ricerche-in-corso.php"
         headers = {
             "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
@@ -1944,79 +2269,84 @@ class ReverseGroupScraper(BaseScraper):
 
 
 class AdamiScraper(BaseScraper):
-    """Adami & Associati — WordPress/Elementor, SSR (contenuto reale già
-    nell'HTML). Ogni annuncio (article.posizioni_aperte) ha la città già
-    incorporata come classe CSS "localita_posizioni-{slug}" — non serve
-    fuzzy matching sul testo: il sito espone un archivio di tassonomia
-    dedicato, /localita_posizioni/{slug}/, che filtra in modo REALE ed
-    ESCLUSIVO (verificato dal vivo: tutti gli annunci restituiti per
-    "milano" hanno davvero "localita_posizioni-milano" tra le classi).
-    Paginazione WordPress standard, .../page/{n}/ (verificato: Milano ha
-    6 pagine, Genova e Torino stanno su una sola pagina) — si segue finché
-    l'ultima pagina non ha meno di 23 articoli (il conteggio per pagina
-    osservato) o non c'è più nulla.
-    """
-    _RISULTATI_PER_PAGINA = 23
+    """Adami & Associati — WordPress/Elementor, SSR.
 
+    RISCRITTO il 08/09/2026: il sito è stato ristrutturato e la vecchia
+    implementazione trovava 0 annunci su ogni città (verificato dal vivo:
+    `article.posizioni_aperte`, la classe su cui si basava, non esiste più
+    nell'HTML — restituisce 0 elementi su tutte e tre le città). Ogni annuncio
+    è ora un singolo `<a class="jc">` che contiene `<h3>` (titolo),
+    `<span class="jst">` (settore) e `<span class="jm">` con due `<span>`
+    annidati (città e regione).
+
+    Anche l'archivio di tassonomia per città (/localita_posizioni/{slug}/) NON
+    filtra più: verificato dal vivo che restituisce lo stesso identico elenco
+    nazionale della pagina generica (annunci di Roma, Treviso, Parma, Verona
+    presenti nella pagina "milano"). Si scarica quindi UNA sola volta la
+    pagina nazionale e si filtra sulla città letta dalla card, che è il dato
+    reale. Nessuna paginazione server-side disponibile: /page/2/ e ?paged=2
+    restituiscono entrambi la stessa prima pagina (30 annunci totali).
+    """
     def __init__(self):
         super().__init__("Adami")
 
     def scrape(self, city_name, city_config):
         jobs = []
-        slug = city_name.lower()
-        base_url = f"https://www.adamiassociati.com/localita_posizioni/{slug}/"
+        url = "https://www.adamiassociati.com/posizioni_aperte/"
         headers = {
             "User-Agent": USER_AGENT_CHROME,
             "Accept-Language": "it-IT,it;q=0.9",
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
         }
-        seen = set()
-        MAX_PAGES = 10
-        for page in range(1, MAX_PAGES + 1):
-            url = base_url if page == 1 else f"{base_url}page/{page}/"
-            try:
-                response = requests.get(url, headers=headers, timeout=15)
-                logging.info(f"{self.portal_name} ({city_name}, pagina {page}): HTTP {response.status_code}")
-                if response.status_code != 200:
-                    break
-                soup = BeautifulSoup(response.text, "html.parser")
-                articles = soup.find_all("article", class_="posizioni_aperte")
-                if not articles:
-                    break
-                for art in articles:
-                    try:
-                        h3 = art.find("h3", class_="elementor-post__title")
-                        a = h3.find("a") if h3 else None
-                        if not a:
-                            continue
-                        title = a.get_text(strip=True)
-                        if not title or not is_valid_job_title(title):
-                            continue
-                        link = a.get("href", "")
-                        if not link:
-                            continue
-                        link = link.split("?")[0]
-                        if link in seen:
-                            continue
-                        seen.add(link)
-                        excerpt_elem = art.select_one("div.elementor-post__excerpt p")
-                        snippet = excerpt_elem.get_text(strip=True) if excerpt_elem else ""
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
-                        jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                               snippet=snippet[:150] + "..." if snippet else "",
-                                               match_level=match_level, match_count=match_count,
-                                               city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
-                    except Exception as e:
-                        logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
-                if len(articles) < self._RISULTATI_PER_PAGINA:
-                    break
-            except requests.exceptions.Timeout:
-                logging.error(f"{self.portal_name} ({city_name}): timeout della richiesta (pagina {page})")
-                break
-            except Exception as e:
-                logging.error(f"Errore scraping {self.portal_name} ({city_name}, pagina {page}): {e}")
-                break
-            time.sleep(1)
+        try:
+            response = requests.get(url, headers=headers, timeout=15)
+            logging.info(f"{self.portal_name} ({city_name}): HTTP {response.status_code}")
+            if response.status_code != 200:
+                logging.error(f"{self.portal_name}: HTTP {response.status_code}")
+                return jobs
+            soup = BeautifulSoup(response.text, "html.parser")
+            cards = soup.find_all("a", class_="jc", href=True)
+            if not cards:
+                logging.error(f"{self.portal_name}: nessuna card 'a.jc' trovata — struttura del sito probabilmente cambiata di nuovo.")
+                return jobs
+            seen = set()
+            for card in cards:
+                try:
+                    h3 = card.find("h3")
+                    if not h3:
+                        continue
+                    title = h3.get_text(strip=True)
+                    if not title or not is_valid_job_title(title):
+                        continue
+                    # Città della card: primo <span> dentro span.jm (il secondo
+                    # è la regione). Si confronta con la città del ciclo perché
+                    # la pagina è nazionale.
+                    jm = card.find("span", class_="jm")
+                    citta_card = ""
+                    if jm:
+                        inner = jm.find("span")
+                        if inner:
+                            citta_card = inner.get_text(strip=True)
+                    if citta_card.strip().lower() != city_name.lower():
+                        continue
+                    link = card["href"].split("?")[0]
+                    if link in seen:
+                        continue
+                    seen.add(link)
+                    settore_elem = card.find("span", class_="jst")
+                    snippet = settore_elem.get_text(strip=True) if settore_elem else ""
+                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
+                    jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                           snippet=snippet[:150],
+                                           match_level=match_level, match_count=match_count,
+                                           city=city_name, work_mode=work_mode, fetch_status=fetch_status,
+                                           probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                except Exception as e:
+                    logging.error(f"{self.portal_name}: annuncio scartato per errore di parsing: {e}")
+        except requests.exceptions.Timeout:
+            logging.error(f"{self.portal_name} ({city_name}): timeout della richiesta")
+        except Exception as e:
+            logging.error(f"Errore scraping {self.portal_name} ({city_name}): {e}")
         if not jobs:
             logging.info(f"{self.portal_name}: 0 offerte valide trovate dopo i filtri.")
         return jobs
@@ -2165,136 +2495,336 @@ def re_sub_nome_file(testo: str) -> str:
     slug = re.sub(r"[^a-zA-Z0-9]+", "_", (testo or "azienda").strip()).strip("_")
     return slug[:40] if slug else "azienda"
 
-def invia_email(nuove_offerte):
-    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
-        logging.error("Credenziali email mancanti. Controlla il file .env")
-        return False
+def _prob_ordinabile(job):
+    """int(job.probabilita) con fallback a 0: un record malformato/legacy con
+    probabilita non numerica (round-trip JSON) non deve far crashare con
+    TypeError l'ordinamento e quindi l'intero invio email."""
+    try:
+        return int(job.probabilita)
+    except (TypeError, ValueError):
+        return 0
 
-    data_oggi = datetime.now().strftime("%d/%m/%Y")
-    
-    msg = MIMEMultipart()
-    msg['From'] = GMAIL_USER
-    msg['To'] = DESTINATION_EMAIL
-    msg['Subject'] = f"[Job Alert] Nuove offerte Multi-City - {data_oggi}"
-    
-    body = ""
-    allegati_cv = []  # lista di dict {"docx_path": ..., "nome_file": ...} da allegare dopo il body
+
+def _fascia_probabilita(prob):
+    """(etichetta testuale, colore HTML) per la fascia di probabilità."""
+    if prob >= 75:
+        return "ALTA", "#1a7f37"
+    if prob >= 50:
+        return "MEDIA", "#9a6700"
+    return "BASSA", "#b42318"
+
+
+def _prepara_allegati_cv(offerte_ordinate):
+    """Genera i CV personalizzati per le offerte sopra soglia, entro il budget di
+    tempo, e ritorna (allegati, info_per_offerta).
+
+    Separato dal rendering del corpo email perché ora le versioni testo e HTML
+    sono due: generare i CV dentro il loop di rendering, com'era prima, li
+    avrebbe generati due volte (due chiamate LLM a pagamento per offerta).
+    `info_per_offerta` è indicizzato per id() dell'oggetto job, chiave stabile
+    e priva di collisioni finché la lista resta viva nel chiamante.
+
+    Le offerte arrivano già ordinate per punteggio decrescente, quindi se il
+    budget di tempo si esaurisce a essere tagliate fuori sono le offerte con
+    match più basso, non quelle arrivate per ultime da uno scraper qualsiasi.
+    """
+    allegati = []
+    info = {}
+    if not CV_PERSONALIZZAZIONE_DISPONIBILE:
+        return allegati, info
+
     # Ogni CV personalizzato può richiedere fino a due chiamate LLM sequenziali
     # (proposta + verifica) di diversi minuti ciascuna: con più offerte >=80% lo
     # stesso giorno il tempo si somma senza limite. Questo budget evita che l'invio
     # email si blocchi per troppo tempo — oltre la soglia, le offerte restanti
     # vengono comunque incluse nell'email ma senza CV personalizzato allegato.
-    cv_personalizzazione_scadenza = time.monotonic() + CV_PERSONALIZZAZIONE_BUDGET_SECONDI
-    cv_budget_esaurito_loggato = False
-    if not nuove_offerte:
+    scadenza = time.monotonic() + CV_PERSONALIZZAZIONE_BUDGET_SECONDI
+    budget_esaurito_loggato = False
+
+    for job in offerte_ordinate:
+        prob = _prob_ordinabile(job)
+        if prob < SOGLIA_CV_PERSONALIZZATO:
+            continue
+        if time.monotonic() >= scadenza:
+            if not budget_esaurito_loggato:
+                logging.warning(
+                    f"Budget di tempo per la personalizzazione CV esaurito "
+                    f"({CV_PERSONALIZZAZIONE_BUDGET_SECONDI}s): le offerte >= {SOGLIA_CV_PERSONALIZZATO}% "
+                    f"restanti vengono incluse nell'email senza CV personalizzato allegato."
+                )
+                budget_esaurito_loggato = True
+            continue
+        try:
+            risultato_cv = genera_cv_per_offerta(job.title, job.link, job_city=job.city, job_text=job.testo_completo)
+        except Exception as e:
+            logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
+            continue
+        docx_path = risultato_cv.get("docx_path") if risultato_cv else None
+        if risultato_cv and docx_path:
+            indice = len(allegati) + 1
+            nome_file = f"CV_Ghigliotti_{indice}_{re_sub_nome_file(job.company)}.docx"
+            allegati.append({"docx_path": docx_path, "nome_file": nome_file})
+            info[id(job)] = {"indice": indice, "riepilogo": risultato_cv.get("riepilogo", [])}
+        elif risultato_cv:
+            # risultato_cv presente ma senza docx_path: forma inattesa, non deve
+            # mai far crashare invia_email (perderebbe l'intera email del giorno).
+            logging.error(f"genera_cv_per_offerta ha ritornato una forma inattesa per '{job.title}': {risultato_cv!r}")
+    return allegati, info
+
+
+def _carica_prospects():
+    """Prospect del giorno da daily_prospects.json. Il file viene solo letto qui,
+    MAI svuotato: se l'invio fallisse dopo aver già svuotato il file, i prospect
+    andrebbero persi senza essere mai stati recapitati. Lo svuotamento avviene
+    solo dopo un invio SMTP riuscito."""
+    percorso = "daily_prospects.json"
+    if not os.path.exists(percorso):
+        return []
+    try:
+        with open(percorso, "r", encoding="utf-8") as f:
+            return json.load(f) or []
+    except Exception as e:
+        logging.error(f"Errore caricamento prospect: {e}")
+        return []
+
+
+def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato):
+    """Versione testo semplice del corpo email: fallback per i client che non
+    renderizzano HTML, e copia leggibile del contenuto."""
+    body = ""
+    if not offerte_ordinate:
         body += "Nessuna nuova offerta oggi.\n\n"
     else:
-        # Raggruppa per città
-        offerte_per_citta = {}
-        for job in nuove_offerte:
-            citta = job.city if job.city else "Altro"
-            if citta not in offerte_per_citta:
-                offerte_per_citta[citta] = []
-            offerte_per_citta[citta].append(job)
+        body += f"Trovate {len(offerte_ordinate)} nuove offerte oggi, ordinate per affinità col CV:\n\n"
 
-        body += f"Trovate {len(nuove_offerte)} nuove offerte oggi, ordinate per affinità col CV:\n\n"
+        top = offerte_ordinate[:TOP_OFFERTE_IN_EVIDENZA]
+        if len(offerte_ordinate) > len(top):
+            body += "===============================\n"
+            body += f"LE {len(top)} DA GUARDARE PER PRIME\n"
+            body += "===============================\n\n"
+            for i, job in enumerate(top, 1):
+                prob = _prob_ordinabile(job)
+                etichetta, _ = _fascia_probabilita(prob)
+                body += f"{i}. [{prob}% {etichetta}] {job.title} - {job.company} ({job.city})\n"
+                body += f"   {job.link}\n"
+            body += "\n"
 
         for citta, offerte_citta in offerte_per_citta.items():
-            # int(...) con fallback a 0 invece di affidarsi al tipo grezzo: un record
-            # malformato/legacy con probabilita non numerica (round-trip JSON) non deve
-            # far crashare con TypeError l'ordinamento e quindi l'intero invio email.
-            def _prob_ordinabile(job):
-                try:
-                    return int(job.probabilita)
-                except (TypeError, ValueError):
-                    return 0
-            offerte_citta.sort(key=_prob_ordinabile, reverse=True)
-            body += f"===============================\n"
-            body += f"📍 {citta.upper()} ({len(offerte_citta)} offerte)\n"
-            body += f"===============================\n\n"
+            body += "===============================\n"
+            body += f"{citta.upper()} ({len(offerte_citta)} offerte)\n"
+            body += "===============================\n\n"
 
             for i, job in enumerate(offerte_citta, 1):
-                # Stessa conversione sicura della sort key sopra: job.probabilita non
-                # protetto qui bloccherebbe con TypeError l'intero invio email su un
-                # record legacy/corrotto con probabilita non numerica.
                 prob = _prob_ordinabile(job)
-                if prob >= 75:
-                    prob_label = "🟢 ALTA"
-                elif prob >= 50:
-                    prob_label = "🟡 MEDIA"
-                else:
-                    prob_label = "🔴 BASSA"
+                etichetta, _ = _fascia_probabilita(prob)
                 body += f"{i}. {job.title}\n"
                 body += f"   Azienda: {job.company}\n"
                 body += f"   Città: {job.city}\n"
                 modalita_display = "Modalità non specificata nell'annuncio" if job.work_mode == "unverified" else job.work_mode.upper()
                 body += f"   Modalità: {modalita_display}\n"
                 body += f"   Portale: {job.portal}\n"
-                body += f"   Probabilità richiamata: {prob}% — {prob_label}\n"
-                body += f"   → {job.motivazione}\n"
+                body += f"   Probabilità richiamata: {prob}% - {etichetta}\n"
+                body += f"   -> {job.motivazione}\n"
                 body += f"   Match CV: {job.match_level} ({job.match_count} keyword)\n"
                 body += f"   Data: {job.date}\n"
                 body += f"   Link: {job.link}\n"
                 if job.snippet:
                     body += f"   Snippet: {job.snippet}\n"
-
-                if CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO and time.monotonic() >= cv_personalizzazione_scadenza:
-                    if not cv_budget_esaurito_loggato:
-                        logging.warning(
-                            f"Budget di tempo per la personalizzazione CV esaurito "
-                            f"({CV_PERSONALIZZAZIONE_BUDGET_SECONDI}s): le offerte >= 80% restanti "
-                            f"vengono incluse nell'email senza CV personalizzato allegato."
-                        )
-                        cv_budget_esaurito_loggato = True
-                elif CV_PERSONALIZZAZIONE_DISPONIBILE and prob >= SOGLIA_CV_PERSONALIZZATO:
-                    try:
-                        risultato_cv = genera_cv_per_offerta(job.title, job.link, job_city=job.city, job_text=job.testo_completo)
-                    except Exception as e:
-                        logging.error(f"Errore imprevisto personalizzazione CV per '{job.title}': {e}")
-                        risultato_cv = None
-                    docx_path = risultato_cv.get("docx_path") if risultato_cv else None
-                    if risultato_cv and docx_path:
-                        indice_allegato = len(allegati_cv) + 1
-                        nome_file = f"CV_Ghigliotti_{indice_allegato}_{re_sub_nome_file(job.company)}.docx"
-                        body += f"   📎 CV personalizzato allegato in Word (allegato {indice_allegato}) — apri in Word ed esporta in PDF prima di candidarti. Modifiche:\n"
-                        for riga in risultato_cv.get("riepilogo", []):
-                            body += f"      - {riga}\n"
-                        allegati_cv.append({"docx_path": docx_path, "nome_file": nome_file})
-                    elif risultato_cv:
-                        # risultato_cv presente ma senza docx_path: forma inattesa, non deve
-                        # mai far crashare invia_email (perderebbe l'intera email del giorno).
-                        logging.error(f"genera_cv_per_offerta ha ritornato una forma inattesa per '{job.title}': {risultato_cv!r}")
+                precedente = gia_candidato.get(get_job_id(job.link))
+                if precedente:
+                    body += (f"   ATTENZIONE: già in candidature dal {precedente.get('data', '?')} "
+                             f"(stato: {precedente.get('stato', '?')})\n")
+                dati_cv = info_cv.get(id(job))
+                if dati_cv:
+                    body += (f"   CV personalizzato allegato in Word (allegato {dati_cv['indice']}) - "
+                             f"apri in Word ed esporta in PDF prima di candidarti. Modifiche:\n")
+                    for riga in dati_cv["riepilogo"]:
+                        body += f"      - {riga}\n"
                 body += "\n"
 
-    body += f"Totale offerte: {len(nuove_offerte)}.\n\n"
-    
-    # --- SEZIONE COMPANY PROSPECTOR ---
-    # Il file viene solo letto qui, MAI svuotato: se l'invio fallisse dopo aver
-    # già svuotato il file, i prospect andrebbero persi senza che siano mai stati
-    # recapitati. Lo svuotamento avviene solo dopo un invio SMTP riuscito, più sotto.
-    prospects_file = "daily_prospects.json"
-    prospects_da_svuotare = False
-    if os.path.exists(prospects_file):
-        try:
-            with open(prospects_file, "r", encoding="utf-8") as f:
-                prospects = json.load(f)
-            if prospects:
-                body += "=========================================================\n"
-                body += f"🌟 COMPANY PROSPECTOR: {len(prospects)} AZIENDE TARGET SELEZIONATE OGGI\n"
-                body += "=========================================================\n\n"
-                for p in prospects:
-                    body += f"🏢 Azienda: {p.get('company', 'N/D')}\n"
-                    body += f"📍 Città: {p.get('city', 'N/D')}\n"
-                    body += f"💼 Settore: {p.get('sector', 'N/D')}\n"
-                    body += f"🔗 Lavora con noi: {p.get('career_url', 'N/D')}\n"
-                    body += f"📩 Candidatura Spontanea: {p.get('spontaneous_application', 'N/D')}\n"
-                    body += f"👤 Contatto Chiave (LinkedIn): {p.get('key_person', 'N/D')}\n"
-                    body += "---------------------------------------------------------\n\n"
-                prospects_da_svuotare = True
-        except Exception as e:
-            logging.error(f"Errore caricamento prospect: {e}")
+    body += f"Totale offerte: {len(offerte_ordinate)}.\n\n"
 
-    msg.attach(MIMEText(body, 'plain', 'utf-8'))
+    if sospetti:
+        body += "=========================================================\n"
+        body += "PORTALI DA CONTROLLARE (nessun risultato da giorni)\n"
+        body += "=========================================================\n"
+        for riga in sospetti:
+            body += f"  - {riga}\n"
+        body += "\n"
+
+    if prospects:
+        body += "=========================================================\n"
+        body += f"COMPANY PROSPECTOR: {len(prospects)} AZIENDE TARGET SELEZIONATE OGGI\n"
+        body += "=========================================================\n\n"
+        for p in prospects:
+            body += f"Azienda: {p.get('company', 'N/D')}\n"
+            body += f"Città: {p.get('city', 'N/D')}\n"
+            body += f"Settore: {p.get('sector', 'N/D')}\n"
+            body += f"Lavora con noi: {p.get('career_url', 'N/D')}\n"
+            body += f"Candidatura Spontanea: {p.get('spontaneous_application', 'N/D')}\n"
+            body += f"Contatto Chiave (LinkedIn): {p.get('key_person', 'N/D')}\n"
+            body += "---------------------------------------------------------\n\n"
+    return body
+
+
+def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, data_oggi):
+    """Versione HTML del corpo email: titolo cliccabile, punteggio a colpo
+    d'occhio e una sezione "da guardare per prime" in cima.
+    Con decine di offerte al giorno il testo semplice diventa una parete in cui
+    le offerte migliori restano sepolte a metà elenco.
+    Stili inline e nessun <style>: i client email, Gmail in testa, rimuovono o
+    ignorano i fogli di stile nel <head>."""
+    def esc(valore):
+        return html_lib.escape(str(valore or ""))
+
+    font = "font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif"
+    parti = [
+        f'<div style="{font};font-size:14px;color:#1f2328;max-width:760px;margin:0 auto;padding:8px">',
+        f'<h1 style="font-size:19px;margin:0 0 4px">Nuove offerte &mdash; {esc(data_oggi)}</h1>',
+    ]
+
+    if not offerte_ordinate:
+        parti.append('<p style="color:#59636e">Nessuna nuova offerta oggi.</p>')
+    else:
+        parti.append(f'<p style="color:#59636e;margin:0 0 18px">{len(offerte_ordinate)} offerte, ordinate per affinità col CV.</p>')
+
+        top = offerte_ordinate[:TOP_OFFERTE_IN_EVIDENZA]
+        if len(offerte_ordinate) > len(top):
+            parti.append(f'<h2 style="font-size:15px;margin:22px 0 8px">Le {len(top)} da guardare per prime</h2>')
+            parti.append('<ol style="margin:0 0 20px;padding-left:22px">')
+            for job in top:
+                prob = _prob_ordinabile(job)
+                _, colore = _fascia_probabilita(prob)
+                parti.append(
+                    f'<li style="margin-bottom:7px">'
+                    f'<b style="color:{colore}">{prob}%</b> '
+                    f'<a href="{esc(job.link)}" style="color:#0969da;text-decoration:none">{esc(job.title)}</a>'
+                    f'<span style="color:#59636e"> &mdash; {esc(job.company)} ({esc(job.city)})</span>'
+                    f'</li>'
+                )
+            parti.append('</ol>')
+
+        for citta, offerte_citta in offerte_per_citta.items():
+            parti.append(
+                f'<h2 style="font-size:15px;margin:26px 0 10px;padding-bottom:5px;'
+                f'border-bottom:2px solid #d1d9e0">{esc(citta.upper())} '
+                f'<span style="color:#59636e;font-weight:normal">({len(offerte_citta)})</span></h2>'
+            )
+            for job in offerte_citta:
+                prob = _prob_ordinabile(job)
+                etichetta, colore = _fascia_probabilita(prob)
+                modalita = "modalità non specificata" if job.work_mode == "unverified" else job.work_mode
+                parti.append(
+                    f'<div style="border:1px solid #d1d9e0;border-left:4px solid {colore};'
+                    f'border-radius:6px;padding:12px 14px;margin-bottom:12px">'
+                )
+                parti.append(
+                    f'<div style="font-size:15px;margin-bottom:3px">'
+                    f'<a href="{esc(job.link)}" style="color:#0969da;text-decoration:none;font-weight:600">{esc(job.title)}</a>'
+                    f'</div>'
+                )
+                parti.append(
+                    f'<div style="color:#59636e;margin-bottom:8px">{esc(job.company)} &middot; '
+                    f'{esc(modalita)} &middot; {esc(job.portal)} &middot; {esc(job.date)}</div>'
+                )
+                parti.append(
+                    f'<div style="margin-bottom:6px"><b style="color:{colore}">{prob}% {esc(etichetta)}</b>'
+                    f'<span style="color:#59636e"> &middot; match CV {esc(job.match_level)} '
+                    f'({job.match_count} keyword)</span></div>'
+                )
+                if job.motivazione:
+                    parti.append(f'<div style="margin-bottom:6px">{esc(job.motivazione)}</div>')
+                if job.snippet:
+                    parti.append(f'<div style="color:#59636e;font-size:13px">{esc(job.snippet)}</div>')
+                precedente = gia_candidato.get(get_job_id(job.link))
+                if precedente:
+                    parti.append(
+                        f'<div style="margin-top:8px;padding:7px 9px;background:#fff8c5;'
+                        f'border-radius:5px;font-size:13px">Gi&agrave; in candidature dal '
+                        f'{esc(precedente.get("data", "?"))} (stato: {esc(precedente.get("stato", "?"))})</div>'
+                    )
+                dati_cv = info_cv.get(id(job))
+                if dati_cv:
+                    righe = "".join(f"<li>{esc(r)}</li>" for r in dati_cv["riepilogo"])
+                    parti.append(
+                        f'<div style="margin-top:8px;padding:8px 10px;background:#ddf4ff;'
+                        f'border-radius:5px;font-size:13px"><b>CV personalizzato allegato '
+                        f'(allegato {dati_cv["indice"]})</b> &mdash; apri in Word ed esporta in PDF '
+                        f'prima di candidarti.<ul style="margin:6px 0 0;padding-left:18px">{righe}</ul></div>'
+                    )
+                parti.append('</div>')
+
+    if sospetti:
+        righe = "".join(f"<li>{esc(r)}</li>" for r in sospetti)
+        parti.append(
+            f'<div style="margin-top:26px;padding:12px 14px;background:#fff8c5;'
+            f'border-radius:6px"><b>Portali da controllare</b> (nessun risultato da giorni)'
+            f'<ul style="margin:6px 0 0;padding-left:20px">{righe}</ul></div>'
+        )
+
+    if prospects:
+        parti.append(f'<h2 style="font-size:15px;margin:26px 0 10px">Aziende target di oggi ({len(prospects)})</h2>')
+        for p in prospects:
+            parti.append(
+                f'<div style="border:1px solid #d1d9e0;border-radius:6px;padding:11px 13px;margin-bottom:10px">'
+                f'<b>{esc(p.get("company", "N/D"))}</b>'
+                f'<div style="color:#59636e">{esc(p.get("city", "N/D"))} &middot; {esc(p.get("sector", "N/D"))}</div>'
+                f'<div style="margin-top:5px"><a href="{esc(p.get("career_url", ""))}" '
+                f'style="color:#0969da">Lavora con noi</a></div>'
+                f'<div>{esc(p.get("spontaneous_application", "N/D"))}</div>'
+                f'<div>{esc(p.get("key_person", "N/D"))}</div>'
+                f'</div>'
+            )
+
+    parti.append('</div>')
+    return "".join(parti)
+
+
+def invia_email(nuove_offerte):
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
+        logging.error("Credenziali email mancanti. Controlla il file .env")
+        return False
+
+    data_oggi = datetime.now().strftime("%d/%m/%Y")
+
+    # Un solo ordinamento globale, riusato per tre cose: la sezione "da guardare
+    # per prime", l'ordine dentro ogni città e l'ordine di generazione dei CV.
+    offerte_ordinate = sorted(nuove_offerte, key=_prob_ordinabile, reverse=True)
+
+    offerte_per_citta = {}
+    for job in offerte_ordinate:
+        offerte_per_citta.setdefault(job.city or "Altro", []).append(job)
+
+    allegati_cv, info_cv = _prepara_allegati_cv(offerte_ordinate)
+
+    try:
+        sospetti = portali_sospetti()
+    except Exception as e:
+        logging.error(f"Errore calcolo salute portali: {e}")
+        sospetti = []
+
+    try:
+        gia_candidato = candidature_per_job_id()
+    except Exception as e:
+        logging.error(f"Errore lettura candidature: {e}")
+        gia_candidato = {}
+
+    prospects = _carica_prospects()
+
+    testo = _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato)
+    corpo_html = _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, data_oggi)
+
+    # mixed( alternative(plain, html), allegati... ): dentro "alternative" le
+    # parti vanno dalla meno preferita alla più preferita, i client mostrano
+    # l'ultima che sanno renderizzare.
+    msg = MIMEMultipart("mixed")
+    msg["From"] = GMAIL_USER
+    msg["To"] = DESTINATION_EMAIL
+    msg["Subject"] = f"[Job Alert] Nuove offerte Multi-City - {data_oggi}"
+    alternative = MIMEMultipart("alternative")
+    alternative.attach(MIMEText(testo, "plain", "utf-8"))
+    alternative.attach(MIMEText(corpo_html, "html", "utf-8"))
+    msg.attach(alternative)
 
     for allegato in allegati_cv:
         try:
@@ -2325,11 +2855,18 @@ def invia_email(nuove_offerte):
                 server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
                 server.send_message(msg)
             logging.info(f"Email inviata con successo a {DESTINATION_EMAIL}")
-            if prospects_da_svuotare:
+            if prospects:
                 try:
-                    _atomic_write_json(prospects_file, [])
+                    _atomic_write_json("daily_prospects.json", [])
                 except Exception as e:
-                    logging.error(f"Errore svuotamento {prospects_file} dopo invio riuscito: {e}")
+                    logging.error(f"Errore svuotamento daily_prospects.json dopo invio riuscito: {e}")
+            # Storico delle offerte effettivamente recapitate: è la base su cui
+            # `candidature.py` fa scegliere quali marcare come candidatura, dato
+            # che offerte_giornaliere.json viene svuotato subito dopo l'invio.
+            try:
+                registra_offerte_inviate(offerte_ordinate)
+            except Exception as e:
+                logging.error(f"Errore aggiornamento storico offerte inviate: {e}")
             return True
         except Exception as e:
             import traceback
@@ -2349,6 +2886,70 @@ def invia_email(nuove_offerte):
 # ==========================================
 # MAIN JOB E SCHEDULING
 # ==========================================
+# Città target dell'utente e loro varianti/provincia, usate per riconoscere la
+# sede reale negli annunci dei portali NAZIONALI (MichaelPage, IQMSelezione,
+# PRAXI, Antal, ReverseGroup, GiGroup): questi scaricano una pagina unica non
+# filtrata per città ed etichettano tutto come city="Italia".
+CITTA_TARGET_PATTERN = {
+    "Genova": ["genova", "genoa"],
+    "Milano": ["milano", "milan ", "milan,", "milan)", "assago", "sesto san giovanni", "rho ", "segrate"],
+    "Torino": ["torino", "turin"],
+}
+
+# Altre grandi città italiane: se l'annuncio nazionale nomina SOLO una di queste
+# e nessuna città target, la sede è quasi certamente altrove e l'offerta è rumore.
+ALTRE_CITTA_ITALIANE = [
+    "roma", "napoli", "firenze", "bologna", "venezia", "verona", "padova",
+    "bari", "palermo", "catania", "bergamo", "brescia", "parma", "modena",
+    "reggio emilia", "vicenza", "treviso", "trieste", "udine", "ancona",
+    "perugia", "pescara", "cagliari", "salerno", "trento", "bolzano",
+    "varese", "como", "monza", "novara", "lecco", "pisa", "livorno",
+    "barberino", "prato", "arezzo", "siena", "rimini", "ravenna", "forli",
+]
+
+
+def rileva_citta_offerta(job):
+    """Per un'offerta di un portale nazionale (city="Italia"), cerca nel testo
+    integrale già scaricato quale sia la sede reale.
+    Ritorna il nome della città target trovata, "Italia" se non è deducibile
+    (si tiene, per non perdere un'offerta buona solo perché la sede non è
+    scritta nel testo scaricato) oppure None se l'annuncio nomina chiaramente
+    solo città NON target (rumore geografico da scartare).
+
+    Serve perché questi portali etichettano tutto come "Italia" e le offerte
+    arrivavano in email senza alcun controllo geografico: nel test end-to-end
+    del 08/09/2026 un "Marketing Manager - Outlet Village Barberino" (Firenze)
+    veniva recapitato tra i risultati di Genova."""
+    def _cerca(testo):
+        """(città target trovata, città non-target trovata) in un testo."""
+        target = next((c for c, varianti in CITTA_TARGET_PATTERN.items()
+                       if any(v in testo for v in varianti)), None)
+        altra = any(c in testo for c in ALTRE_CITTA_ITALIANE)
+        return target, altra
+
+    # Prima il titolo (+ snippet): è il segnale ad alta precisione, senza il
+    # boilerplate della pagina. Il testo integrale scaricato contiene infatti
+    # anche header, footer e i riferimenti alle sedi dell'agenzia: verificato
+    # dal vivo che un "Marketing Manager - Outlet Village Barberino" (Firenze)
+    # veniva etichettato "Milano" solo perché la pagina MichaelPage nomina
+    # Milano nel proprio footer.
+    target, altra = _cerca(f"{job.title} {job.snippet}".lower())
+    if target:
+        return target
+    if altra:
+        return None
+
+    # Solo se il titolo non dice nulla si guarda il testo integrale, che è più
+    # rumoroso: qui una città target vale solo se nessuna città non-target
+    # compare, altrimenti non è distinguibile dal boilerplate.
+    target, altra = _cerca(job.testo_completo.lower())
+    if target and not altra:
+        return target
+    if altra and not target:
+        return None
+    return "Italia"
+
+
 def filtra_offerte_per_citta(offerte_scraper, city_config):
     """Filtra le offerte in base alla configurazione della città.
     Genova (filter_hybrid_only=False): accetta in sede e ibrido, esclude da remoto.
@@ -2357,7 +2958,39 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
     """
     offerte_filtrate = []
     for job in offerte_scraper:
-        if city_config.get("filter_hybrid_only", False):
+        # `cfg` locale, non `city_config`: riassegnare il parametro dentro il
+        # ciclo lo lascerebbe cambiato anche per tutte le offerte successive
+        # dello stesso batch.
+        cfg = city_config
+        # Freschezza: un annuncio pubblicato mesi fa è quasi sempre una ricerca
+        # già chiusa lasciata online. Il controllo sta qui perché questa funzione
+        # è il gate comune a entrambi gli entry point (esegui_scraping_job e
+        # run_manual_scrape.py), quindi vale per tutti i portali senza doverlo
+        # ripetere in ognuno.
+        if offerta_troppo_vecchia(job):
+            logging.info(f"Offerta scartata (pubblicata da oltre {MAX_ETA_GIORNI_ANNUNCIO} giorni, "
+                         f"data={job.date}): {job.title} — {job.link}")
+            continue
+
+        # Portali nazionali: risolvi la sede reale dal testo prima di applicare
+        # i filtri di modalità, e scarta ciò che è chiaramente fuori area.
+        if job.city == "Italia":
+            citta_reale = rileva_citta_offerta(job)
+            if citta_reale is None:
+                logging.info(f"Offerta scartata (sede fuori dalle città target): {job.title} — {job.link}")
+                continue
+            job.city = citta_reale
+        # La policy work-mode è quella della città REALE dell'offerta, non quella
+        # del ciclo. I portali nazionali (MichaelPage, GiGroup, IQMSelezione,
+        # PRAXI, Antal, ReverseGroup, LHH) girano tutti durante l'iterazione
+        # "Genova" — la più permissiva — quindi un'offerta con sede a Milano o
+        # Torino saltava del tutto il filtro "solo ibrido" di quelle città e
+        # arrivava in email anche se full time in ufficio. PRAXI, che la sede
+        # reale la leggeva già correttamente dalla card, era il caso più visibile.
+        if job.city in CITIES:
+            cfg = CITIES[job.city]
+
+        if cfg.get("filter_hybrid_only", False):
             # Milano/Torino: solo ibrido, non remoto, non in sede
             if job.work_mode == "ibrido":
                 offerte_filtrate.append(job)
@@ -2488,15 +3121,30 @@ def esegui_scraping_job(orario_label):
     ]
 
     tutte_le_offerte = []
-    
+    conteggi_grezzi = {s.portal_name: 0 for s in scrapers}
+    errori_portali = {}
+
     for city_name, city_config in CITIES.items():
         print(f"  -> Scraping per città: {city_name}")
         for scraper in scrapers:
-            offerte_scraper = scraper.scrape(city_name, city_config)
-            
+            # try/except per singolo portale, come già fa run_manual_scrape.py:
+            # senza, un'eccezione non gestita in UNO scraper (es. un sito che
+            # cambia struttura) interrompe l'intero run e fa perdere anche le
+            # offerte di tutti i portali e le città successive.
+            try:
+                offerte_scraper = scraper.scrape(city_name, city_config)
+            except Exception as e:
+                logging.error(f"Portale {scraper.portal_name} fallito su {city_name}, lo salto: {e}")
+                print(f"     {scraper.portal_name}: ERRORE — {str(e)[:100]}")
+                errori_portali[scraper.portal_name] = f"{type(e).__name__}: {e}"
+                continue
+
+            conteggi_grezzi[scraper.portal_name] += len(offerte_scraper)
             # Filtro modalità ibrida/unverified se richiesto dalla città
             tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
-        
+
+    aggiorna_stato_portali(conteggi_grezzi, errori_portali)
+
     viste = load_viste()  # ora è un set
     nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
     save_viste(viste)
