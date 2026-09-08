@@ -692,7 +692,8 @@ EXACT_TITLES = [
     "head of marketing & sales",
     "head of business development",
     "head of commercial",
-    "head of revenue",
+    # "head of revenue" RIMOSSA: troppo larga, faceva passare "Executive Head of
+    # Revenue Operations & Growth, Europe" — un ruolo RevOps, lontano dal profilo.
     "head of e-commerce",
     "head of ecommerce",
     "head of demand generation",
@@ -724,12 +725,16 @@ EXACT_TITLES = [
     "e-commerce manager",
     "ecommerce manager",
     "e-commerce director",
-    "digital manager",
+    # "digital manager" e "responsabile digital" RIMOSSE: genericissime, facevano
+    # passare qualunque ruolo con "digital" nel titolo (es. "Responsabile Digital
+    # Payments", un ruolo di prodotto finance). Al loro posto la sola variante
+    # utile davvero: l'ordine invertito di "digital sales manager".
+    "sales digital manager",
     "digital director",
     "responsabile e-commerce",
-    "responsabile digital",
-    "revenue manager",
-    "revenue operations manager",
+    # "revenue manager" e "revenue operations manager" RIMOSSE: la prima nel
+    # mercato italiano indica quasi sempre il revenue management alberghiero,
+    # la seconda un ruolo RevOps — entrambe fuori perimetro.
     "marketing lead",
     "growth lead",
 ]
@@ -827,7 +832,23 @@ TITLE_EXCLUSIONS = [
     
     # Ruoli content/social media puri
     "social media manager", "content creator", "copywriter", "graphic designer", "web designer",
-    "event planner", "event specialist", "event manager", "public relations", "pr specialist"
+    "event planner", "event specialist", "event manager", "public relations", "pr specialist",
+
+    # Ruoli che richiedono una LINGUA che il candidato non parla. Il CV dichiara
+    # italiano madrelingua e inglese C1, nient'altro: un annuncio che mette una
+    # terza lingua nel titolo la considera un requisito di primo piano, non un
+    # "gradito". Osservato dal vivo nella mail dell'08/09: "Responsabile
+    # Commerciale - INGLESE/TEDESCO o FRANCESE/INGLESE" arrivava al 95%, ma
+    # entrambe le combinazioni richiedono una lingua che il candidato non ha.
+    "tedesco", "german", "deutsch", "francese", "french", "spagnolo", "spanish",
+    "portoghese", "russo", "cinese", "chinese", "arabo", "arabic",
+    "olandese", "dutch", "polacco", "polish", "madrelingua", "native speaker",
+
+    # Ruoli di prodotto/settore finance e RevOps: fuori perimetro per esplicita
+    # indicazione dell'utente ("digital payments non è una mia posizione, e
+    # finance principalmente").
+    "digital payments", "revenue operations", "revops",
+    "private banker", "credit manager", "financial controller", "risk manager",
 ]
 
 def _safe_str(d, key, default=""):
@@ -1079,6 +1100,33 @@ def registra_offerte_inviate(offerte):
     except Exception as e:
         logging.error(f"Errore scrittura {STORICO_OFFERTE_FILE}: {e}")
     return aggiornato
+
+
+def segnature_storico():
+    """{segnatura titolo+azienda: data del primo invio} dallo storico.
+
+    Serve a riconoscere le RIPUBBLICAZIONI. LinkedIn (e non solo) rimette online
+    lo stesso annuncio con un URL nuovo e una data di pubblicazione azzerata:
+    la card dice "1 giorno fa" ma la posizione è aperta da settimane. Il dedup
+    lavora sull'URL e non le intercetta, e il filtro di freschezza legge la data
+    falsa. Confrontare titolo+azienda con ciò che è già stato recapitato è
+    l'unico segnale disponibile, e almeno permette di dirlo in email invece di
+    presentare come nuova una posizione già vista."""
+    segnature = {}
+    for voce in carica_storico_offerte():
+        if not isinstance(voce, dict):
+            continue
+        titolo = _pulisci_per_segnatura(voce.get("titolo", ""))
+        azienda = _pulisci_per_segnatura(voce.get("azienda", ""))
+        # Senza azienda la segnatura collasserebbe titoli generici di aziende
+        # diverse ("Marketing Manager") e segnalerebbe come ripubblicazione
+        # un'offerta nuova di un'altra azienda.
+        if not titolo or not azienda or azienda == _pulisci_per_segnatura("Azienda non specificata"):
+            continue
+        chiave = (titolo, azienda)
+        if chiave not in segnature:
+            segnature[chiave] = voce.get("data_invio", "")
+    return segnature
 
 
 def carica_candidature():
@@ -2609,7 +2657,7 @@ def _carica_prospects():
         return []
 
 
-def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato):
+def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate):
     """Versione testo semplice del corpo email: fallback per i client che non
     renderizzano HTML, e copia leggibile del contenuto."""
     body = ""
@@ -2651,6 +2699,11 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
                 body += f"   Link: {job.link}\n"
                 if job.snippet:
                     body += f"   Snippet: {job.snippet}\n"
+                prima_volta = ripubblicate.get((_pulisci_per_segnatura(job.title),
+                                                _pulisci_per_segnatura(job.company)))
+                if prima_volta:
+                    body += (f"   ATTENZIONE: gia' proposta il {prima_volta} - annuncio ripubblicato, "
+                             f"la data qui sopra e' quella della ripubblicazione, non dell'apertura\n")
                 precedente = gia_candidato.get(get_job_id(job.link))
                 if precedente:
                     body += (f"   ATTENZIONE: già in candidature dal {precedente.get('data', '?')} "
@@ -2688,7 +2741,7 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
     return body
 
 
-def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, data_oggi):
+def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, data_oggi):
     """Versione HTML del corpo email: titolo cliccabile, punteggio a colpo
     d'occhio e una sezione "da guardare per prime" in cima.
     Con decine di offerte al giorno il testo semplice diventa una parete in cui
@@ -2757,6 +2810,15 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                     parti.append(f'<div style="margin-bottom:6px">{esc(job.motivazione)}</div>')
                 if job.snippet:
                     parti.append(f'<div style="color:#59636e;font-size:13px">{esc(job.snippet)}</div>')
+                prima_volta = ripubblicate.get((_pulisci_per_segnatura(job.title),
+                                                _pulisci_per_segnatura(job.company)))
+                if prima_volta:
+                    parti.append(
+                        f'<div style="margin-top:8px;padding:7px 9px;background:#fff8c5;'
+                        f'border-radius:5px;font-size:13px">Gi&agrave; proposta il {esc(prima_volta)} '
+                        f'&mdash; annuncio ripubblicato: la data sopra &egrave; quella della '
+                        f'ripubblicazione, non dell&rsquo;apertura della posizione.</div>'
+                    )
                 precedente = gia_candidato.get(get_job_id(job.link))
                 if precedente:
                     parti.append(
@@ -2830,10 +2892,16 @@ def invia_email(nuove_offerte):
         logging.error(f"Errore lettura candidature: {e}")
         gia_candidato = {}
 
+    try:
+        ripubblicate = segnature_storico()
+    except Exception as e:
+        logging.error(f"Errore lettura storico per le ripubblicazioni: {e}")
+        ripubblicate = {}
+
     prospects = _carica_prospects()
 
-    testo = _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato)
-    corpo_html = _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, data_oggi)
+    testo = _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate)
+    corpo_html = _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, data_oggi)
 
     # mixed( alternative(plain, html), allegati... ): dentro "alternative" le
     # parti vanno dalla meno preferita alla più preferita, i client mostrano
@@ -2947,10 +3015,15 @@ ALTRE_CITTA_ITALIANE = [
 def rileva_citta_offerta(job):
     """Per un'offerta di un portale nazionale (city="Italia"), cerca nel testo
     integrale già scaricato quale sia la sede reale.
-    Ritorna il nome della città target trovata, "Italia" se non è deducibile
-    (si tiene, per non perdere un'offerta buona solo perché la sede non è
-    scritta nel testo scaricato) oppure None se l'annuncio nomina chiaramente
-    solo città NON target (rumore geografico da scartare).
+    Ritorna il nome della città target trovata, oppure None se l'annuncio va
+    scartato — sia quando nomina chiaramente solo luoghi NON target, sia quando
+    la sede non è deducibile affatto.
+
+    Nessun fallback "Italia": su richiesta esplicita dell'utente (09/09) le
+    offerte senza sede accertata non arrivano più in email. Un annuncio che
+    potrebbe essere ovunque in Italia non è candidabile e costringe comunque ad
+    aprire il link per scoprirlo — meno offerte ma affidabili vale più di un
+    elenco più lungo da verificare a mano.
 
     Serve perché questi portali etichettano tutto come "Italia" e le offerte
     arrivavano in email senza alcun controllo geografico: nel test end-to-end
@@ -2981,9 +3054,7 @@ def rileva_citta_offerta(job):
     target, altra = _cerca(job.testo_completo.lower())
     if target and not altra:
         return target
-    if altra and not target:
-        return None
-    return "Italia"
+    return None
 
 
 def filtra_offerte_per_citta(offerte_scraper, city_config):
