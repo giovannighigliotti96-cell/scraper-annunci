@@ -690,7 +690,6 @@ EXACT_TITLES = [
     "head of sales & marketing",
     "head of marketing and sales",
     "head of marketing & sales",
-    "head of business development",
     "head of commercial",
     # "head of revenue" RIMOSSA: troppo larga, faceva passare "Executive Head of
     # Revenue Operations & Growth, Europe" — un ruolo RevOps, lontano dal profilo.
@@ -703,22 +702,19 @@ EXACT_TITLES = [
     "chief revenue officer",
     "chief commercial officer",
 
-    # --- Business Development / Commerciale ---
-    # Il CV ha una linea intera "Digital Sales & Business Development Lead" e
-    # ownership su revenue/P&L: i ruoli BizDev e commerciali di livello manager
-    # sono target diretti, ma nessuna variante era in lista (osservati scartati
-    # dal vivo su Hays: "Business Development Manager", "Business Developer").
-    "business development manager",
-    "business development director",
-    "business development lead",
-    "business developer",
+    # --- Commerciale ---
+    # Il business development è stato ESCLUSO su indicazione esplicita
+    # dell'utente (09/09/2026): non è un lavoro che vuole fare, e nella prima
+    # email post-fix ne era pieno. Restano i ruoli commerciali di direzione,
+    # che il CV giustifica con l'ownership su revenue/P&L e il riporto al board.
+    # Le esclusioni per "business develop*" sono in TITLE_EXCLUSIONS, così un
+    # titolo misto tipo "Sales & Business Development Manager" non rientra
+    # dalla finestra tramite un'altra voce della lista.
     "sales director",
     "commercial manager",
     "commercial director",
     "direttore commerciale",
     "responsabile commerciale",
-    "responsabile sviluppo commerciale",
-    "responsabile business development",
     "country manager",
 
     # --- Digital / E-commerce / Revenue ---
@@ -848,6 +844,14 @@ TITLE_EXCLUSIONS = [
     # indicazione dell'utente ("digital payments non è una mia posizione, e
     # finance principalmente").
     "digital payments", "revenue operations", "revops",
+    # Business development: escluso su indicazione esplicita dell'utente
+    # (09/09/2026). Sta tra le ESCLUSIONI e non semplicemente fuori da
+    # EXACT_TITLES perché così blocca anche i titoli misti, che altrimenti
+    # passerebbero grazie all'altra meta' del titolo (es. "Sales & Business
+    # Development Manager" contiene "sales & marketing manager"? no, ma
+    # "Head of Sales & Business Development" contiene "head of sales").
+    "business development", "business developer", "business develop",
+    "sviluppo commerciale", "bizdev", "biz dev",
     "private banker", "credit manager", "financial controller", "risk manager",
 ]
 
