@@ -532,6 +532,29 @@ def _safe_get(url, headers, timeout, max_redirects=5):
         return resp
     raise ValueError(f"Troppi redirect ({max_redirects}) seguendo: {url}")
 
+# Date di pubblicazione lette dal JSON-LD della pagina di dettaglio, indicizzate
+# per URL. Molti portali (Hays, ReverseGroup, MichaelPage) non mostrano la data
+# nella pagina di elenco ma la espongono nel JSON-LD del dettaglio, che
+# calcola_punteggio_e_modalita scarica comunque per lo scoring: leggerla li'
+# costa zero richieste in piu'.
+# E' una cache di processo, non uno stato persistente: viene popolata durante lo
+# scraping e letta subito dopo da filtra_offerte_per_citta, nello stesso run.
+# L'alternativa era aggiungere un ottavo valore di ritorno e toccare tutti e 13
+# i chiamanti, con il rischio di sbagliarne uno in silenzio.
+_DATE_ANNUNCIO_DA_JSONLD = {}
+
+_RE_DATE_POSTED = re.compile(r'"datePosted"\s*:\s*"(\d{4}-\d{2}-\d{2})')
+
+
+def _estrai_date_posted(html: str) -> str:
+    """Data di pubblicazione dal JSON-LD grezzo della pagina. Si legge dall'HTML
+    e non dal testo estratto: BeautifulSoup.get_text() non restituisce il
+    contenuto dei tag <script>, dove il JSON-LD vive (verificato dal vivo su
+    Hays e MichaelPage l'09/09/2026)."""
+    match = _RE_DATE_POSTED.search(html or "")
+    return match.group(1) if match else ""
+
+
 def calcola_punteggio_e_modalita(url, snippet):
     """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro.
     Ritorna anche testo_originale (snippet + testo scaricato) come ultimo elemento,
@@ -551,6 +574,9 @@ def calcola_punteggio_e_modalita(url, snippet):
             soup = BeautifulSoup(resp.text, "html.parser")
             testo_originale += " " + soup.get_text(" ", strip=True)
             fetch_status = "ok"
+            data_ld = _estrai_date_posted(resp.text)
+            if data_ld:
+                _DATE_ANNUNCIO_DA_JSONLD[url] = data_ld
         else:
             fetch_status = "http_error"
     except requests.exceptions.Timeout:
@@ -733,7 +759,46 @@ EXACT_TITLES = [
     # la seconda un ruolo RevOps — entrambe fuori perimetro.
     "marketing lead",
     "growth lead",
+
+    # --- Varianti di grado dei ruoli gia' in lista (aggiunte 09/09/2026) ---
+    # Nessun ruolo NUOVO: solo altre forme e altri gradi di titoli che l'utente
+    # cerca gia'. "sales manager" e "general manager" sono stati volutamente
+    # LASCIATI FUORI: il primo e' larghissimo in Italia (si porterebbe dietro
+    # Area/Technical/Product Sales Manager), il secondo sta sopra il livello
+    # attuale del profilo.
+    "direttore vendite",
+    "responsabile vendite",
+    "growth director",
+    "chief growth officer",
+    "vp marketing",
+    "vp sales",
+    "head of gtm",
+    "responsabile go to market",
+    "head of customer acquisition",
+    "head of crm",
+    "responsabile crm",
 ]
+
+# Titoli che valgono SOLO se il titolo dell'annuncio corrisponde esattamente,
+# non come sottostringa. Richiesta esplicita dell'utente per "head of digital"
+# ("o sono scritti così o niente"): come sottostringa catturerebbe qualunque
+# "Head of Digital <qualcosa>" — Transformation, Innovation, Operations — che
+# sono ruoli diversi. È lo stesso errore gia' fatto con "digital manager".
+# Il confronto ignora il suffisso descrittivo dopo un separatore, perche' i
+# portali lo aggiungono quasi sempre ("Head of Digital - Fashion Brand"):
+# conta la parte di titolo prima di "-", "|", "(" o ",".
+TITOLI_MATCH_ESATTO = [
+    "head of digital",
+]
+
+_SEPARATORI_TITOLO = re.compile(r"\s*[-–—|(/,:]")
+
+
+def _titolo_base(titolo: str) -> str:
+    """Parte significativa del titolo, prima del suffisso descrittivo che i
+    portali aggiungono dopo un separatore. "Head of Digital - Fashion Brand"
+    -> "head of digital"."""
+    return _SEPARATORI_TITOLO.split(titolo.lower().strip(), 1)[0].strip()
 
 # Keyword di ricerca da inviare alle API/search box dei portali che supportano
 # la ricerca per titolo (LinkedIn, LHH, GiGroup). Una voce per ciascun titolo
@@ -897,23 +962,39 @@ def _eta_giorni_da_data(date_str: str):
 
 
 # Età massima di un annuncio perché arrivi in email, per i portali diversi da
-# LinkedIn (che ha una soglia propria, più stretta: vedi LinkedInScraper.MAX_ETA_GIORNI).
+# LinkedIn (che ha una soglia propria: vedi LinkedInScraper.MAX_ETA_GIORNI).
+# 7 giorni, non 30: con 30 arrivavano ancora annunci chiaramente stantii — un
+# "Business Developer" di Hays presentato al 95% risultava pubblicato 60 giorni
+# prima leggendone il JSON-LD. Candidarsi a una ricerca vecchia di settimane
+# vale poco, quindi la finestra utile e' quella della settimana.
 # Le agenzie di ricerca e selezione lasciano gli annunci online per mesi anche
 # quando la ricerca è di fatto chiusa: verificato dal vivo l'08/09/2026 che tra
 # i risultati MichaelPage comparivano ancora ref "jn-052026", cioè annunci di
 # maggio, presentati come novità del giorno. Candidarsi a una ricerca vecchia di
 # mesi è tempo sprecato. Il filtro si applica SOLO quando la data è nota: un
 # annuncio senza data non viene mai scartato per questo motivo.
-MAX_ETA_GIORNI_ANNUNCIO = 30
+MAX_ETA_GIORNI_ANNUNCIO = 7
+
+
+def data_pubblicazione_effettiva(job) -> str:
+    """Data di pubblicazione più attendibile disponibile per l'offerta.
+
+    Ordine di preferenza: il datePosted del JSON-LD della pagina di dettaglio,
+    poi la data che lo scraper ha letto dalla pagina di elenco. Il JSON-LD vince
+    perché è la data dichiarata dal portale stesso, mentre quella di elenco a
+    volte è assente e a volte è un'approssimazione (per MichaelPage si ricava
+    dal ref nell'URL, che ha precisione solo mensile)."""
+    data_ld = _DATE_ANNUNCIO_DA_JSONLD.get(job.link, "")
+    return data_ld or job.date
 
 
 def offerta_troppo_vecchia(job) -> bool:
     """True se l'annuncio ha una data di pubblicazione nota e più vecchia della
     soglia. LinkedIn è escluso perché applica già la propria soglia (3 giorni)
-    a monte, dentro lo scraper."""
+    a monte, dentro lo scraper. Un annuncio senza data non viene mai scartato."""
     if job.portal == "LinkedIn":
         return False
-    eta = _eta_giorni_da_data(job.date)
+    eta = _eta_giorni_da_data(data_pubblicazione_effettiva(job))
     return eta is not None and eta > MAX_ETA_GIORNI_ANNUNCIO
 
 def is_valid_job_title(title: str) -> bool:
@@ -932,7 +1013,11 @@ def is_valid_job_title(title: str) -> bool:
     for exact in EXACT_TITLES:
         if exact in t:
             return True
-            
+
+    # 3. Titoli ammessi solo per corrispondenza esatta (vedi TITOLI_MATCH_ESATTO)
+    if _titolo_base(t) in TITOLI_MATCH_ESATTO:
+        return True
+
     return False
 
 # ==========================================
@@ -3078,6 +3163,15 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
         # è il gate comune a entrambi gli entry point (esegui_scraping_job e
         # run_manual_scrape.py), quindi vale per tutti i portali senza doverlo
         # ripetere in ognuno.
+        # Se il JSON-LD del dettaglio ha dato una data e lo scraper non ne aveva
+        # trovata una nella pagina di elenco, la si porta sull'offerta: serve al
+        # filtro qui sotto ma soprattutto la si vede in email, dove finora
+        # compariva "Data non disponibile" pur avendo il dato in mano.
+        data_reale = data_pubblicazione_effettiva(job)
+        if data_reale and data_reale != job.date:
+            if not job.date or job.date == "Data non disponibile" or job.portal == "MichaelPage":
+                job.date = data_reale
+
         if offerta_troppo_vecchia(job):
             logging.info(f"Offerta scartata (pubblicata da oltre {MAX_ETA_GIORNI_ANNUNCIO} giorni, "
                          f"data={job.date}): {job.title} — {job.link}")
