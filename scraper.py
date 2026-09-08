@@ -2907,15 +2907,30 @@ CITTA_TARGET_PATTERN = {
     "Torino": ["torino", "turin"],
 }
 
-# Altre grandi città italiane: se l'annuncio nazionale nomina SOLO una di queste
+# Luoghi italiani NON target: se l'annuncio nazionale nomina solo uno di questi
 # e nessuna città target, la sede è quasi certamente altrove e l'offerta è rumore.
+#
+# Include anche le REGIONI, non solo le città: molti annunci indicano solo l'area
+# ("Business Developer (Veneto - Friuli)", osservato dal vivo nel test dell'08/09
+# e passato come "Italia" perché la lista conteneva solo nomi di città). È lo
+# stesso difetto che in passato faceva arrivare come "Genova" o "Milano" annunci
+# che poi risultavano in Emilia-Romagna.
+#
+# Liguria, Lombardia e Piemonte sono volutamente ASSENTI: sono le regioni delle
+# città target, nominarle non è motivo di scarto.
 ALTRE_CITTA_ITALIANE = [
+    # città
     "roma", "napoli", "firenze", "bologna", "venezia", "verona", "padova",
     "bari", "palermo", "catania", "bergamo", "brescia", "parma", "modena",
     "reggio emilia", "vicenza", "treviso", "trieste", "udine", "ancona",
     "perugia", "pescara", "cagliari", "salerno", "trento", "bolzano",
     "varese", "como", "monza", "novara", "lecco", "pisa", "livorno",
     "barberino", "prato", "arezzo", "siena", "rimini", "ravenna", "forli",
+    # regioni e macro-aree
+    "veneto", "friuli", "emilia-romagna", "emilia romagna", "toscana", "lazio",
+    "campania", "puglia", "sicilia", "sardegna", "marche", "umbria", "abruzzo",
+    "calabria", "basilicata", "molise", "trentino", "alto adige", "sud tirolo",
+    "valle d'aosta", "val d'aosta",
 ]
 
 
