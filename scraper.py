@@ -357,8 +357,93 @@ def valuta_match_llm(job_text: str) -> tuple:
         motivazione = dati["motivazione"].strip()
         return probabilita, motivazione
     except Exception as e:
-        logging.warning(f"Match LLM fallito, ricado sull'euristica a keyword: {type(e).__name__}: {e}")
+        logging.warning(f"Match LLM Claude fallito: {type(e).__name__}: {e}")
         return None
+
+
+# ==========================================
+# MATCH SEMANTICO VIA GEMINI (fallback gratuito)
+# ==========================================
+# Secondo fornitore, usato quando Claude non è disponibile — oggi tipicamente
+# per credito esaurito. Il free tier di Gemini regge ampiamente il fabbisogno
+# (circa 15 richieste al minuto e oltre 1000 al giorno, contro le 5-20
+# giornaliere che restano dopo aver spostato la valutazione a valle dei filtri).
+#
+# ATTENZIONE, limite noto e accettato dall'utente: i termini del free tier
+# dicono che Google usa i contenuti inviati per migliorare i propri modelli e
+# raccomandano di non inviare informazioni personali. Il CV viaggia in ogni
+# chiamata. Sul tier a pagamento questo non avviene.
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
+GEMINI_MODEL = "gemini-3.8-flash"
+
+try:
+    from google import genai as google_genai
+    GEMINI_SDK_AVAILABLE = True
+except ImportError:
+    GEMINI_SDK_AVAILABLE = False
+
+_gemini_client = None
+_gemini_warning_shown = False
+
+
+def _get_gemini_client():
+    global _gemini_client
+    if _gemini_client is None and GEMINI_SDK_AVAILABLE and GEMINI_API_KEY:
+        _gemini_client = google_genai.Client(api_key=GEMINI_API_KEY)
+    return _gemini_client
+
+
+def valuta_match_gemini(job_text: str) -> tuple:
+    """Stessa valutazione di valuta_match_llm ma via Gemini. Ritorna
+    (probabilita, motivazione) oppure None se non disponibile o fallita, così
+    il chiamante può ricadere sull'euristica."""
+    global _gemini_warning_shown
+    client = _get_gemini_client()
+    if client is None or not CV_TESTO_COMPLETO:
+        if not _gemini_warning_shown:
+            if not GEMINI_SDK_AVAILABLE:
+                logging.warning("Gemini non disponibile: pacchetto 'google-genai' non installato.")
+            elif not GEMINI_API_KEY:
+                logging.warning("Gemini non disponibile: GEMINI_API_KEY mancante.")
+            _gemini_warning_shown = True
+        return None
+
+    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_COMPLETO[:6000])
+    try:
+        risposta = client.interactions.create(
+            model=GEMINI_MODEL,
+            input=(f"{istruzioni}\n\n"
+                   f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"),
+            response_format={
+                "type": "text",
+                "mime_type": "application/json",
+                "schema": {
+                    "type": "object",
+                    "properties": {
+                        "probabilita": {"type": "integer"},
+                        "motivazione": {"type": "string"},
+                    },
+                    "required": ["probabilita", "motivazione"],
+                },
+            },
+        )
+        dati = json.loads(risposta.output_text)
+        probabilita = max(0, min(100, int(dati["probabilita"])))
+        return probabilita, str(dati["motivazione"]).strip()
+    except Exception as e:
+        logging.warning(f"Match Gemini fallito: {type(e).__name__}: {e}")
+        return None
+
+
+def valuta_match_semantico(job_text: str) -> tuple:
+    """Valutazione semantica con i fornitori disponibili, in ordine: prima
+    Claude (qualità migliore, a pagamento), poi Gemini (free tier). Ritorna
+    None se nessuno dei due è utilizzabile, e in quel caso il chiamante tiene
+    il punteggio dell'euristica."""
+    risultato = valuta_match_llm(job_text)
+    if risultato is not None:
+        return risultato
+    return valuta_match_gemini(job_text)
 
 def valuta_match_candidato(job_text: str) -> tuple:
     """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,
@@ -384,16 +469,15 @@ def arricchisci_offerte_con_llm(offerte):
     """
     if not offerte:
         return offerte
-    client = _get_anthropic_client()
-    if client is None or not CV_TESTO_COMPLETO:
-        logging.info(f"Valutazione LLM non disponibile: {len(offerte)} offerte restano con il punteggio euristico.")
+    if not CV_TESTO_COMPLETO or (_get_anthropic_client() is None and _get_gemini_client() is None):
+        logging.info(f"Nessun fornitore semantico disponibile: {len(offerte)} offerte restano con il punteggio euristico.")
         return offerte
 
     riuscite = 0
     for job in offerte:
         testo = job.testo_completo or f"{job.title} {job.company} {job.snippet}"
         try:
-            risultato = valuta_match_llm(testo)
+            risultato = valuta_match_semantico(testo)
         except Exception as e:
             logging.error(f"Valutazione LLM fallita per '{job.title}': {e}")
             risultato = None

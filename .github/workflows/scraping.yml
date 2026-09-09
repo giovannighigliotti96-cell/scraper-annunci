@@ -103,8 +103,11 @@ jobs:
         env:
           # run_manual_scrape.py non invia mai email (solo run_email_job.py lo fa):
           # le credenziali Gmail non servono qui e non vanno esposte inutilmente
-          # a questo step. ANTHROPIC_API_KEY invece serve, per il match LLM durante lo scraping stesso.
+          # a questo step. Le chiavi dei modelli invece servono, per la valutazione
+          # semantica delle offerte superstiti: si prova prima Claude e, se non
+          # disponibile (tipicamente credito esaurito), si ricade su Gemini.
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python run_manual_scrape.py
 
       - name: Salva memoria (commit JSON)
