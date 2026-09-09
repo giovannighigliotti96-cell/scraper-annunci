@@ -18,6 +18,7 @@ Lo script è idempotente: riconosce i job già creati dal titolo e non li duplic
 """
 import os
 import sys
+import time
 import json
 import urllib.request
 import urllib.error
@@ -122,6 +123,11 @@ def main():
         if not applica:
             print(f"  + {titolo} — da creare ({ora:02d}:{minuto:02d} {FUSO} -> {workflow})")
             continue
+        # Pausa tra una creazione e l'altra: l'API di cron-job.org risponde 429
+        # se le richieste arrivano ravvicinate (osservato dal vivo: 2 job su 5
+        # rifiutati creandoli in sequenza senza attesa).
+        if creati:
+            time.sleep(3)
         stato, risposta = _chiama("PUT", "/jobs", api_key,
                                   definizione_job(titolo, workflow, ora, minuto, gh_token))
         if stato in (200, 201):
