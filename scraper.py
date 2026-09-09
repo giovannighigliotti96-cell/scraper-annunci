@@ -321,14 +321,32 @@ MATCH_LLM_MODEL = "claude-sonnet-4-6"
 # Istruzioni di ruolo fisse + CV: separate dal testo dell'annuncio (che cambia
 # ad ogni chiamata) e messe nel system prompt con cache_control, così le ~5-6
 # chiamate al giorno condividono la cache invece di ripagare l'intero CV ogni volta.
-_MATCH_LLM_SYSTEM_TEMPLATE = """Sei un recruiter esperto che valuta la compatibilità tra un candidato e un'offerta di lavoro, leggendo l'intero testo di entrambi — non un confronto di parole chiave.
+_MATCH_LLM_SYSTEM_TEMPLATE = """Sei un recruiter senior. Devi dire se vale la pena che questo candidato si candidi a un annuncio, leggendo entrambi i testi per intero — non è un confronto di parole chiave.
 
-Per ogni annuncio che ricevi, analizzalo nel suo complesso e valuta la compatibilità del candidato considerando:
-- Requisiti espliciti (titolo di studio, anni di esperienza, settore di provenienza specifico, hard skill) — se il CV non li soddisfa chiaramente, segnalalo come gap concreto, non ignorarlo
-- Valori o cultura aziendale menzionati nell'annuncio (es. "spirito imprenditoriale", "mentalità start-up", "orientamento al cliente") e se il CV li dimostra anche implicitamente, tramite esperienze equivalenti anche se descritte con parole diverse (es. aver fondato un'azienda dimostra imprenditorialità anche se quella parola non compare nel CV)
-- Esperienza trasferibile che risponde allo spirito della richiesta anche senza corrispondenza letterale di keyword
+VINCOLI DEL CANDIDATO (non deducibili in modo affidabile dal solo CV, tienili sempre presenti):
+- Lingue: italiano madrelingua e inglese C1. NESSUN'ALTRA LINGUA. Se l'annuncio ne richiede una terza (tedesco, francese, spagnolo, cinese...) è un requisito bloccante non soddisfatto, anche quando è presentato come "gradito".
+- Seniority: manager con circa 6-8 anni complessivi, con riporto diretto al board. Non è un profilo junior, e non è un direttore generale o un VP di multinazionale.
+- Contesti in cui ha davvero lavorato: PMI e scale-up italiane, più un'azienda tech fondata e ceduta. NON ha esperienza dentro multinazionali strutturate, né nei settori farmaceutico, bancario o assicurativo.
+- Sede: cerca solo a Genova, Milano e Torino, e non è disponibile al full remote né al trasferimento.
 
-Dai sempre un punteggio 0-100 di probabilità di essere richiamato per un colloquio, e una motivazione breve (massimo 3 righe, in italiano) che citi sia i punti di forza concreti sia eventuali gap reali rilevati nell'annuncio. Sii onesto sui gap: non gonfiare il punteggio per compiacere, un punteggio basso ben motivato è più utile di uno ottimistico e vago.
+COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un colloquio):
+- 85-100 → soddisfa i requisiti principali e il ruolo è centrato sulle sue aree forti; nessun requisito bloccante mancante.
+- 65-84 → buona corrispondenza, manca qualcosa di secondario (uno strumento specifico, un settore diverso ma affine).
+- 40-64 → corrispondenza parziale: il ruolo è affine ma chiede requisiti che non ha, o è su un livello diverso.
+- 15-39 → uno o più requisiti bloccanti non soddisfatti (una lingua che non parla, un settore molto distante, seniority molto sopra o sotto).
+- 0-14 → ruolo fuori perimetro.
+Non concentrare i punteggi nella fascia alta. Se anche UN solo requisito esplicito dell'annuncio non è soddisfatto, il punteggio deve scendere sotto 65 anche quando tutto il resto combacia.
+
+MOTIVAZIONE (massimo 3 righe, in italiano):
+Cita elementi concreti e specifici presi DALL'ANNUNCIO, non impressioni generiche. Dì (1) qual è il requisito principale e se il candidato lo soddisfa, e (2) qual è il gap più rilevante, nominando ciò che l'annuncio chiede.
+NON scrivere motivazioni come "Buon profilo con esperienza nel marketing", "Discreta compatibilità", "Il candidato ha competenze rilevanti": non aiutano a decidere se candidarsi.
+Scrivi invece motivazioni come: "Chiedono di gestire un budget media da 2M, tu ne hai gestito uno da 400k: ordine di grandezza diverso. In compenso la pipeline HubSpot costruita da zero è esattamente il punto 2 della loro job description."
+
+REGOLE:
+- Non gonfiare il punteggio per compiacere: un punteggio basso ben motivato vale più di uno alto e vago.
+- Se l'annuncio è troppo scarno per valutarlo davvero, dillo esplicitamente nella motivazione e usa un punteggio intorno a 50.
+- Non riassumere l'annuncio: spiega cosa significa per QUESTO candidato.
+- Valuta anche i requisiti impliciti e culturali (es. "spirito imprenditoriale" è soddisfatto da chi ha fondato un'azienda, anche se quella parola nel CV non compare).
 
 CV DEL CANDIDATO:
 {cv_testo}"""
@@ -415,7 +433,18 @@ def valuta_match_llm(job_text: str) -> tuple:
 # raccomandano di non inviare informazioni personali. Il CV viaggia in ogni
 # chiamata. Sul tier a pagamento questo non avviene.
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "").strip()
-GEMINI_MODEL = "gemini-3.8-flash"
+# Cascata di modelli, dal piu' capace al piu' leggero. Verificato dal vivo il
+# 09/09/2026 che ogni modello ha una quota SEPARATA: con gemini-3.8-flash gia'
+# esaurito, gli altri tre rispondevano ancora. Su 429 conviene quindi passare al
+# modello successivo (risposta immediata) invece di attendere che si liberi la
+# finestra del primo, e la capacita' complessiva del free tier si moltiplica.
+GEMINI_MODELLI = [
+    "gemini-3.8-flash",
+    "gemini-3.5-flash",
+    "gemini-3.5-flash-lite",
+    "gemini-3.1-flash-lite",
+]
+GEMINI_MODEL = GEMINI_MODELLI[0]  # compatibilita' con chi legge il singolo nome
 
 try:
     from google import genai as google_genai
@@ -425,6 +454,34 @@ except ImportError:
 
 _gemini_client = None
 _gemini_warning_shown = False
+
+# Richieste al minuto ammesse dal free tier. Misurato dal vivo il 09/09/2026:
+# il 429 di gemini-3.8-flash riporta testualmente "limit: 5" — un terzo di
+# quanto indicavano le fonti di terze parti, che davano 15. Senza spaziare le
+# chiamate, dalla sesta in poi fallivano tutte: in un run con 20 offerte da
+# valutare significava perderne 15.
+# 4 e non 5: il limite dichiarato e' 5, ma e' misurato su una finestra
+# scorrevole e i retry consumano anch'essi slot. Un margine sotto la soglia
+# costa ~3 secondi in piu' per offerta e evita di rimbalzare sul 429.
+GEMINI_RICHIESTE_AL_MINUTO = 4
+_GEMINI_INTERVALLO_MINIMO_S = 60.0 / GEMINI_RICHIESTE_AL_MINUTO
+_gemini_ultima_chiamata = 0.0
+
+# Quanti tentativi fare quando il server risponde 429. Il messaggio d'errore
+# indica quanti secondi attendere ("Please retry in 36.7s"): si rispetta quel
+# valore invece di indovinare un backoff.
+GEMINI_TENTATIVI_SU_429 = 3
+_RE_ATTESA_429 = re.compile(r"retry in (\d+(?:\.\d+)?)s")
+
+
+def _attendi_slot_gemini():
+    """Spaziatura proattiva tra le chiamate, per restare sotto il limite al
+    minuto invece di scoprirlo con un errore."""
+    global _gemini_ultima_chiamata
+    da_aspettare = _GEMINI_INTERVALLO_MINIMO_S - (time.monotonic() - _gemini_ultima_chiamata)
+    if da_aspettare > 0:
+        time.sleep(da_aspettare)
+    _gemini_ultima_chiamata = time.monotonic()
 
 
 def _get_gemini_client():
@@ -450,30 +507,72 @@ def valuta_match_gemini(job_text: str) -> tuple:
         return None
 
     istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
+    ultimo_errore = None
+    for indice, modello in enumerate(GEMINI_MODELLI):
+        _attendi_slot_gemini()
+        try:
+            risultato = _chiama_gemini(client, istruzioni, job_text, modello)
+            if indice:
+                logging.info(f"Match Gemini servito da {modello} (i modelli precedenti erano in quota).")
+            return risultato
+        except Exception as e:
+            ultimo_errore = e
+            if not _e_errore_di_quota(e):
+                logging.warning(f"Match Gemini fallito su {modello}: {type(e).__name__}: {e}")
+                return None
+            logging.info(f"{modello} in quota, provo il modello successivo.")
+
+    # Tutti i modelli sono in quota: si aspetta il tempo indicato dall'ultimo
+    # errore e si riprova una volta sola con il modello migliore. Oltre questo
+    # punto conviene arrendersi e tenere il punteggio euristico, invece di
+    # allungare il run per un'offerta.
+    attesa = _secondi_di_attesa(ultimo_errore)
+    logging.info(f"Tutti i modelli Gemini in quota, attendo {attesa:.0f}s e riprovo una volta.")
+    time.sleep(attesa)
     try:
-        risposta = client.interactions.create(
-            model=GEMINI_MODEL,
-            input=(f"{istruzioni}\n\n"
-                   f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"),
-            response_format={
-                "type": "text",
-                "mime_type": "application/json",
-                "schema": {
-                    "type": "object",
-                    "properties": {
-                        "probabilita": {"type": "integer"},
-                        "motivazione": {"type": "string"},
-                    },
-                    "required": ["probabilita", "motivazione"],
-                },
-            },
-        )
-        dati = json.loads(risposta.output_text)
-        probabilita = max(0, min(100, int(dati["probabilita"])))
-        return probabilita, str(dati["motivazione"]).strip()
+        return _chiama_gemini(client, istruzioni, job_text, GEMINI_MODELLI[0])
     except Exception as e:
-        logging.warning(f"Match Gemini fallito: {type(e).__name__}: {e}")
+        logging.warning(f"Match Gemini: quota esaurita su tutti i modelli. Ultimo errore: {type(e).__name__}")
         return None
+
+
+def _e_errore_di_quota(errore) -> bool:
+    testo = str(errore)
+    return "429" in testo or "RESOURCE_EXHAUSTED" in testo or "too_many_requests" in testo
+
+
+def _secondi_di_attesa(errore) -> float:
+    """Secondi indicati dal server nel messaggio 429 ("Please retry in 18.6s"),
+    con un margine di 1s: ripartire spaccando il secondo rifallisce."""
+    trovato = _RE_ATTESA_429.search(str(errore or ""))
+    return float(trovato.group(1)) + 1 if trovato else 30.0
+
+
+def _chiama_gemini(client, istruzioni, job_text, modello):
+    """La singola richiesta a Gemini. Separata da valuta_match_gemini perché
+    quest'ultima la ritenta: tenere insieme retry e costruzione della richiesta
+    rendeva il flusso di controllo difficile da seguire. Le eccezioni si
+    propagano al chiamante, che decide se ritentare."""
+    risposta = client.interactions.create(
+        model=modello,
+        input=(f"{istruzioni}\n\n"
+               f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"),
+        response_format={
+            "type": "text",
+            "mime_type": "application/json",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "probabilita": {"type": "integer"},
+                    "motivazione": {"type": "string"},
+                },
+                "required": ["probabilita", "motivazione"],
+            },
+        },
+    )
+    dati = json.loads(risposta.output_text)
+    probabilita = max(0, min(100, int(dati["probabilita"])))
+    return probabilita, str(dati["motivazione"]).strip()
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
