@@ -16,7 +16,8 @@ from scraper import (
     ReverseGroupScraper, AdamiScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
-    dedup_offerte, aggiorna_stato_portali, arricchisci_offerte_con_llm
+    dedup_offerte, aggiorna_stato_portali, arricchisci_offerte_con_llm,
+    invia_alert_immediato
 )
 from state_io import atomic_write_json
 
@@ -79,6 +80,12 @@ if __name__ == "__main__":
     # arricchisci_offerte_con_llm): stessa scelta di esegui_scraping_job.
     print(f"Valutazione semantica di {len(nuove_offerte)} offerte...")
     arricchisci_offerte_con_llm(nuove_offerte)
+
+    # Alert immediato per le offerte ad alta affinita': il valore sta nel
+    # candidarsi lo stesso giorno, non nove ore dopo (vedi invia_alert_immediato).
+    segnalate = invia_alert_immediato(nuove_offerte)
+    if segnalate:
+        print(f"Alert immediato inviato per {segnalate} offerte sopra la soglia.")
 
     giornaliere = load_giornaliere()
     for job in nuove_offerte:

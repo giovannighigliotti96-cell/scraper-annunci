@@ -335,12 +335,21 @@ COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un
 - 40-64 → corrispondenza parziale: il ruolo è affine ma chiede requisiti che non ha, o è su un livello diverso.
 - 15-39 → uno o più requisiti bloccanti non soddisfatti (una lingua che non parla, un settore molto distante, seniority molto sopra o sotto).
 - 0-14 → ruolo fuori perimetro.
-Non concentrare i punteggi nella fascia alta. Se anche UN solo requisito esplicito dell'annuncio non è soddisfatto, il punteggio deve scendere sotto 65 anche quando tutto il resto combacia.
+Non concentrare i punteggi nella fascia alta, ma distingui i requisiti BLOCCANTI da quelli DESIDERATI: i selezionatori applicano le liste di requisiti con flessibilità, e un requisito mancante non equivale a una porta chiusa.
+- Sono BLOCCANTI (portano sotto 40): una lingua che il candidato non parla, una sede fuori dalle tre città o il full remote, un'abilitazione o un titolo obbligatorio che non ha, un settore fortemente regolamentato dove l'esperienza specifica è un prerequisito reale (farmaceutico, bancario, assicurativo), una seniority enormemente distante (ruoli da CEO/DG di grande gruppo, oppure junior).
+- NON sono bloccanti (abbassano di 10-20 punti, non affossano): qualche anno di esperienza in più rispetto ai suoi, uno strumento specifico che non ha usato (es. Salesforce al posto di HubSpot), un modello di vendita o un tipo di struttura che non ha praticato, un settore diverso ma non regolamentato, una dimensione aziendale maggiore.
+Calibrazione verificata su un caso reale: un "Digital Sales Manager" che chiedeva 8-10 anni ed esperienza come manager di manager — requisiti che il candidato non soddisfa alla lettera — lo ha in realtà portato fino all'ultimo step della selezione. Un annuncio così merita 70-80, non 50.
 
 MOTIVAZIONE (massimo 3 righe, in italiano):
 Cita elementi concreti e specifici presi DALL'ANNUNCIO, non impressioni generiche. Dì (1) qual è il requisito principale e se il candidato lo soddisfa, e (2) qual è il gap più rilevante, nominando ciò che l'annuncio chiede.
 NON scrivere motivazioni come "Buon profilo con esperienza nel marketing", "Discreta compatibilità", "Il candidato ha competenze rilevanti": non aiutano a decidere se candidarsi.
 Scrivi invece motivazioni come: "Chiedono di gestire un budget media da 2M, tu ne hai gestito uno da 400k: ordine di grandezza diverso. In compenso la pipeline HubSpot costruita da zero è esattamente il punto 2 della loro job description."
+
+MODALITÀ DI LAVORO (campo "modalita"):
+Leggi cosa dice l'annuncio sulla presenza in ufficio e rispondi con UNA di queste parole: "ibrido", "in sede", "da remoto", "non indicata". Usa "non indicata" solo se l'annuncio davvero non ne parla — non tirare a indovinare dal settore o dal ruolo. In "dettaglio_modalita" riporta in poche parole quello che l'annuncio dice davvero (es. "2 giorni in ufficio", "hybrid, autonomia sui giorni", "presenza quotidiana richiesta"), o lascia stringa vuota se non c'è nulla.
+
+RETRIBUZIONE (campo "ral"):
+Se l'annuncio indica una retribuzione, riportala come la scrive lui (es. "66.000-86.000 € inclusa variabile", "RAL 50-60k"). Se non la indica, stringa vuota. Non stimarla mai: una cifra inventata è peggio di nessuna cifra.
 
 REGOLE:
 - Non gonfiare il punteggio per compiacere: un punteggio basso ben motivato vale più di uno alto e vago.
@@ -350,6 +359,30 @@ REGOLE:
 
 CV DEL CANDIDATO:
 {cv_testo}"""
+
+# Modalita' di lavoro ammesse nella risposta del modello, allineate ai valori che
+# il resto del codice gia' usa (detect_work_mode, filtra_offerte_per_citta).
+_MODALITA_AMMESSE = {"ibrido", "in sede", "da remoto"}
+
+
+def _leggi_valutazione(dati: dict) -> tuple:
+    """Normalizza la risposta JSON di un fornitore in
+    (probabilita, motivazione, modalita, dettaglio_modalita, ral).
+
+    Condivisa da Claude e Gemini: ricevono lo stesso schema e devono produrre la
+    stessa struttura, quindi anche la lettura e' una sola. I campi aggiunti dopo
+    (modalita, RAL) sono letti in modo tollerante: una risposta che li omette
+    resta valida e vale come "non indicata", cosi' un fornitore che ignorasse
+    parte dello schema non fa perdere il punteggio."""
+    probabilita = max(0, min(100, int(dati["probabilita"])))
+    motivazione = str(dati["motivazione"]).strip()
+    modalita = str(dati.get("modalita", "")).strip().lower()
+    if modalita not in _MODALITA_AMMESSE:
+        modalita = ""
+    return (probabilita, motivazione, modalita,
+            str(dati.get("dettaglio_modalita", "")).strip(),
+            str(dati.get("ral", "")).strip())
+
 
 def valuta_match_llm(job_text: str) -> tuple:
     """Legge l'intero testo dell'annuncio (non solo keyword) e lo confronta con
@@ -403,18 +436,18 @@ def valuta_match_llm(job_text: str) -> tuple:
                         "properties": {
                             "probabilita": {"type": "integer"},
                             "motivazione": {"type": "string"},
+                            "modalita": {"type": "string"},
+                            "dettaglio_modalita": {"type": "string"},
+                            "ral": {"type": "string"},
                         },
-                        "required": ["probabilita", "motivazione"],
+                        "required": ["probabilita", "motivazione", "modalita", "dettaglio_modalita", "ral"],
                         "additionalProperties": False,
                     },
                 },
             },
         )
         testo_risposta = llm_utils.estrai_testo_risposta(response)
-        dati = json.loads(testo_risposta)
-        probabilita = max(0, min(100, int(dati["probabilita"])))
-        motivazione = dati["motivazione"].strip()
-        return probabilita, motivazione
+        return _leggi_valutazione(json.loads(testo_risposta))
     except Exception as e:
         logging.warning(f"Match LLM Claude fallito: {type(e).__name__}: {e}")
         return None
@@ -565,14 +598,15 @@ def _chiama_gemini(client, istruzioni, job_text, modello):
                 "properties": {
                     "probabilita": {"type": "integer"},
                     "motivazione": {"type": "string"},
+                    "modalita": {"type": "string"},
+                    "dettaglio_modalita": {"type": "string"},
+                    "ral": {"type": "string"},
                 },
-                "required": ["probabilita", "motivazione"],
+                "required": ["probabilita", "motivazione", "modalita", "dettaglio_modalita", "ral"],
             },
         },
     )
-    dati = json.loads(risposta.output_text)
-    probabilita = max(0, min(100, int(dati["probabilita"])))
-    return probabilita, str(dati["motivazione"]).strip()
+    return _leggi_valutazione(json.loads(risposta.output_text))
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
@@ -622,7 +656,21 @@ def arricchisci_offerte_con_llm(offerte):
             logging.error(f"Valutazione LLM fallita per '{job.title}': {e}")
             risultato = None
         if risultato is not None:
-            job.probabilita, job.motivazione = risultato
+            probabilita, motivazione, modalita, dettaglio, ral = risultato
+            job.probabilita, job.motivazione = probabilita, motivazione
+            if ral:
+                job.ral = ral
+            # La modalita' letta dall'LLM sostituisce quella dedotta dai pattern
+            # testuali solo quando il modello ne ha trovata una esplicita: legge
+            # l'annuncio per intero e capisce le forme che detect_work_mode non
+            # copre ("autonomia sui giorni in ufficio"). Se dice "non indicata"
+            # si tiene quella precedente, per non perdere informazione.
+            if modalita:
+                if modalita != job.work_mode:
+                    logging.info(f"Modalita' corretta dall'LLM per '{job.title}': "
+                                 f"{job.work_mode} -> {modalita}")
+                job.work_mode = modalita
+                job.dettaglio_modalita = dettaglio
             riuscite += 1
     logging.info(f"Valutazione LLM: {riuscite}/{len(offerte)} offerte rivalutate semanticamente.")
     return offerte
@@ -1623,7 +1671,7 @@ def portali_sospetti():
 # ==========================================
 
 class ScrapedJob:
-    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo=""):
+    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita=""):
         # title/snippet guardati come company/date: un valore None (es. da un record
         # legacy con "title": null in offerte_giornaliere.json) non deve far crashare
         # il costruttore con AttributeError su .strip().
@@ -1653,6 +1701,15 @@ class ScrapedJob:
         # alla personalizzazione CV di riusarlo invece di riscaricare la pagina
         # ore dopo (quando potrebbe essere stata rimossa/modificata).
         self.testo_completo = testo_completo if testo_completo else ""
+        # Retribuzione dichiarata dall'annuncio, quando c'e': la estrae l'LLM
+        # durante la valutazione semantica (vedi _leggi_valutazione). Sapere
+        # subito che un ruolo e' sotto la propria fascia evita di aprire il link.
+        self.ral = ral if ral else ""
+        # Cosa dice l'annuncio sulla presenza in ufficio, con le sue parole
+        # ("2 giorni in sede", "autonomia sui giorni"): work_mode da solo dice
+        # la categoria, questo dice il dettaglio che serve per decidere se il
+        # pendolarismo e' sostenibile.
+        self.dettaglio_modalita = dettaglio_modalita if dettaglio_modalita else ""
 
     def to_dict(self):
         return {
@@ -1670,6 +1727,8 @@ class ScrapedJob:
             "probabilita": self.probabilita,
             "motivazione": self.motivazione,
             "testo_completo": self.testo_completo,
+            "ral": self.ral,
+            "dettaglio_modalita": self.dettaglio_modalita,
         }
 
     @classmethod
@@ -1684,7 +1743,8 @@ class ScrapedJob:
             data.get("match_level", "Base"), data.get("match_count", 0),
             _safe_str(data, "city", ""), data.get("work_mode", "unverified"), data.get("fetch_status", "no_attempt"),
             data.get("probabilita", 0), data.get("motivazione", ""),
-            data.get("testo_completo", ""),
+            data.get("testo_completo", ""), data.get("ral", ""),
+            data.get("dettaglio_modalita", ""),
         )
 
 class BaseScraper:
@@ -3136,7 +3196,11 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
                 body += f"   Azienda: {job.company}\n"
                 body += f"   Città: {job.city}\n"
                 modalita_display = "Modalità non specificata nell'annuncio" if job.work_mode == "unverified" else job.work_mode.upper()
+                if job.dettaglio_modalita:
+                    modalita_display += f" ({job.dettaglio_modalita})"
                 body += f"   Modalità: {modalita_display}\n"
+                if job.ral:
+                    body += f"   Retribuzione: {job.ral}\n"
                 body += f"   Portale: {job.portal}\n"
                 body += f"   Probabilità richiamata: {prob}% - {etichetta}\n"
                 body += f"   -> {job.motivazione}\n"
@@ -3234,6 +3298,8 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                 prob = _prob_ordinabile(job)
                 etichetta, colore = _fascia_probabilita(prob)
                 modalita = "modalità non specificata" if job.work_mode == "unverified" else job.work_mode
+                if job.dettaglio_modalita:
+                    modalita += f" ({job.dettaglio_modalita})"
                 parti.append(
                     f'<div style="border:1px solid #d1d9e0;border-left:4px solid {colore};'
                     f'border-radius:6px;padding:12px 14px;margin-bottom:12px">'
@@ -3252,6 +3318,8 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                     f'<span style="color:#59636e"> &middot; match CV {esc(job.match_level)} '
                     f'({job.match_count} keyword)</span></div>'
                 )
+                if job.ral:
+                    parti.append(f'<div style="margin-bottom:6px"><b>Retribuzione:</b> {esc(job.ral)}</div>')
                 if job.motivazione:
                     parti.append(f'<div style="margin-bottom:6px">{esc(job.motivazione)}</div>')
                 if job.snippet:
@@ -3307,6 +3375,73 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
 
     parti.append('</div>')
     return "".join(parti)
+
+
+# Soglia oltre la quale un'offerta merita di essere segnalata SUBITO, senza
+# aspettare il riepilogo serale. Alta di proposito: due o tre avvisi al giorno
+# restano un segnale, dieci diventano rumore e si smette di aprirli.
+SOGLIA_ALERT_IMMEDIATO = 85
+
+
+def invia_alert_immediato(offerte):
+    """Manda subito una mail breve per le offerte sopra soglia, invece di farle
+    aspettare fino alle 18:05.
+
+    Il motivo e' il tempismo: lo scraping gira dalle 09:17, quindi un'offerta
+    trovata al mattino restava ferma nove ore e la candidatura partiva il giorno
+    dopo, quando la selezione ha gia' raccolto centinaia di profili. Per i ruoli
+    manageriali le shortlist si formano nei primi giorni, ed essere tra i primi
+    conta piu' di qualunque altra ottimizzazione fatta finora.
+
+    Non sostituisce il riepilogo serale: quelle offerte ci compaiono comunque.
+    Ritorna il numero di offerte segnalate."""
+    if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
+        return 0
+    da_segnalare = [j for j in offerte if _prob_ordinabile(j) >= SOGLIA_ALERT_IMMEDIATO]
+    if not da_segnalare:
+        return 0
+    da_segnalare.sort(key=_prob_ordinabile, reverse=True)
+
+    if len(da_segnalare) == 1:
+        job = da_segnalare[0]
+        oggetto = f"[Candidati oggi] {job.title[:60]} — {job.city}"
+    else:
+        oggetto = f"[Candidati oggi] {len(da_segnalare)} offerte ad alta affinità"
+
+    righe = ["Offerte appena trovate che meritano una candidatura oggi, "
+             "senza aspettare il riepilogo di stasera.", ""]
+    for job in da_segnalare:
+        righe.append(f"{_prob_ordinabile(job)}% — {job.title}")
+        righe.append(f"   {job.company} · {job.city} · {job.portal}")
+        if job.ral:
+            righe.append(f"   Retribuzione: {job.ral}")
+        if job.motivazione:
+            righe.append(f"   {job.motivazione}")
+        righe.append(f"   {job.link}")
+        righe.append("")
+    righe.append("Le trovi comunque nel riepilogo delle 18:05.")
+
+    msg = MIMEMultipart("mixed")
+    msg["From"] = GMAIL_USER
+    msg["To"] = DESTINATION_EMAIL
+    msg["Subject"] = oggetto
+    msg.attach(MIMEText("\n".join(righe), "plain", "utf-8"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=10) as server:
+            server.ehlo()
+            server.starttls()
+            server.ehlo()
+            server.login(GMAIL_USER, GMAIL_APP_PASSWORD)
+            server.send_message(msg)
+        logging.info(f"Alert immediato inviato per {len(da_segnalare)} offerte sopra {SOGLIA_ALERT_IMMEDIATO}%.")
+        return len(da_segnalare)
+    except Exception as e:
+        # Nessun retry e nessuna propagazione: e' una notifica accessoria, le
+        # offerte arrivano comunque nel riepilogo serale. Bloccare o rallentare
+        # lo scraping per un alert non inviato sarebbe sproporzionato.
+        logging.warning(f"Alert immediato non inviato: {type(e).__name__}: {e}")
+        return 0
 
 
 def invia_email(nuove_offerte):
@@ -3751,6 +3886,7 @@ def esegui_scraping_job(orario_label):
     # Valutazione semantica solo sulle offerte superstiti: qui sono poche e
     # ognuna arrivera' in email, quindi ogni chiamata a pagamento e' spesa bene.
     arricchisci_offerte_con_llm(nuove_offerte)
+    invia_alert_immediato(nuove_offerte)
 
     giornaliere = load_giornaliere()
     for job in nuove_offerte:
