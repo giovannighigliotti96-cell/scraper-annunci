@@ -361,14 +361,47 @@ def valuta_match_llm(job_text: str) -> tuple:
         return None
 
 def valuta_match_candidato(job_text: str) -> tuple:
-    """Punto d'ingresso unico per lo scoring di compatibilità: prova il match
-    semantico via LLM (valuta_match_llm) e, solo se non disponibile o fallito,
-    ricade sull'euristica a keyword esistente (calcola_probabilita_callback) —
-    così un problema con l'API Claude non blocca mai lo scraping."""
-    risultato_llm = valuta_match_llm(job_text)
-    if risultato_llm is not None:
-        return risultato_llm
+    """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,
+    nessuna chiamata LLM.
+
+    La valutazione semantica costa una chiamata a pagamento e prima girava qui,
+    cioè su ogni titolo valido — 97 chiamate in un run reale (08/09/2026) per 19
+    offerte che poi arrivavano davvero in email: l'80% del costo bruciato su
+    annunci scartati subito dopo da città, freschezza o deduplica.
+    Ora l'LLM interviene solo su ciò che è sopravvissuto a tutti i filtri, in
+    arricchisci_offerte_con_llm()."""
     return calcola_probabilita_callback(job_text.lower())
+
+
+def arricchisci_offerte_con_llm(offerte):
+    """Rivaluta con l'LLM le offerte che arriveranno davvero in email,
+    sostituendo probabilità e motivazione calcolate dall'euristica.
+
+    Va chiamata DOPO tutti i filtri e la deduplica: è il punto in cui il numero
+    di annunci è minimo e ognuno vale la spesa. Se l'LLM non è disponibile o
+    fallisce su una singola offerta, quella conserva il punteggio euristico e il
+    ciclo prosegue — un problema con l'API non deve mai bloccare l'invio.
+    """
+    if not offerte:
+        return offerte
+    client = _get_anthropic_client()
+    if client is None or not CV_TESTO_COMPLETO:
+        logging.info(f"Valutazione LLM non disponibile: {len(offerte)} offerte restano con il punteggio euristico.")
+        return offerte
+
+    riuscite = 0
+    for job in offerte:
+        testo = job.testo_completo or f"{job.title} {job.company} {job.snippet}"
+        try:
+            risultato = valuta_match_llm(testo)
+        except Exception as e:
+            logging.error(f"Valutazione LLM fallita per '{job.title}': {e}")
+            risultato = None
+        if risultato is not None:
+            job.probabilita, job.motivazione = risultato
+            riuscite += 1
+    logging.info(f"Valutazione LLM: {riuscite}/{len(offerte)} offerte rivalutate semanticamente.")
+    return offerte
 
 # ==========================================
 # SCORING PROBABILITÀ RICHIAMATA
@@ -3453,7 +3486,11 @@ def esegui_scraping_job(orario_label):
     viste = load_viste()  # ora è un set
     nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
     save_viste(viste)
-    
+
+    # Valutazione semantica solo sulle offerte superstiti: qui sono poche e
+    # ognuna arrivera' in email, quindi ogni chiamata a pagamento e' spesa bene.
+    arricchisci_offerte_con_llm(nuove_offerte)
+
     giornaliere = load_giornaliere()
     for job in nuove_offerte:
         giornaliere.append(job.to_dict())

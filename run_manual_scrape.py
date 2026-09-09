@@ -16,7 +16,7 @@ from scraper import (
     ReverseGroupScraper, AdamiScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
-    dedup_offerte, aggiorna_stato_portali
+    dedup_offerte, aggiorna_stato_portali, arricchisci_offerte_con_llm
 )
 from state_io import atomic_write_json
 
@@ -74,6 +74,11 @@ if __name__ == "__main__":
     viste = load_viste()
     nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
     save_viste(viste)
+
+    # Valutazione semantica solo sulle offerte superstiti (vedi
+    # arricchisci_offerte_con_llm): stessa scelta di esegui_scraping_job.
+    print(f"Valutazione semantica di {len(nuove_offerte)} offerte...")
+    arricchisci_offerte_con_llm(nuove_offerte)
 
     giornaliere = load_giornaliere()
     for job in nuove_offerte:
