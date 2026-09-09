@@ -1139,10 +1139,14 @@ EXACT_TITLES = [
     # Le esclusioni per "business develop*" sono in TITLE_EXCLUSIONS, così un
     # titolo misto tipo "Sales & Business Development Manager" non rientra
     # dalla finestra tramite un'altra voce della lista.
-    "sales director",
+    # "sales director", "direttore vendite", "responsabile vendite" e
+    # "direttore commerciale" RIMOSSI il 09/09/2026 sulla base delle offerte
+    # realmente recapitate: portavano vendita tradizionale senza componente
+    # digitale, cioe' il terreno dove il profilo compete peggio. Punteggi medi
+    # misurati: responsabile vendite 12, direttore commerciale 30, sales
+    # director 42, contro una media di 83 per "country manager" e 88 per
+    # "head of marketing". "direttore vendite" non aveva mai prodotto nulla.
     "commercial manager",
-    "commercial director",
-    "direttore commerciale",
     "responsabile commerciale",
     "country manager",
 
@@ -1169,8 +1173,6 @@ EXACT_TITLES = [
     # LASCIATI FUORI: il primo e' larghissimo in Italia (si porterebbe dietro
     # Area/Technical/Product Sales Manager), il secondo sta sopra il livello
     # attuale del profilo.
-    "direttore vendite",
-    "responsabile vendite",
     "growth director",
     "chief growth officer",
     "vp marketing",
@@ -1229,8 +1231,18 @@ SEARCH_KEYWORDS = [
     "Head of Growth",
     "Sales & Marketing Manager",
     "Digital Sales Manager",
+    # Le formule con cui le aziende descrivono i ruoli che uniscono digitale e
+    # vendita: sono la categoria con la resa piu' alta (media 91 sulle offerte
+    # realmente recapitate, contro 81 del marketing puro e 70 del sales puro)
+    # ma anche la piu' rara nel flusso — 1 offerta su 50. Cercarle
+    # esplicitamente e' l'unico modo per aumentarne il numero.
+    "Digital Sales & Marketing Manager",
+    "Revenue Marketing Manager",
+    "Responsabile Marketing e Vendite",
     "Head of Sales",
-    "Business Development Manager",
+    # "Business Development Manager" RIMOSSA: il BizDev e' escluso da
+    # TITLE_EXCLUSIONS, quindi questa query spendeva richieste per raccogliere
+    # annunci che venivano scartati subito dopo.
     "Demand Generation Manager",
     "B2B Marketing Manager",
     "E-commerce Manager",
@@ -1238,7 +1250,6 @@ SEARCH_KEYWORDS = [
     "Country Manager",
     "Responsabile Marketing",
     "Responsabile Commerciale",
-    "Direttore Commerciale",
 ]
 
 
