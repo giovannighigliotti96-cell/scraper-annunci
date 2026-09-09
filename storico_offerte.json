@@ -1,5 +1,85 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586",
+    "data_invio": "2026-09-09",
+    "titolo": "Direttore Commerciale Servizi Controllo Consumi",
+    "azienda": "Team opportunity",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 30,
+    "link": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/away-from-home-b2b-sales-director-at-euren-intersearch-4463008172",
+    "data_invio": "2026-09-09",
+    "titolo": "AWAY FROM HOME & B2B SALES DIRECTOR",
+    "azienda": "Euren InterSearch",
+    "citta": "Torino",
+    "portale": "LinkedIn",
+    "probabilita": 25,
+    "link": "https://it.linkedin.com/jobs/view/away-from-home-b2b-sales-director-at-euren-intersearch-4463008172"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-account-responsabile-commerciale-b2b-%E2%80%93-settore-promozionale-nord-italia-at-promo-team-4465050245",
+    "data_invio": "2026-09-09",
+    "titolo": "Sales Account / Responsabile Commerciale B2B – Settore Promozionale (Nord Italia)",
+    "azienda": "PROMO TEAM",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 25,
+    "link": "https://it.linkedin.com/jobs/view/sales-account-responsabile-commerciale-b2b-%E2%80%93-settore-promozionale-nord-italia-at-promo-team-4465050245"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/rappresentante-technical-sales-futuro-sales-director-at-w-talent-switzerland-4453075145",
+    "data_invio": "2026-09-09",
+    "titolo": "Rappresentante technical sales - Futuro Sales Director",
+    "azienda": "W Talent Switzerland",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 25,
+    "link": "https://it.linkedin.com/jobs/view/rappresentante-technical-sales-futuro-sales-director-at-w-talent-switzerland-4453075145"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/gp-and-itero-marketing-manager-at-align-technology-4463872603",
+    "data_invio": "2026-09-09",
+    "titolo": "GP and iTero Marketing Manager",
+    "azienda": "Align Technology",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 20,
+    "link": "https://it.linkedin.com/jobs/view/gp-and-itero-marketing-manager-at-align-technology-4463872603"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendite-at-eurointerim-s-p-a-4464607603",
+    "data_invio": "2026-09-09",
+    "titolo": "Responsabile vendite",
+    "azienda": "Eurointerim S.p.A.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 15,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-vendite-at-eurointerim-s-p-a-4464607603"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendite-servizi-gestione-economica-domestica-at-team-opportunity-4463855592",
+    "data_invio": "2026-09-09",
+    "titolo": "Responsabile vendite servizi gestione economica domestica",
+    "azienda": "Team opportunity",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 10,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-vendite-servizi-gestione-economica-domestica-at-team-opportunity-4463855592"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-director-emea-industrial-new-defense-m-f-at-hexcel-corporation-4463832310",
+    "data_invio": "2026-09-09",
+    "titolo": "Sales Director EMEA - Industrial & New Defense M/F",
+    "azienda": "Hexcel Corporation",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 8,
+    "link": "https://it.linkedin.com/jobs/view/sales-director-emea-industrial-new-defense-m-f-at-hexcel-corporation-4463832310"
+  },
+  {
     "job_id": "https://www.hays.it/lavoro-dettagli/responsabile-commerciale-genova_953893",
     "data_invio": "2026-09-08",
     "titolo": "Responsabile Commerciale",
