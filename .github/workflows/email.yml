@@ -7,20 +7,16 @@ on:
     # "Verifica orario" più sotto esegue l'invio solo se l'ora locale italiana reale
     # corrisponde alle 18:05, così esattamente una delle due invocazioni gira per
     # davvero in ciascuna stagione.
-    # Molti tentativi ravvicinati, non uno solo. Il cron di GitHub Actions e'
-    # best-effort e slitta in modo imprevedibile: misurati 2-4.6 ore di ritardo
-    # sull'orario target su 12 giorni consecutivi, con la mail delle 18:05 che
-    # arrivava dopo le 21. Con un tentativo ogni 20 minuti si prende il primo
-    # che GitHub degna di far partire, e il guard email_gia_inviata_oggi()
-    # impedisce che i successivi mandino una seconda email.
-    - cron: '5 16 * * *'    # 18:05 CEST
-    - cron: '25 16 * * *'
-    - cron: '45 16 * * *'
-    - cron: '5 17 * * *'    # 18:05 CET (inverno) / 19:05 CEST
-    - cron: '25 17 * * *'
-    - cron: '45 17 * * *'
-    - cron: '5 18 * * *'
-    - cron: '35 18 * * *'
+    # RETE DI SICUREZZA, non il meccanismo principale. L'invio puntuale lo
+    # innesca cron-job.org via workflow_dispatch: il cron di GitHub Actions e'
+    # best-effort e slitta di 2-4.6 ore (misurato su 12 giorni), quindi non e'
+    # utilizzabile per un orario che conta.
+    # Queste due entry servono solo se il trigger esterno non arriva (servizio
+    # giu', token scaduto): sono volutamente TARDIVE, cosi' in condizioni normali
+    # trovano il lavoro gia' fatto ed escono subito grazie a
+    # email_gia_inviata_oggi().
+    - cron: '0 19 * * *'    # 21:00 CEST / 20:00 CET
+    - cron: '0 21 * * *'
   workflow_dispatch:       # avvio manuale dalla UI GitHub
 
 concurrency:

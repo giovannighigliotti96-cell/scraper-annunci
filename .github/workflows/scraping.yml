@@ -7,24 +7,14 @@ on:
     # cron entry (una per stagione): lo step "Verifica orario" più sotto controlla l'ora
     # locale italiana reale ed esegue lo scraping solo se corrisponde a un orario target,
     # così esattamente una delle due invocazioni gira per davvero in ciascuna stagione.
-    # Una entry ogni ora nella fascia lavorativa, invece di quattro orari fissi.
-    # Il cron di GitHub Actions e' best-effort e slitta di 1-4.6 ore (misurato):
-    # con orari fissi lo scraping delle 09:17 partiva a mezzogiorno e l'alert
-    # per le offerte migliori arrivava con mezza giornata di ritardo, che e'
-    # esattamente cio' che l'alert doveva evitare. Con piu' entry si prende il
-    # primo slot disponibile; la deduplica rende innocuo un run ravvicinato, e
-    # il guard sotto limita comunque il numero di esecuzioni reali al giorno.
-    - cron: '17 6 * * *'
-    - cron: '17 7 * * *'
-    - cron: '17 8 * * *'
+    # RETE DI SICUREZZA, non il meccanismo principale: gli scraping puntuali li
+    # innesca cron-job.org via workflow_dispatch. Il cron di GitHub slitta di
+    # 1-4.6 ore (misurato), il che vanificherebbe l'alert immediato — il cui
+    # senso e' proprio candidarsi lo stesso giorno.
+    # Queste entry coprono il caso in cui il trigger esterno non arrivi; il guard
+    # sulla distanza minima piu' sotto evita che ripetano un run gia' fatto.
     - cron: '17 9 * * *'
-    - cron: '17 10 * * *'
-    - cron: '17 11 * * *'
-    - cron: '17 12 * * *'
     - cron: '17 13 * * *'
-    - cron: '17 14 * * *'
-    - cron: '30 15 * * *'
-    - cron: '30 16 * * *'
   workflow_dispatch:        # avvio manuale dalla UI GitHub
 
 concurrency:
