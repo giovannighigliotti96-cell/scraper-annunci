@@ -3450,6 +3450,12 @@ ALTRE_CITTA_ITALIANE = [
     "perugia", "pescara", "cagliari", "salerno", "trento", "bolzano",
     "varese", "como", "monza", "novara", "lecco", "pisa", "livorno",
     "barberino", "prato", "arezzo", "siena", "rimini", "ravenna", "forli",
+    # Citta' vicine alle tre target: sono quelle che generano lo scambio piu'
+    # insidioso, perche' un annuncio a La Spezia o a Savona "sembra" Genova.
+    # La Spezia mancava, ed e' costata un falso positivo reale il 09/09/2026:
+    # un "Responsabile vendite" di La Spezia recapitato come offerta di Genova.
+    "la spezia", "savona", "imperia", "alessandria", "asti", "cuneo",
+    "pavia", "cremona", "piacenza", "biella", "vercelli", "aosta",
     # regioni e macro-aree
     "veneto", "friuli", "emilia-romagna", "emilia romagna", "toscana", "lazio",
     "campania", "puglia", "sicilia", "sardegna", "marche", "umbria", "abruzzo",
@@ -3503,6 +3509,22 @@ def rileva_citta_offerta(job):
     return None
 
 
+def citta_coerente_col_testo(job) -> bool:
+    """True se la città attribuita all'offerta è compatibile con il suo testo.
+
+    Ritorna False solo quando il testo nomina città diverse da quella attribuita
+    e NON nomina quella attribuita: è il caso in cui l'annuncio è quasi
+    certamente altrove. Con un testo che non nomina città (o non scaricato) la
+    risposta è True, perché non c'è modo di smentire l'attribuzione."""
+    testo = f"{job.title} {job.snippet} {job.testo_completo}".lower()
+    if not testo.strip():
+        return True
+    varianti = CITTA_TARGET_PATTERN.get(job.city, [])
+    if any(v in testo for v in varianti):
+        return True
+    return not any(c in testo for c in ALTRE_CITTA_ITALIANE)
+
+
 def filtra_offerte_per_citta(offerte_scraper, city_config):
     """Filtra le offerte in base alla configurazione della città.
     Genova (filter_hybrid_only=False): accetta in sede e ibrido, esclude da remoto.
@@ -3515,6 +3537,21 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
         # ciclo lo lascerebbe cambiato anche per tutte le offerte successive
         # dello stesso batch.
         cfg = city_config
+        # Coerenza geografica per i portali che assegnano gia' una citta' target
+        # (LinkedIn, Wyser, Adami...): quella citta' viene dalla QUERY di ricerca,
+        # non dalla sede reale dell'annuncio. LinkedIn in particolare restituisce
+        # spesso annunci dei dintorni: verificato dal vivo il 09/09/2026 un
+        # "Responsabile vendite" con sede a La Spezia recapitato come offerta di
+        # Genova — esattamente il difetto per cui l'utente apriva un annuncio e
+        # trovava un'altra regione.
+        # Si scarta solo nel caso inequivocabile: la citta' assegnata NON compare
+        # nel testo dell'annuncio, ma ne compaiono altre. Se il testo non nomina
+        # alcuna citta' (o non e' stato scaricato) l'offerta si tiene, perche'
+        # l'assenza di prova non e' prova di assenza.
+        if job.city in CITTA_TARGET_PATTERN and not citta_coerente_col_testo(job):
+            logging.info(f"Offerta scartata (sede reale diversa da {job.city}): {job.title} — {job.link}")
+            continue
+
         # Freschezza: un annuncio pubblicato mesi fa è quasi sempre una ricerca
         # già chiusa lasciata online. Il controllo sta qui perché questa funzione
         # è il gate comune a entrambi gli entry point (esegui_scraping_job e
