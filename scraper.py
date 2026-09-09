@@ -3377,6 +3377,38 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
     return "".join(parti)
 
 
+# Data dell'ultimo riepilogo giornaliero inviato con successo. Serve a poter
+# schedulare MOLTI tentativi di invio senza rischiare piu' email nello stesso
+# giorno: il cron di GitHub Actions ritarda i workflow in modo imprevedibile
+# (misurati 2-4.6 ore di ritardo sull'orario target su 12 giorni consecutivi),
+# quindi l'unico modo per ricevere la mail vicino all'orario voluto e' provarci
+# piu' volte e fermarsi al primo tentativo andato a buon fine.
+ULTIMO_INVIO_FILE = "ultimo_invio.json"
+
+
+def email_gia_inviata_oggi() -> bool:
+    """True se il riepilogo di oggi e' gia' partito. In caso di file illeggibile
+    ritorna False: meglio una mail doppia che nessuna mail."""
+    try:
+        dati = state_io.load_json_or_raise(ULTIMO_INVIO_FILE, {})
+        return isinstance(dati, dict) and dati.get("data") == datetime.now().strftime("%Y-%m-%d")
+    except Exception as e:
+        logging.warning(f"Errore lettura {ULTIMO_INVIO_FILE}: {e}")
+        return False
+
+
+def registra_invio_email():
+    """Segna che il riepilogo di oggi e' stato inviato. Chiamata solo dopo un
+    invio SMTP riuscito."""
+    try:
+        _atomic_write_json(ULTIMO_INVIO_FILE,
+                           {"data": datetime.now().strftime("%Y-%m-%d"),
+                            "orario": datetime.now().strftime("%H:%M:%S")},
+                           ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"Errore scrittura {ULTIMO_INVIO_FILE}: {e}")
+
+
 # Soglia oltre la quale un'offerta merita di essere segnalata SUBITO, senza
 # aspettare il riepilogo serale. Alta di proposito: due o tre avvisi al giorno
 # restano un segnale, dieci diventano rumore e si smette di aprirli.
@@ -3537,6 +3569,7 @@ def invia_email(nuove_offerte):
                 registra_offerte_inviate(offerte_ordinate)
             except Exception as e:
                 logging.error(f"Errore aggiornamento storico offerte inviate: {e}")
+            registra_invio_email()
             return True
         except Exception as e:
             import traceback
