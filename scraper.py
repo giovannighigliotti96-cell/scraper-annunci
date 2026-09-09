@@ -252,6 +252,47 @@ def estrai_testo_cv(pdf_path):
 # Testo integrale del CV, caricato una sola volta all'avvio per il match LLM
 CV_TESTO_COMPLETO = estrai_testo_cv(CV_FILE)
 
+
+# ==========================================
+# ANONIMIZZAZIONE DEL CV PER I FORNITORI LLM
+# ==========================================
+# Il CV viene inviato per intero a ogni chiamata di valutazione semantica. Sul
+# free tier di Gemini i termini dicono che Google usa i contenuti inviati per
+# migliorare i propri modelli e raccomandano di non inviare dati personali:
+# i dati anagrafici vengono quindi rimossi prima dell'invio.
+# Al modello non servono — per stimare la compatibilità con un annuncio contano
+# competenze ed esperienze, non nome, telefono o email — quindi toglierli non
+# degrada il match.
+# Resta un limite onesto: la storia lavorativa non è anonimizzabile senza
+# distruggere proprio l'informazione che serve, e resta potenzialmente
+# riconducibile alla persona.
+# NOTA: si applica SOLO al testo inviato per il match. cv_personalizzazione.py
+# continua a usare il CV completo, perché lì il nome serve davvero (finisce nel
+# .docx generato) e va a Claude, dove i dati non sono usati per il training.
+_NOMI_DA_RIMUOVERE = ["giovanni ghigliotti", "ghigliotti giovanni", "ghigliotti", "giovanni"]
+_RE_EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+")
+# Numeri di telefono: prefisso internazionale opzionale e almeno 8 cifre, con
+# separatori liberi. Volutamente prudente per non intaccare cifre di business
+# (fatturati, percentuali, anni) che al modello servono.
+_RE_TELEFONO = re.compile(r"(?:\+\d{1,3}[\s.-]?)?(?:\d[\s.-]?){8,13}\d")
+
+
+def anonimizza_cv_per_llm(testo: str) -> str:
+    """Toglie dal CV i dati anagrafici prima di inviarlo a un fornitore esterno.
+    Rimuove email, numeri di telefono e il nome del candidato in tutte le forme
+    in cui compare nel documento, sostituendoli con segnaposto."""
+    if not testo:
+        return ""
+    pulito = _RE_EMAIL.sub("[email rimossa]", testo)
+    pulito = _RE_TELEFONO.sub("[telefono rimosso]", pulito)
+    for nome in _NOMI_DA_RIMUOVERE:
+        pulito = re.sub(re.escape(nome), "[nome rimosso]", pulito, flags=re.IGNORECASE)
+    return pulito
+
+
+# Versione del CV effettivamente inviata ai fornitori LLM.
+CV_TESTO_PER_MATCH = anonimizza_cv_per_llm(CV_TESTO_COMPLETO)
+
 # ==========================================
 # MATCH SEMANTICO CV-ANNUNCIO VIA CLAUDE
 # ==========================================
@@ -316,7 +357,7 @@ def valuta_match_llm(job_text: str) -> tuple:
             _anthropic_warning_shown = True
         return None
 
-    system_prompt = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_COMPLETO[:6000])
+    system_prompt = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
 
     try:
         response = client.messages.create(
@@ -408,7 +449,7 @@ def valuta_match_gemini(job_text: str) -> tuple:
             _gemini_warning_shown = True
         return None
 
-    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_COMPLETO[:6000])
+    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
     try:
         risposta = client.interactions.create(
             model=GEMINI_MODEL,
