@@ -17,7 +17,7 @@ from scraper import (
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
     dedup_offerte, aggiorna_stato_portali, arricchisci_offerte_con_llm,
-    invia_alert_immediato
+    invia_alert_immediato, accumula_segnalazioni_aziende
 )
 from state_io import atomic_write_json
 
@@ -68,6 +68,17 @@ if __name__ == "__main__":
         print()
 
     aggiorna_stato_portali(conteggi_grezzi, errori_portali)
+
+    # Aziende target: pagine careers monitorate a rotazione, sezione a parte
+    # nell'email. Isolato in try/except come sopra: e' un canale accessorio.
+    try:
+        import aziende_target
+        off_az, auto_az = aziende_target.controlla_aziende_target()
+        if off_az or auto_az:
+            accumula_segnalazioni_aziende(off_az, auto_az)
+            print(f"Aziende target: {len(off_az)} posizioni aperte, {len(auto_az)} da autocandidatura")
+    except Exception as e:
+        print(f"Monitoraggio aziende target fallito: {str(e)[:90]}")
 
     # Deduplicazione (logica condivisa con esegui_scraping_job in scraper.py:
     # match_level/work_mode/probabilita/motivazione sono già stati calcolati una

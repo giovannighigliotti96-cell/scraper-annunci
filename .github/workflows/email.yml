@@ -117,6 +117,10 @@ jobs:
           # qui sotto, altrimenti i tentativi successivi non saprebbero che la
           # mail e' gia' partita e ne manderebbero un'altra.
           cp ultimo_invio.json /tmp/ultimo_invio.json 2>/dev/null || echo '{}' > /tmp/ultimo_invio.json
+          # invia_email() svuota le segnalazioni aziende solo dopo un invio
+          # riuscito: si conserva quella verita' locale, che il reset --hard
+          # sotto sostituirebbe con la versione remota ancora piena.
+          cp segnalazioni_aziende.json /tmp/segnalazioni_after.json 2>/dev/null || echo '{"offerte":[],"autocandidature":[]}' > /tmp/segnalazioni_after.json
 
           for i in 1 2 3; do
             # Aggiorna al commit più recente del remoto (uno scraping concorrente
@@ -177,11 +181,12 @@ jobs:
           # ultimo_invio.json: vince sempre la versione locale, che e' quella
           # scritta dall'invio appena riuscito.
           atomic_write_json('ultimo_invio.json', load('/tmp/ultimo_invio.json', {}), ensure_ascii=False, indent=2)
+          atomic_write_json('segnalazioni_aziende.json', load('/tmp/segnalazioni_after.json', {'offerte': [], 'autocandidature': []}), ensure_ascii=False, indent=2)
 
           print(f"Merge OK: rimosse {len(link_inviati)} offerte inviate, {len(rimanenti)} rimaste (arrivate nel frattempo)")
           EOF
 
-            git add offerte_giornaliere.json daily_prospects.json storico_offerte.json ultimo_invio.json
+            git add offerte_giornaliere.json daily_prospects.json storico_offerte.json ultimo_invio.json segnalazioni_aziende.json
             if git diff --staged --quiet; then
               echo "Nessuna modifica da salvare."
               exit 0

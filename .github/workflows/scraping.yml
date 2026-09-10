@@ -136,6 +136,11 @@ jobs:
           # committato perché email.yml gira su un runner diverso e lo legge dal
           # repo per segnalare i portali fermi a zero da giorni.
           cp stato_portali.json /tmp/run_stato_portali.json 2>/dev/null || echo '{}' > /tmp/run_stato_portali.json
+          # Stato del monitoraggio aziende target: quali pagine careers sono
+          # gia' state trovate e cosa e' gia' stato segnalato. Senza questo, ogni
+          # run ripartirebbe da zero riproponendo le stesse autocandidature.
+          cp stato_aziende.json /tmp/run_stato_aziende.json 2>/dev/null || echo '{}' > /tmp/run_stato_aziende.json
+          cp segnalazioni_aziende.json /tmp/run_segnalazioni.json 2>/dev/null || echo '{"offerte":[],"autocandidature":[]}' > /tmp/run_segnalazioni.json
 
           for i in 1 2 3; do
             # Aggiorna al commit più recente del remoto (altri run potrebbero aver pushato)
@@ -180,11 +185,13 @@ jobs:
           # "scraping", quindi non ci sono due run di scraping concorrenti da
           # fondere: l'ultimo che finisce ha lo stato più aggiornato.
           atomic_write_json('stato_portali.json', load('/tmp/run_stato_portali.json', {}), ensure_ascii=False, indent=2)
+          atomic_write_json('stato_aziende.json', load('/tmp/run_stato_aziende.json', {}), ensure_ascii=False, indent=2)
+          atomic_write_json('segnalazioni_aziende.json', load('/tmp/run_segnalazioni.json', {'offerte': [], 'autocandidature': []}), ensure_ascii=False, indent=2)
 
           print(f"Merge OK: {len(merged_viste)} URL visti, {len(merged_gior)} offerte oggi")
           EOF
 
-            git add offerte_viste.json offerte_giornaliere.json stato_portali.json
+            git add offerte_viste.json offerte_giornaliere.json stato_portali.json stato_aziende.json segnalazioni_aziende.json
             if git diff --staged --quiet; then
               echo "Nessuna modifica da salvare."
               exit 0

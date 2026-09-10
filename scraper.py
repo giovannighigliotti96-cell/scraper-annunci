@@ -111,6 +111,48 @@ STORICO_OFFERTE_MAX = 400  # tetto: tiene le più recenti, il file resta piccolo
 # Candidature inviate davvero, indicizzate per job_id. Le aggiorna `candidature.py`.
 CANDIDATURE_FILE = "candidature.json"
 
+# Segnalazioni dal monitoraggio delle pagine "lavora con noi" delle aziende
+# target, in attesa di essere recapitate. Sta in un file separato da
+# offerte_giornaliere.json perche' ha una forma diversa (un'offerta di portale
+# ha punteggio, modalita', citta' verificata; qui c'e' un titolo e un link) e
+# perche' nell'email occupa una sezione propria.
+SEGNALAZIONI_AZIENDE_FILE = "segnalazioni_aziende.json"
+
+
+def carica_segnalazioni_aziende():
+    try:
+        dati = state_io.load_json_or_raise(SEGNALAZIONI_AZIENDE_FILE, {})
+        if not isinstance(dati, dict):
+            return {"offerte": [], "autocandidature": []}
+        return {"offerte": dati.get("offerte", []),
+                "autocandidature": dati.get("autocandidature", [])}
+    except Exception as e:
+        logging.error(f"Errore lettura {SEGNALAZIONI_AZIENDE_FILE}: {e}")
+        return {"offerte": [], "autocandidature": []}
+
+
+def salva_segnalazioni_aziende(segnalazioni):
+    try:
+        _atomic_write_json(SEGNALAZIONI_AZIENDE_FILE, segnalazioni, ensure_ascii=False, indent=2)
+    except Exception as e:
+        logging.error(f"Errore scrittura {SEGNALAZIONI_AZIENDE_FILE}: {e}")
+
+
+def accumula_segnalazioni_aziende(offerte, autocandidature):
+    """Aggiunge le segnalazioni trovate in questo run a quelle in attesa,
+    senza duplicare cio' che c'e' gia'."""
+    attuali = carica_segnalazioni_aziende()
+    viste_off = {(o.get("azienda"), o.get("titolo")) for o in attuali["offerte"]}
+    viste_auto = {a.get("azienda") for a in attuali["autocandidature"]}
+    for o in offerte:
+        if (o.get("azienda"), o.get("titolo")) not in viste_off:
+            attuali["offerte"].append(o)
+    for a in autocandidature:
+        if a.get("azienda") not in viste_auto:
+            attuali["autocandidature"].append(a)
+    salva_segnalazioni_aziende(attuali)
+    return attuali
+
 # Quante offerte mostrare nella sezione "da guardare per prime" in cima all'email.
 TOP_OFFERTE_IN_EVIDENZA = 10
 CV_FILE = "cv_ghigliotti.pdf"
@@ -3196,7 +3238,7 @@ def _carica_prospects():
         return []
 
 
-def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate):
+def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, segnalazioni):
     """Versione testo semplice del corpo email: fallback per i client che non
     renderizzano HTML, e copia leggibile del contenuto."""
     body = ""
@@ -3269,9 +3311,25 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
             body += f"  - {riga}\n"
         body += "\n"
 
+    offerte_az = (segnalazioni or {}).get("offerte", [])
+    auto_az = (segnalazioni or {}).get("autocandidature", [])
+    if offerte_az or auto_az:
+        body += "=========================================================\n"
+        body += "AZIENDE TARGET - dai siti aziendali, non dai portali\n"
+        body += "=========================================================\n\n"
+        for o in offerte_az:
+            luogo = f" ({o['citta']})" if o.get("citta") else ""
+            body += f"POSIZIONE APERTA - {o.get('azienda','')}{luogo}\n"
+            body += f"   {o.get('titolo','')}\n   {o.get('link','')}\n\n"
+        for a in auto_az:
+            luogo = f" ({a['citta']})" if a.get("citta") else ""
+            body += f"CANDIDATURA SPONTANEA - {a.get('azienda','')}{luogo}\n"
+            body += "   Nessuna posizione in target aperta, ma la pagina per candidarsi c'e':\n"
+            body += f"   {a.get('link','')}\n\n"
+
     if prospects:
         body += "=========================================================\n"
-        body += f"COMPANY PROSPECTOR: {len(prospects)} AZIENDE TARGET SELEZIONATE OGGI\n"
+        body += f"COMPANY PROSPECTOR: {len(prospects)} AZIENDE SELEZIONATE OGGI\n"
         body += "=========================================================\n\n"
         for p in prospects:
             body += f"Azienda: {p.get('company', 'N/D')}\n"
@@ -3284,7 +3342,7 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
     return body
 
 
-def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, data_oggi):
+def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, segnalazioni, data_oggi):
     """Versione HTML del corpo email: titolo cliccabile, punteggio a colpo
     d'occhio e una sezione "da guardare per prime" in cima.
     Con decine di offerte al giorno il testo semplice diventa una parete in cui
@@ -3391,6 +3449,38 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
             f'border-radius:6px"><b>Portali da controllare</b> (nessun risultato da giorni)'
             f'<ul style="margin:6px 0 0;padding-left:20px">{righe}</ul></div>'
         )
+
+    offerte_az = (segnalazioni or {}).get("offerte", [])
+    auto_az = (segnalazioni or {}).get("autocandidature", [])
+    if offerte_az or auto_az:
+        parti.append(
+            '<h2 style="font-size:15px;margin:26px 0 10px;padding-bottom:5px;'
+            'border-bottom:2px solid #d1d9e0">Aziende target '
+            '<span style="color:#59636e;font-weight:normal">&mdash; dai siti aziendali, non dai portali</span></h2>'
+        )
+        for o in offerte_az:
+            luogo = f" &middot; {esc(o.get('citta'))}" if o.get("citta") else ""
+            parti.append(
+                f'<div style="border:1px solid #d1d9e0;border-left:4px solid #1a7f37;'
+                f'border-radius:6px;padding:12px 14px;margin-bottom:12px">'
+                f'<div style="font-size:15px;margin-bottom:3px">'
+                f'<a href="{esc(o.get("link"))}" style="color:#0969da;text-decoration:none;font-weight:600">'
+                f'{esc(o.get("titolo"))}</a></div>'
+                f'<div style="color:#59636e">{esc(o.get("azienda"))}{luogo} &middot; posizione aperta sul sito aziendale</div>'
+                f'</div>'
+            )
+        for a in auto_az:
+            luogo = f" &middot; {esc(a.get('citta'))}" if a.get("citta") else ""
+            parti.append(
+                f'<div style="border:1px solid #d1d9e0;border-left:4px solid #9a6700;'
+                f'border-radius:6px;padding:12px 14px;margin-bottom:12px">'
+                f'<div style="font-size:15px;margin-bottom:3px">'
+                f'<a href="{esc(a.get("link"))}" style="color:#0969da;text-decoration:none;font-weight:600">'
+                f'{esc(a.get("azienda"))}</a>{luogo}</div>'
+                f'<div style="color:#59636e">Nessuna posizione in target aperta, '
+                f'ma la pagina per candidarsi &egrave; raggiungibile.</div>'
+                f'</div>'
+            )
 
     if prospects:
         parti.append(f'<h2 style="font-size:15px;margin:26px 0 10px">Aziende target di oggi ({len(prospects)})</h2>')
@@ -3565,9 +3655,10 @@ def invia_email(nuove_offerte):
         ripubblicate = {}
 
     prospects = _carica_prospects()
+    segnalazioni = carica_segnalazioni_aziende()
 
-    testo = _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate)
-    corpo_html = _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, data_oggi)
+    testo = _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, segnalazioni)
+    corpo_html = _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, segnalazioni, data_oggi)
 
     # mixed( alternative(plain, html), allegati... ): dentro "alternative" le
     # parti vanno dalla meno preferita alla più preferita, i client mostrano
@@ -3623,6 +3714,10 @@ def invia_email(nuove_offerte):
             except Exception as e:
                 logging.error(f"Errore aggiornamento storico offerte inviate: {e}")
             registra_invio_email()
+            # Segnalazioni recapitate: si svuotano solo ora, come i prospect.
+            # Se l'invio fosse fallito resterebbero in attesa del prossimo.
+            if segnalazioni.get("offerte") or segnalazioni.get("autocandidature"):
+                salva_segnalazioni_aziende({"offerte": [], "autocandidature": []})
             return True
         except Exception as e:
             import traceback
@@ -3964,6 +4059,17 @@ def esegui_scraping_job(orario_label):
             tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
 
     aggiorna_stato_portali(conteggi_grezzi, errori_portali)
+
+    # Monitoraggio delle pagine "lavora con noi" delle aziende target: e' un
+    # canale diverso dai portali e vive in una sezione propria dell'email.
+    # Un errore qui non deve mai fermare lo scraping, che e' la parte principale.
+    try:
+        import aziende_target
+        off_az, auto_az = aziende_target.controlla_aziende_target()
+        if off_az or auto_az:
+            accumula_segnalazioni_aziende(off_az, auto_az)
+    except Exception as e:
+        logging.error(f"Monitoraggio aziende target fallito: {e}")
 
     viste = load_viste()  # ora è un set
     nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
