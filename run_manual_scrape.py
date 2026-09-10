@@ -79,7 +79,9 @@ if __name__ == "__main__":
     # Valutazione semantica solo sulle offerte superstiti (vedi
     # arricchisci_offerte_con_llm): stessa scelta di esegui_scraping_job.
     print(f"Valutazione semantica di {len(nuove_offerte)} offerte...")
-    arricchisci_offerte_con_llm(nuove_offerte)
+    # Il valore di ritorno e' la lista FILTRATA: arricchisci_offerte_con_llm
+    # scarta le offerte che, lette dall'LLM, restano sotto la soglia minima.
+    nuove_offerte = arricchisci_offerte_con_llm(nuove_offerte)
 
     # Alert immediato per le offerte ad alta affinita': il valore sta nel
     # candidarsi lo stesso giorno, non nove ore dopo (vedi invia_alert_immediato).

@@ -338,6 +338,8 @@ COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un
 Non concentrare i punteggi nella fascia alta, ma distingui i requisiti BLOCCANTI da quelli DESIDERATI: i selezionatori applicano le liste di requisiti con flessibilità, e un requisito mancante non equivale a una porta chiusa.
 - Sono BLOCCANTI (portano sotto 40): una lingua che il candidato non parla, una sede fuori dalle tre città o il full remote, un'abilitazione o un titolo obbligatorio che non ha, un settore fortemente regolamentato dove l'esperienza specifica è un prerequisito reale (farmaceutico, bancario, assicurativo), una seniority enormemente distante (ruoli da CEO/DG di grande gruppo, oppure junior).
 - NON sono bloccanti (abbassano di 10-20 punti, non affossano): qualche anno di esperienza in più rispetto ai suoi, uno strumento specifico che non ha usato (es. Salesforce al posto di HubSpot), un modello di vendita o un tipo di struttura che non ha praticato, un settore diverso ma non regolamentato, una dimensione aziendale maggiore.
+COERENZA DEL PERCORSO, non solo delle competenze. Prima di dare un punteggio alto, chiediti se il candidato ha mai FATTO quel mestiere, non solo se ha competenze che vi si sovrappongono. Un ruolo di vendita pura (Sales Director, Direttore Vendite, Area Manager, Key Account) richiede una carriera fatta di gestione di reti commerciali, distributori, agenti, quote e sell-in/sell-out: il candidato non ha nulla di tutto questo nel CV, e nessuno dei suoi titoli lo dice. Che sappia di revenue, KPI, B2B e interlocutori C-level non lo rende un direttore vendite — e candidarsi con un titolo che il suo profilo non sostiene lo espone a un rifiuto immediato. Lo stesso vale per settori con un mestiere proprio: wholesale e fashion, reti di agenti, GDO. Se il ruolo è vendita senza componente digitale o di marketing, il punteggio non deve superare 45 per quanto le competenze si assomiglino.
+
 Calibrazione verificata su un caso reale: un "Digital Sales Manager" che chiedeva 8-10 anni ed esperienza come manager di manager — requisiti che il candidato non soddisfa alla lettera — lo ha in realtà portato fino all'ultimo step della selezione. Un annuncio così merita 70-80, non 50.
 
 MOTIVAZIONE (massimo 3 righe, in italiano):
@@ -665,6 +667,7 @@ def arricchisci_offerte_con_llm(offerte):
             # l'annuncio per intero e capisce le forme che detect_work_mode non
             # copre ("autonomia sui giorni in ufficio"). Se dice "non indicata"
             # si tiene quella precedente, per non perdere informazione.
+            job.valutato_da = "llm"
             if modalita:
                 if modalita != job.work_mode:
                     logging.info(f"Modalita' corretta dall'LLM per '{job.title}': "
@@ -673,7 +676,21 @@ def arricchisci_offerte_con_llm(offerte):
                 job.dettaglio_modalita = dettaglio
             riuscite += 1
     logging.info(f"Valutazione LLM: {riuscite}/{len(offerte)} offerte rivalutate semanticamente.")
-    return offerte
+
+    # Scarto per punteggio DOPO la valutazione: qui ogni offerta ha un giudizio
+    # sul contenuto reale dell'annuncio, non sul solo titolo. E' il filtro piu'
+    # accurato di tutti quelli applicati finora, perche' gli altri lavorano su
+    # proxy (parole nel titolo, citta' nel testo) mentre questo legge l'annuncio.
+    tenute = []
+    for job in offerte:
+        if offerta_sotto_soglia(job):
+            logging.info(f"Offerta scartata (punteggio {_prob_ordinabile(job)} < {SOGLIA_MINIMA_PUNTEGGIO}): "
+                         f"{job.title} — {job.motivazione[:80]}")
+            continue
+        tenute.append(job)
+    if len(tenute) < len(offerte):
+        logging.info(f"Scartate {len(offerte) - len(tenute)} offerte sotto la soglia di {SOGLIA_MINIMA_PUNTEGGIO}.")
+    return tenute
 
 # ==========================================
 # SCORING PROBABILITÀ RICHIAMATA
@@ -1682,7 +1699,7 @@ def portali_sospetti():
 # ==========================================
 
 class ScrapedJob:
-    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita=""):
+    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita="", valutato_da=""):
         # title/snippet guardati come company/date: un valore None (es. da un record
         # legacy con "title": null in offerte_giornaliere.json) non deve far crashare
         # il costruttore con AttributeError su .strip().
@@ -1721,6 +1738,10 @@ class ScrapedJob:
         # la categoria, questo dice il dettaglio che serve per decidere se il
         # pendolarismo e' sostenibile.
         self.dettaglio_modalita = dettaglio_modalita if dettaglio_modalita else ""
+        # "llm" se il punteggio viene da una valutazione semantica, "euristica"
+        # se dal conteggio di keyword. Distinzione necessaria perche' la soglia
+        # minima si applica solo al primo caso: vedi offerta_sotto_soglia.
+        self.valutato_da = valutato_da if valutato_da else "euristica"
 
     def to_dict(self):
         return {
@@ -1740,6 +1761,7 @@ class ScrapedJob:
             "testo_completo": self.testo_completo,
             "ral": self.ral,
             "dettaglio_modalita": self.dettaglio_modalita,
+            "valutato_da": self.valutato_da,
         }
 
     @classmethod
@@ -1755,7 +1777,7 @@ class ScrapedJob:
             _safe_str(data, "city", ""), data.get("work_mode", "unverified"), data.get("fetch_status", "no_attempt"),
             data.get("probabilita", 0), data.get("motivazione", ""),
             data.get("testo_completo", ""), data.get("ral", ""),
-            data.get("dettaglio_modalita", ""),
+            data.get("dettaglio_modalita", ""), data.get("valutato_da", ""),
         )
 
 class BaseScraper:
@@ -3420,6 +3442,26 @@ def registra_invio_email():
         logging.error(f"Errore scrittura {ULTIMO_INVIO_FILE}: {e}")
 
 
+# Punteggio sotto il quale un'offerta non arriva nemmeno in email. Finora il
+# punteggio ordinava soltanto: risultato, ogni sera c'erano da scorrere anche
+# offerte da 8-30 punti (il 16% del totale ricevuto) che non valeva la pena
+# aprire. Misurato sulle 50 offerte reali: la soglia a 50 ne toglie 8 e alza la
+# media da 73 a 83, senza sacrificarne nessuna valida — tra 40 e 50 non ce n'è
+# nessuna, la fascia e' vuota.
+SOGLIA_MINIMA_PUNTEGGIO = 50
+
+
+def offerta_sotto_soglia(job) -> bool:
+    """True se l'offerta va scartata per punteggio troppo basso.
+
+    Vale SOLO per le offerte valutate da un modello: quando l'LLM non e'
+    disponibile il punteggio arriva dall'euristica a keyword, che conta parole e
+    non legge l'annuncio — filtrare su quel numero significherebbe scartare
+    offerte buone per colpa di un fallback, che e' esattamente il momento in cui
+    servirebbe piu' prudenza, non meno."""
+    return job.valutato_da == "llm" and _prob_ordinabile(job) < SOGLIA_MINIMA_PUNTEGGIO
+
+
 # Soglia oltre la quale un'offerta merita di essere segnalata SUBITO, senza
 # aspettare il riepilogo serale. Alta di proposito: due o tre avvisi al giorno
 # restano un segnale, dieci diventano rumore e si smette di aprirli.
@@ -3929,7 +3971,9 @@ def esegui_scraping_job(orario_label):
 
     # Valutazione semantica solo sulle offerte superstiti: qui sono poche e
     # ognuna arrivera' in email, quindi ogni chiamata a pagamento e' spesa bene.
-    arricchisci_offerte_con_llm(nuove_offerte)
+    # arricchisci_offerte_con_llm ora RITORNA la lista filtrata (scarta le offerte
+    # sotto la soglia di punteggio), quindi il valore di ritorno va usato.
+    nuove_offerte = arricchisci_offerte_con_llm(nuove_offerte)
     invia_alert_immediato(nuove_offerte)
 
     giornaliere = load_giornaliere()
