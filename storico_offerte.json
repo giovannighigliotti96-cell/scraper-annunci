@@ -1,5 +1,35 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/creator-growth-manager-at-metapic-4464507031",
+    "data_invio": "2026-09-10",
+    "titolo": "Creator Growth Manager",
+    "azienda": "Metapic",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/creator-growth-manager-at-metapic-4464507031"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sports-marketing-manager-at-havas-media-network-italy-4463445252",
+    "data_invio": "2026-09-10",
+    "titolo": "Sports Marketing Manager",
+    "azienda": "Havas Media Network Italy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/sports-marketing-manager-at-havas-media-network-italy-4463445252"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/therapy-development-marketing-manager-at-edwards-lifesciences-4463050491",
+    "data_invio": "2026-09-10",
+    "titolo": "Therapy Development Marketing Manager",
+    "azienda": "Edwards Lifesciences",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 12,
+    "link": "https://it.linkedin.com/jobs/view/therapy-development-marketing-manager-at-edwards-lifesciences-4463050491"
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586",
     "data_invio": "2026-09-09",
     "titolo": "Direttore Commerciale Servizi Controllo Consumi",
