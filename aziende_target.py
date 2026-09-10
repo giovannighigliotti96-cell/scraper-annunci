@@ -31,9 +31,11 @@ import state_io
 AZIENDE_FILE = "aziende_target.json"
 STATO_AZIENDE_FILE = "stato_aziende.json"
 
-# Quante aziende controllare per ogni run. Con 200 aziende e 4 run al giorno,
-# una rotazione da 50 le copre tutte una volta al giorno senza mai fare 200
-# richieste in blocco: nessun sito viene martellato e il run non si allunga.
+# Quante aziende controllare per ogni run. Con 359 aziende in lista e 4 run al
+# giorno, una rotazione da 50 le copre tutte in poco meno di due giorni senza
+# mai fare centinaia di richieste in blocco: nessun sito viene martellato e il
+# run non si allunga. I primi giri sono i piu' lenti perche' devono ancora
+# scoprire dove sta la pagina careers; dopo, ogni azienda costa una richiesta.
 AZIENDE_PER_RUN = 50
 
 # Ogni quanto riproporre l'autocandidatura di un'azienda che non ha offerte
