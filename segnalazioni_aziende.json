@@ -1,4 +1,65 @@
 {
   "offerte": [],
-  "autocandidature": []
+  "autocandidature": [
+    {
+      "azienda": "Audio Effetti Srl",
+      "citta": "Genova",
+      "link": "https://audioeffetti.com/it/careers"
+    },
+    {
+      "azienda": "Mikai Spa",
+      "citta": "Genova",
+      "link": "https://www.mikai.it/"
+    },
+    {
+      "azienda": "Wilhelmsen Ships Service Spa",
+      "citta": "Genova",
+      "link": "https://www.wilhelmsen.com/careers"
+    },
+    {
+      "azienda": "Phase Motion Control Spa",
+      "citta": "Genova",
+      "link": "https://www.phase.eu/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Centro Per Gli Studi Di Tecnica Navale Cetena Spa",
+      "citta": "Genova",
+      "link": "https://www.cetena.it/opportunita-di-lavoro/"
+    },
+    {
+      "azienda": "Kongsberg Maritime Italy Srl",
+      "citta": "Genova",
+      "link": "https://www.kongsbergmaritime.com/a-career-with-kongsberg-maritime/"
+    },
+    {
+      "azienda": "Soteco International Srl",
+      "citta": "Genova",
+      "link": "https://www.sotecointernational.com/careers/"
+    },
+    {
+      "azienda": "Helan Cosmesi Di Laboratorio Srl",
+      "citta": "Genova",
+      "link": "https://helan.com/lavora-con-noi"
+    },
+    {
+      "azienda": "Ultraflex Spa",
+      "citta": "Genova",
+      "link": "https://www.ultraflex.it/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Uflex Srl",
+      "citta": "Genova",
+      "link": "https://uflex.it/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Green Project Srl",
+      "citta": "Genova",
+      "link": "https://www.greenproject.it/careers"
+    },
+    {
+      "azienda": "Iis Cert Srl",
+      "citta": "Genova",
+      "link": "https://www.iis.it/it/lavora-con-noi"
+    }
+  ]
 }
