@@ -1,5 +1,35 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/co-founder-coo-head-of-growth-healthtech-at-pronto-visite-4466464825",
+    "data_invio": "2026-09-12",
+    "titolo": "Co-Founder & COO - Head of Growth (HealthTech)",
+    "azienda": "Pronto Visite",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/co-founder-coo-head-of-growth-healthtech-at-pronto-visite-4466464825"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/integrated-marketing-manager-at-deliveroo-4465159212",
+    "data_invio": "2026-09-12",
+    "titolo": "Integrated Marketing Manager",
+    "azienda": "Deliveroo",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 74,
+    "link": "https://it.linkedin.com/jobs/view/integrated-marketing-manager-at-deliveroo-4465159212"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/customer-marketing-manager-at-costa-crociere-s-p-a-4447153307",
+    "data_invio": "2026-09-12",
+    "titolo": "Customer Marketing Manager",
+    "azienda": "Costa Crociere S.p.A.",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/customer-marketing-manager-at-costa-crociere-s-p-a-4447153307"
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/creator-growth-manager-at-metapic-4464507031",
     "data_invio": "2026-09-10",
     "titolo": "Creator Growth Manager",
