@@ -1,5 +1,72 @@
 {
-  "offerte": [],
+  "offerte": [
+    {
+      "titolo": "Digital Marketing Manager (Mensch) Programmatic Advertising",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5039075008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Head of Digital",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5398305008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Marketing Manager Retail Media (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5379162008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Online Marketing Manager – Digitale Media Kampagnen (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5039065008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Online Marketing Manager – Media Planning (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5416341008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Online Marketing Manager (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5237372008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Performance Marketing Manager (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5416348008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Senior Performance Marketing Manager",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5373737008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Senior Performance Marketing Manager (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5227466008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Senior Video Marketing Manager – Media Planning (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5250592008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Senior Video Marketing Manager – Strategy & Innovation (Mensch)",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5039022008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    }
+  ],
   "autocandidature": [
     {
       "azienda": "Audio Effetti Srl",
@@ -120,6 +187,101 @@
       "azienda": "Veleria San Giorgio Srl",
       "citta": "Genova",
       "link": "https://www.veleriasangiorgio.com/lavora-con-noi/"
+    },
+    {
+      "azienda": "Nielsen Media Services Italy Srl",
+      "citta": "Milano",
+      "link": "https://www.nielsen.com/careers/"
+    },
+    {
+      "azienda": "Avvale Yubiq Spa",
+      "citta": "Milano",
+      "link": "https://www.avvale.com/careers"
+    },
+    {
+      "azienda": "Cegeka Business Solutions Italia Srl",
+      "citta": "Milano",
+      "link": "https://www.cegeka.com/it/careers"
+    },
+    {
+      "azienda": "Nielsen Media Italy Srl",
+      "citta": "Milano",
+      "link": "https://www.nielsen.com/careers/"
+    },
+    {
+      "azienda": "Gruppo Mobili Quattrozeta Srl",
+      "citta": "Milano",
+      "link": "https://www.gm4z.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Arredissima Legnano Srl",
+      "citta": "Milano",
+      "link": "https://www.arredissima.com/contatti/lavora-con-noi/"
+    },
+    {
+      "azienda": "Bcd Travel Italy Spa",
+      "citta": "Milano",
+      "link": "https://www.bcdtravel.com/jobs/"
+    },
+    {
+      "azienda": "Finomnia Spa",
+      "citta": "Milano",
+      "link": "https://www.finomnia.com/it/lavora-con-noi"
+    },
+    {
+      "azienda": "Lvmh Watch & Jewelry Italy Spa",
+      "citta": "Milano",
+      "link": "https://www.lvmh.com/join-us"
+    },
+    {
+      "azienda": "Menghi Spa",
+      "citta": "Milano",
+      "link": "https://menghi.com/lavora-con-noi/"
+    },
+    {
+      "azienda": "Accenture Services And Technology Srl",
+      "citta": "Milano",
+      "link": "https://www.accenture.com/us-en/careers"
+    },
+    {
+      "azienda": "Sauter Italia Spa",
+      "citta": "Milano",
+      "link": "https://www.sauteritalia.it/aziende/lavoro-e-carriera/lavora-con-noi/"
+    },
+    {
+      "azienda": "Exeltis Italia Srl",
+      "citta": "Milano",
+      "link": "https://exeltis.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Emmelibri Srl",
+      "citta": "Milano",
+      "link": "https://www.emmelibri.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Medacta Italia Srl",
+      "citta": "Milano",
+      "link": "https://www.medacta.com/it/careers"
+    },
+    {
+      "azienda": "Qiagen Srl",
+      "citta": "Milano",
+      "link": "https://www.qiagen.com/us/careers"
+    },
+    {
+      "azienda": "Eae Italia Srl",
+      "citta": "Milano",
+      "link": "https://www.eaeitalia.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Longlife Srl",
+      "citta": "Milano",
+      "link": "https://www.longlife.com/work-with-us"
+    },
+    {
+      "azienda": "Yokogawa Italia Srl",
+      "citta": "Milano",
+      "link": "https://www.yokogawa.com/about/careers/"
     }
   ]
 }
