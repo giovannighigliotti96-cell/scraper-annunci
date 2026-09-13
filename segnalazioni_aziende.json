@@ -145,6 +145,31 @@
       "azienda": "Remer Rubinetterie Spa",
       "citta": "Milano",
       "link": "https://remer.eu/jobs"
+    },
+    {
+      "azienda": "Ing Enea Mattei Spa",
+      "citta": "Milano",
+      "link": "https://www.matteigroup.com/contacts/careers"
+    },
+    {
+      "azienda": "Negri Bossi Spa",
+      "citta": "Milano",
+      "link": "https://www.negribossi.com/careers/"
+    },
+    {
+      "azienda": "Muno Italy Srl",
+      "citta": "Milano",
+      "link": "https://www.munocorp.com/careers"
+    },
+    {
+      "azienda": "Atlas Copco Blm Srl",
+      "citta": "Milano",
+      "link": "https://www.atlascopcogroup.com/en/careers"
+    },
+    {
+      "azienda": "Arrow Diagnostics Srl",
+      "citta": "Genova",
+      "link": "http://www.arrowdiagnostics.it/it/lavora-con-noi/"
     }
   ]
 }
