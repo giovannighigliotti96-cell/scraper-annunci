@@ -170,6 +170,16 @@
       "azienda": "Arrow Diagnostics Srl",
       "citta": "Genova",
       "link": "http://www.arrowdiagnostics.it/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Timossi Commerciale Spa",
+      "citta": "Genova",
+      "link": "https://www.timossi.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Monti E Barabino Spa",
+      "citta": "Genova",
+      "link": "https://montiebarabino.com/lavora-con-noi/"
     }
   ]
 }
