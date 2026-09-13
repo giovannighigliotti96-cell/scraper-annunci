@@ -1,4 +1,65 @@
 {
   "offerte": [],
-  "autocandidature": []
+  "autocandidature": [
+    {
+      "azienda": "Synthesis Spa",
+      "citta": "Milano",
+      "link": "https://synthesisweb.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Eurosyn Spa",
+      "citta": "Milano",
+      "link": "https://eurosyn.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Advanz Pharma Italia Srl",
+      "citta": "Milano",
+      "link": "https://www.advanzpharma.com/careers"
+    },
+    {
+      "azienda": "Acal Bfi Italy Srl",
+      "citta": "Milano",
+      "link": "https://www.acalbfi.com/about-us/careers/"
+    },
+    {
+      "azienda": "Sifem International Srl",
+      "citta": "Milano",
+      "link": "https://www.sifem.it/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Trend Micro Italy Srl",
+      "citta": "Milano",
+      "link": "https://www.trendmicro.com/en_us/about/careers.html"
+    },
+    {
+      "azienda": "Pall Italia Srl",
+      "citta": "Milano",
+      "link": "https://jobs.danaher.com/global/en/pall"
+    },
+    {
+      "azienda": "Haas Factory Outlet Operated By Celada Srl",
+      "citta": "Milano",
+      "link": "https://www.haasfactoryoutlet.com/careers"
+    },
+    {
+      "azienda": "Rinaldo Franco Spa",
+      "citta": "Milano",
+      "link": "https://www.rinaldofranco.com/lavora-con-noi/"
+    },
+    {
+      "azienda": "Elcart Distribution Spa",
+      "citta": "Milano",
+      "link": "https://www.elcart.com/it/azienda/lavora-con-noi"
+    },
+    {
+      "azienda": "Orvital Spa",
+      "citta": "Milano",
+      "link": "https://www.orvital.it/lavora-con-noi"
+    },
+    {
+      "azienda": "Fiore Srl",
+      "citta": "Milano",
+      "link": "https://www.fioresrl.com/lavora-con-noi/"
+    }
+  ]
 }
