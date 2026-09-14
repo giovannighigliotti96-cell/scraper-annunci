@@ -1477,8 +1477,11 @@ def is_valid_job_title(title: str) -> bool:
     Restituisce True se il titolo corrisponde a uno dei ruoli target.
     Logica: EXACT_TITLES match AND NOT EXCLUSION match.
     """
-    t = title.lower().strip()
-    
+    # Spazi ripetuti compressi: "RESPONSABILE  MARKETING" (doppio spazio, visto
+    # dal vivo su ReverseGroup il 14/09/2026) non combaciava con la regola
+    # "responsabile marketing" e veniva scartato senza motivo.
+    t = re.sub(r"\s+", " ", title.lower()).strip()
+
     # 1. Controlla esclusioni prima di tutto
     for excl in TITLE_EXCLUSIONS:
         if excl in t:
