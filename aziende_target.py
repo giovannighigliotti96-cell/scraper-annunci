@@ -152,8 +152,35 @@ def _offerte_da_jsonld(html):
             if isinstance(item, dict) and item.get("@type") == "JobPosting":
                 titolo = item.get("title")
                 if titolo:
-                    titoli.append((str(titolo).strip(), item.get("url", "")))
+                    titoli.append((str(titolo).strip(), item.get("url", ""),
+                                   _luogo_da_valore(item.get("jobLocation"))))
     return titoli
+
+
+def _luogo_da_valore(valore):
+    """Riduce a testo il campo "sede" di un annuncio, qualunque forma abbia.
+
+    Ogni ATS lo scrive a modo suo: una stringa ("Milano"), un oggetto
+    ({"name": "Berlin"}), un oggetto annidato schema.org ({"address":
+    {"addressLocality": "Wien", "addressCountry": "AT"}}), o una lista di
+    sedi. Qui si raccolgono tutte le stringhe che contiene, in un unico testo
+    minuscolo: a decidere se e' Italia pensa poi _offerta_in_italia."""
+    pezzi = []
+
+    def raccogli(v):
+        if isinstance(v, str):
+            pezzi.append(v)
+        elif isinstance(v, dict):
+            for k, x in v.items():
+                if k in ("@type", "@context", "id", "url", "geo", "latitude", "longitude"):
+                    continue
+                raccogli(x)
+        elif isinstance(v, list):
+            for x in v:
+                raccogli(x)
+
+    raccogli(valore)
+    return " ".join(pezzi).lower().strip()
 
 
 def _offerte_da_ats(html, url_careers=""):
@@ -184,8 +211,14 @@ def _offerte_da_ats(html, url_careers=""):
                     continue
                 titolo = job.get("title") or job.get("text") or job.get("name")
                 link = job.get("absolute_url") or job.get("hostedUrl") or job.get("careers_url") or ""
+                # Greenhouse: location.name; Lever: categories.location;
+                # Recruitee: location / city / country; Workable: location.{city,country}
+                luogo = _luogo_da_valore([job.get("location"), job.get("city"),
+                                          job.get("country"), job.get("country_code"),
+                                          (job.get("categories") or {}).get("location")
+                                          if isinstance(job.get("categories"), dict) else None])
                 if titolo:
-                    titoli.append((str(titolo).strip(), link))
+                    titoli.append((str(titolo).strip(), link, luogo))
             if titoli:
                 logging.info(f"Offerte lette da {nome_ats} (slug {slug}): {len(titoli)}")
                 return titoli
@@ -207,7 +240,7 @@ def _offerte_da_html(html, url_base):
             if link and not link.startswith("http"):
                 from urllib.parse import urljoin
                 link = urljoin(url_base, link)
-            titoli.append((testo, link or url_base))
+            titoli.append((testo, link or url_base, ""))
     return titoli
 
 
@@ -221,13 +254,59 @@ def offerte_pertinenti(html, url_careers):
                  or _offerte_da_html(html, url_careers))
     viste = set()
     risultato = []
-    for titolo, link in candidati:
+    for titolo, link, luogo in candidati:
         chiave = titolo.lower().strip()
         if chiave in viste or not is_valid_job_title(titolo):
+            continue
+        if not _offerta_in_italia(titolo, luogo):
+            logging.info(f"Offerta estera scartata: {titolo} [{luogo or 'sede non indicata'}]")
             continue
         viste.add(chiave)
         risultato.append({"titolo": titolo, "link": link or url_careers})
     return risultato
+
+
+# Segni nel titolo che tradiscono un annuncio scritto per un altro paese. Le
+# formule di parita' di genere tedesche ("(m/w/d)", "(Mensch)") e francesi
+# ("(H/F)") sono le piu' frequenti, ma bastano anche le parole comuni.
+_TITOLO_ESTERO = re.compile(
+    r"\((?:m/w/d|w/m/d|m/f/d|f/m/d|m/w/x|mensch|h/f|f/h|m/f/x|m/f/h)\)"
+    r"|\b(?:und|für|fuer|mit|kampagnen|leiter|leitung|mitarbeiter|vertrieb|"
+    r"chargé|chargée|responsable|chef de|alternance|stage|prácticas|gerente)\b",
+    re.IGNORECASE,
+)
+
+# "Italia" nelle lingue degli ATS, piu' la sigla ISO "IT" come parola intera:
+# senza il confine di parola combacerebbe con "un-it-ed kingdom".
+_ITALIA = re.compile(r"\b(?:ital(?:ia|y|ie|ien)|it)\b")
+
+
+def _offerta_in_italia(titolo, luogo):
+    """False se l'annuncio e' chiaramente per un altro paese.
+
+    Le pagine careers delle multinazionali con sede italiana (WPP Media Srl e'
+    il caso reale, 13/09/2026) elencano le posizioni di tutto il gruppo: senza
+    questo controllo arrivavano in email undici annunci tedeschi etichettati
+    "Milano" solo perche' Milano e' la sede dell'azienda in lista.
+
+    Regola: se la sede e' indicata deve essere italiana (citta' target, altra
+    citta' italiana o la parola Italia); se non e' indicata si tiene, a meno che
+    il titolo non sia scritto per un altro paese. Il caso "sede assente" resta
+    permissivo perche' e' quello delle PMI con pagina HTML semplice, che sono il
+    bersaglio di questo monitoraggio e non hanno sedi all'estero."""
+    from scraper import CITTA_TARGET_PATTERN, ALTRE_CITTA_ITALIANE
+
+    if _TITOLO_ESTERO.search(titolo):
+        return False
+    if not luogo:
+        return True
+    if _ITALIA.search(luogo):
+        return True
+    if any(v in luogo for varianti in CITTA_TARGET_PATTERN.values() for v in varianti):
+        return True
+    if any(c in luogo for c in ALTRE_CITTA_ITALIANE):
+        return True
+    return False
 
 
 def _gia_arrivata_dai_portali(titolo, nome_azienda):
