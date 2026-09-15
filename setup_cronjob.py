@@ -42,6 +42,11 @@ JOB = [
     ("Scraper — email riepilogo 18:05", "email.yml", 18, 5),
 ]
 
+# Settimanale: il pacchetto di aziende a cui scrivere, il lunedi' mattina.
+JOB_SETTIMANALI = [
+    ("Scraper — outreach lunedi' 09:00", "outreach.yml", 9, 0, 1),  # wday 1 = lunedi'
+]
+
 
 def _chiama(metodo, percorso, api_key, corpo=None):
     dati = json.dumps(corpo).encode() if corpo is not None else None
@@ -58,7 +63,7 @@ def _chiama(metodo, percorso, api_key, corpo=None):
         return e.code, {"errore": e.read().decode()[:300]}
 
 
-def definizione_job(titolo, workflow, ora, minuto, gh_token):
+def definizione_job(titolo, workflow, ora, minuto, gh_token, wdays=(-1,)):
     """Un job che chiama l'endpoint workflow_dispatch di GitHub.
 
     requestMethod 1 = POST. In schedule, -1 significa "ogni": ogni giorno del
@@ -86,7 +91,7 @@ def definizione_job(titolo, workflow, ora, minuto, gh_token):
                 "minutes": [minuto],
                 "mdays": [-1],
                 "months": [-1],
-                "wdays": [-1],
+                "wdays": list(wdays),
             },
         }
     }
@@ -115,7 +120,9 @@ def main():
     print()
 
     creati = saltati = falliti = 0
-    for titolo, workflow, ora, minuto in JOB:
+    tutti = ([(t, w, h, m, (-1,)) for t, w, h, m in JOB]
+             + [(t, w, h, m, (d,)) for t, w, h, m, d in JOB_SETTIMANALI])
+    for titolo, workflow, ora, minuto, wdays in tutti:
         if titolo in esistenti:
             print(f"  = {titolo} — già presente, non lo tocco")
             saltati += 1
@@ -129,7 +136,7 @@ def main():
         if creati:
             time.sleep(3)
         stato, risposta = _chiama("PUT", "/jobs", api_key,
-                                  definizione_job(titolo, workflow, ora, minuto, gh_token))
+                                  definizione_job(titolo, workflow, ora, minuto, gh_token, wdays))
         if stato in (200, 201):
             print(f"  + {titolo} — creato (id {risposta.get('jobId', '?')})")
             creati += 1

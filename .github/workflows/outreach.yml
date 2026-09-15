@@ -1,0 +1,70 @@
+name: Outreach settimanale
+
+on:
+  schedule:
+    # RETE DI SICUREZZA: il trigger puntuale (lunedi' 09:00 Europe/Rome) lo da'
+    # cron-job.org via workflow_dispatch, come per scraping ed email. Questa
+    # entry parte piu' tardi nella giornata e serve solo se il trigger esterno
+    # manca; il modulo non manda doppioni perche' propone solo aziende mai
+    # proposte, quindi un secondo giro nello stesso giorno al massimo ne
+    # aggiunge altre dieci.
+    - cron: '0 12 * * 1'    # lunedi' 14:00 CEST / 13:00 CET
+  workflow_dispatch:
+
+concurrency:
+  group: outreach
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  outreach:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Installa dipendenze
+        run: pip install -r requirements.txt
+
+      - name: Prepara e invia il pacchetto
+        env:
+          GMAIL_USER: ${{ secrets.GMAIL_USER }}
+          GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
+          DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python outreach.py
+
+      - name: Salva lo stato (aziende gia' proposte)
+        run: |
+          git config --local user.email "actions@github.com"
+          git config --local user.name "GitHub Actions"
+          cp outreach_stato.json /tmp/outreach_stato.json
+          for i in 1 2 3; do
+            git fetch origin main
+            git reset --hard origin/main
+            # Lo stato locale e' un superset del remoto (solo aggiunte): si
+            # riporta quello, senza merge.
+            cp /tmp/outreach_stato.json outreach_stato.json
+            git add outreach_stato.json
+            if git diff --cached --quiet; then
+              echo "Nessuna modifica allo stato."
+              exit 0
+            fi
+            git commit -m "chore: aziende proposte nell'outreach [skip ci]"
+            if git push origin HEAD:main; then
+              exit 0
+            fi
+            echo "Push fallito (tentativo $i), riprovo..."
+            sleep $((i * 5))
+          done
+          exit 1
