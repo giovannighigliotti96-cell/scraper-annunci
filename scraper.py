@@ -726,8 +726,14 @@ def arricchisci_offerte_con_llm(offerte):
     tenute = []
     for job in offerte:
         if offerta_sotto_soglia(job):
-            logging.info(f"Offerta scartata (punteggio {_prob_ordinabile(job)} < {SOGLIA_MINIMA_PUNTEGGIO}): "
-                         f"{job.title} — {job.motivazione[:80]}")
+            # Su stdout, non a livello INFO: nei log di GitHub Actions il livello
+            # INFO non compare, e uno scarto invisibile non si puo' discutere.
+            # Il 15/09/2026 un "Responsabile Marketing" (Milano, RAL 55-65k) e'
+            # stato scartato e si e' capito solo rileggendo l'annuncio a mano.
+            # Sono poche righe per run: qui e' il punto in cui il numero di
+            # offerte e' gia' minimo.
+            print(f"  SCARTATA {_prob_ordinabile(job):3d}% | {job.title} — {job.company} ({job.city}) "
+                  f"[{job.portal}]\n           {job.motivazione[:220]}\n           {job.link}")
             continue
         tenute.append(job)
     if len(tenute) < len(offerte):
