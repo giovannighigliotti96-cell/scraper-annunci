@@ -7,7 +7,7 @@ on:
     # ed email. Questa entry parte piu' tardi e serve solo se il trigger esterno
     # manca; il modulo non manda doppioni perche' propone solo aziende e
     # consulenti mai proposti, quindi un secondo giro nello stesso giorno al
-    # massimo aggiunge altre due aziende.
+    # massimo aggiunge altre tre aziende.
     - cron: '30 10 * * *'    # 12:30 CEST / 11:30 CET
   workflow_dispatch:
 

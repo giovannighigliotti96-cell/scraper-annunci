@@ -7,8 +7,8 @@ dice cosa FARE, ed e' la parte che dipende da Giovanni. Tre blocchi:
 1. Due PMI della lista a cui scrivere oggi, con: come si presentano sul sito,
    i nomi con ruolo decisore trovati nelle pagine chi-siamo/team/contatti, i
    recapiti pubblici, e un messaggio di sei righe scritto sul loro business.
-   Perche' due al giorno e non dieci il lunedi': dieci in blocco si rimandano,
-   due si fanno.
+   Perche' tre al giorno e non dieci il lunedi': dieci in blocco si rimandano,
+   tre si fanno.
 2. I consulenti delle societa' di ricerca che hanno gestito le offerte
    recapitate negli ultimi giorni e a cui non e' ancora stato proposto di
    scrivere: entrare nel loro database vale piu' della singola offerta.
@@ -42,7 +42,7 @@ import scraper as S
 
 AZIENDE_FILE = "aziende_target.json"
 STATO_OUTREACH_FILE = "outreach_stato.json"
-AZIENDE_AL_GIORNO = 2
+AZIENDE_AL_GIORNO = 3  # tre al giorno, deciso da Giovanni il 15/09/2026
 # Consulenti visti nelle offerte recapitate in questa finestra di giorni.
 GIORNI_CONSULENTI = 7
 
@@ -360,6 +360,35 @@ def candidature_da_sollecitare():
     return sorted(ferme, key=lambda x: -x[0])
 
 
+def messaggio_consulente(c):
+    """Il messaggio al consulente della societa' di ricerca. Fisso, non scritto
+    dal modello: qui la specificita' sta nel nome e nella ricerca che ha
+    gestito, il resto deve essere breve e uguale per tutti."""
+    nome = c["nome"].split(" (")[0].split()[0]
+    return (f"Buongiorno {nome},\n"
+            f"ho visto la ricerca \"{c['titolo']}\" che segue per {c['azienda']} e le scrivo "
+            f"direttamente perche' il profilo e' vicino al mio: Digital Sales & Marketing Manager, "
+            f"con esperienza nella fondazione e nello scaling di un marketplace B2B2C, nella "
+            f"guida di team fino a 10 persone e nella costruzione di go-to-market e pipeline "
+            f"per PMI e startup.\n"
+            f"Se questa ricerca e' gia' avanti, mi farebbe piacere entrare nel suo database per "
+            f"le prossime su Genova, Milano o da remoto, in ambito digital, marketing e sviluppo "
+            f"commerciale. Le allego il CV; per una call di 15 minuti sono disponibile quando "
+            f"preferisce.\n"
+            f"Grazie del tempo,\nGiovanni Ghigliotti")
+
+
+def messaggio_sollecito(d):
+    """Due righe per riaprire una candidatura ferma: cortese, senza pressare."""
+    azienda = d.get("azienda") or "la vostra azienda"
+    cosa = f"la posizione \"{d['titolo']}\"" if d.get("titolo") else "la mia candidatura"
+    return (f"Buongiorno,\n"
+            f"le scrivo per {cosa} presso {azienda}: resto molto interessato e volevo sapere se "
+            f"la selezione e' ancora aperta e se posso esservi utile con altre informazioni. "
+            f"Nel frattempo grazie per l'attenzione.\n"
+            f"Giovanni Ghigliotti")
+
+
 def testo_pacchetto(schede, consulenti=(), solleciti=()):
     righe = [f"Piano del giorno — {date.today().strftime('%d/%m/%Y')}", ""]
     if consulenti:
@@ -367,13 +396,18 @@ def testo_pacchetto(schede, consulenti=(), solleciti=()):
         for c in consulenti:
             righe += [f"   - {c['nome']} · {c['portale']}",
                       f"     ha gestito: {c['titolo']} — {c['azienda']} ({c['citta']})",
-                      f"     {c['link']}", ""]
+                      f"     {c['link']}", "",
+                      "     MESSAGGIO (LinkedIn o email, con il CV allegato):", ""]
+            righe += ["     " + r for r in messaggio_consulente(c).splitlines()]
+            righe.append("")
     if solleciti:
         righe += ["CANDIDATURE DA SOLLECITARE (ferme da 10+ giorni)", ""]
         for giorni, d in solleciti:
             righe += [f"   - {giorni} giorni · {d.get('azienda') or d.get('titolo') or d.get('link')} [{d.get('stato')}]"
-                      + (f" — {d['note']}" if d.get("note") else "")]
-        righe.append("")
+                      + (f" — {d['note']}" if d.get("note") else ""), "",
+                      "     MESSAGGIO:", ""]
+            righe += ["     " + r for r in messaggio_sollecito(d).splitlines()]
+            righe.append("")
     righe += [f"AZIENDE A CUI SCRIVERE OGGI ({len(schede)})",
               "Per ognuna: cosa fanno, a chi scrivere, il messaggio pronto. Controlla i numeri",
               "nel messaggio prima di mandarlo: li prende dal CV, ma la firma e' tua.", ""]
