@@ -192,6 +192,8 @@ _NON_PERSONA = {
     "director", "manager", "head", "chief", "officer", "partner", "founder", "owner",
     "effettivo", "verifica", "impresa", "compliance", "protect", "servizi", "lingua",
     "indietro", "avanti", "home", "news", "blog", "login", "area", "riservata",
+    "ultimate", "beneficial", "entrepreneur", "per", "the", "and", "our", "your",
+    "product", "products", "brand", "brands", "customer", "customers", "client", "clients",
 }
 
 
