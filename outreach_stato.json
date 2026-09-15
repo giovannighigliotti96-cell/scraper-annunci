@@ -1,1 +1,93 @@
-{}
+{
+  "Sedapta Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Creditsafe Italia Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Ultimate Beneficial",
+        "Owner"
+      ],
+      [
+        "Entrepreneur Per",
+        "Owner"
+      ]
+    ],
+    "email": []
+  },
+  "Lutech Sinergetica Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Stefano Merchiori",
+        "Founder"
+      ]
+    ],
+    "email": []
+  },
+  "Nielsen Media Services Italy Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Jared Grusd",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Alliance Healthcare Italia (It Services) Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Nielsen Media Italy Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Jared Grusd",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Aitek Società Per Azioni": {
+    "proposta_il": "2026-09-15",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Legale Rappresen",
+        "Titolare"
+      ]
+    ],
+    "email": [
+      "dpo@aitek.it"
+    ]
+  },
+  "Avvale Yubiq Spa": {
+    "proposta_il": "2026-09-15",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Buddyfit Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Ingersoll Rand Italia Srl": {
+    "proposta_il": "2026-09-15",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  }
+}
