@@ -63,6 +63,20 @@ def _chiama(metodo, percorso, api_key, corpo=None):
         return e.code, {"errore": e.read().decode()[:300]}
 
 
+def _token_da_job_esistente(api_key, esistenti):
+    for titolo, job in esistenti.items():
+        if not str(titolo).startswith("Scraper"):
+            continue
+        stato, dettagli = _chiama("GET", f"/jobs/{job.get('jobId')}", api_key)
+        if stato != 200:
+            continue
+        intestazioni = ((dettagli.get("jobDetails") or {}).get("extendedData") or {}).get("headers") or {}
+        auth = intestazioni.get("Authorization", "")
+        if auth.startswith("Bearer "):
+            return auth[len("Bearer "):].strip()
+    return ""
+
+
 def definizione_job(titolo, workflow, ora, minuto, gh_token, wdays=(-1,)):
     """Un job che chiama l'endpoint workflow_dispatch di GitHub.
 
@@ -102,10 +116,8 @@ def main():
     api_key = os.getenv("CRONJOB_API_KEY", "").strip()
     gh_token = os.getenv("GH_DISPATCH_TOKEN", "").strip()
 
-    mancanti = [n for n, v in (("CRONJOB_API_KEY", api_key),
-                               ("GH_DISPATCH_TOKEN", gh_token)) if not v]
-    if mancanti:
-        print(f"Mancano nel .env: {', '.join(mancanti)}")
+    if not api_key:
+        print("Manca nel .env: CRONJOB_API_KEY")
         return 1
 
     stato, risposta = _chiama("GET", "/jobs", api_key)
@@ -114,6 +126,17 @@ def main():
         return 1
 
     esistenti = {j.get("title"): j for j in risposta.get("jobs", [])}
+
+    # Il token GitHub si vede una volta sola, alla creazione: se non e' nel
+    # .env lo si rilegge da un job gia' creato, che lo conserva nell'header
+    # Authorization (verificato il 15/09/2026: l'API lo restituisce).
+    if not gh_token:
+        gh_token = _token_da_job_esistente(api_key, esistenti)
+        if gh_token:
+            print("GH_DISPATCH_TOKEN non nel .env: riuso quello dei job esistenti.")
+        else:
+            print("Manca GH_DISPATCH_TOKEN e nessun job esistente da cui rileggerlo.")
+            return 1
     print(f"Job già presenti su cron-job.org: {len(esistenti)}")
     for titolo in esistenti:
         print(f"   - {titolo}")
