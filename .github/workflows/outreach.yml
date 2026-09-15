@@ -44,18 +44,20 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python outreach.py
 
-      - name: Salva lo stato (aziende gia' proposte)
+      - name: Salva lo stato (aziende proposte, bandi visti)
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
           cp outreach_stato.json /tmp/outreach_stato.json
+          cp concorsi_stato.json /tmp/concorsi_stato.json 2>/dev/null || echo '{}' > /tmp/concorsi_stato.json
           for i in 1 2 3; do
             git fetch origin main
             git reset --hard origin/main
             # Lo stato locale e' un superset del remoto (solo aggiunte): si
             # riporta quello, senza merge.
             cp /tmp/outreach_stato.json outreach_stato.json
-            git add outreach_stato.json
+            cp /tmp/concorsi_stato.json concorsi_stato.json
+            git add outreach_stato.json concorsi_stato.json
             if git diff --cached --quiet; then
               echo "Nessuna modifica allo stato."
               exit 0

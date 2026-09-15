@@ -13,6 +13,8 @@ dice cosa FARE, ed e' la parte che dipende da Giovanni. Tre blocchi:
    recapitate negli ultimi giorni e a cui non e' ancora stato proposto di
    scrivere: entrare nel loro database vale piu' della singola offerta.
 3. Le candidature ferme da troppo, da sollecitare (dal tracker).
+4. I concorsi pubblici nuovi e pertinenti (Genova, Milano), letti dal bando:
+   requisiti, RAL, prove, verdetto. Rete di sicurezza, non canale (concorsi.py).
 
 Il ritmo e' stato deciso il 15/09/2026 sui numeri veri: 45 candidature in tre
 mesi, tutte su LinkedIn, 3 colloqui e nessuno scarto sul merito. Il problema
@@ -389,7 +391,7 @@ def messaggio_sollecito(d):
             f"Giovanni Ghigliotti")
 
 
-def testo_pacchetto(schede, consulenti=(), solleciti=()):
+def testo_pacchetto(schede, consulenti=(), solleciti=(), concorsi_testo=""):
     righe = [f"Piano del giorno — {date.today().strftime('%d/%m/%Y')}", ""]
     if consulenti:
         righe += ["CONSULENTI A CUI SCRIVERE OGGI (entri nel loro database, non solo in quella ricerca)", ""]
@@ -433,6 +435,8 @@ def testo_pacchetto(schede, consulenti=(), solleciti=()):
         righe += ["", "   MESSAGGIO:", ""]
         righe += ["   " + r for r in s["pitch"].splitlines() if r.strip()]
         righe.append("")
+    if concorsi_testo:
+        righe += ["=" * 70, "", concorsi_testo, ""]
     righe += ["=" * 70, "",
               "Ogni cosa che mandi, registrala:",
               "   python candidature.py add <link offerta o sito azienda>",
@@ -463,10 +467,18 @@ def main():
     salva_stato(stato)
     solleciti = candidature_da_sollecitare()
     schede = prepara_pacchetto(quante)
-    if not schede and not consulenti and not solleciti:
-        print("Niente da proporre oggi: lista esaurita, nessun consulente nuovo, nessun sollecito.")
+    # I concorsi non devono mai bloccare il piano: inPA giu' o PDF illeggibile
+    # e la sezione semplicemente manca, con un avviso nel log.
+    concorsi_testo = ""
+    try:
+        from concorsi import nuovi_bandi, testo_sezione
+        concorsi_testo = testo_sezione(nuovi_bandi())
+    except Exception as e:
+        logging.warning(f"Sezione concorsi non disponibile: {type(e).__name__}: {e}")
+    if not schede and not consulenti and not solleciti and not concorsi_testo:
+        print("Niente da proporre oggi: lista esaurita, nessun consulente nuovo, nessun sollecito, nessun bando.")
         return 0
-    testo = testo_pacchetto(schede, consulenti, solleciti)
+    testo = testo_pacchetto(schede, consulenti, solleciti, concorsi_testo)
     print(testo)
     if "--niente-email" in sys.argv:
         return 0
