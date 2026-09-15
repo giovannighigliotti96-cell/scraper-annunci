@@ -1695,6 +1695,9 @@ def registra_offerte_inviate(offerte):
             "portale": job.portal,
             "probabilita": _prob_ordinabile(job),
             "link": job.link,
+            # Il consulente serve al piano del giorno (outreach.py), che
+            # propone a chi scrivere tra chi ha gestito le offerte recenti.
+            "recruiter": job.recruiter,
         })
 
     if not nuove:

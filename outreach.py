@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
-"""Pacchetto settimanale di candidature proattive verso le PMI in lista.
+"""Il piano del giorno: la mail delle 10:00 con le cose da fare oggi.
 
-Perche' esiste. Il monitoraggio delle pagine careers (aziende_target.py) dice
-DOVE candidarsi, ma una spontanea infilata in un form la legge nessuno: in una
-PMI da 5-50 milioni assume il titolare o il direttore, e si convince con un
-messaggio scritto sul SUO business, non con un CV generico. Questo modulo
-prepara ogni settimana dieci aziende con: cosa fanno (letto dal loro sito), a
-chi scrivere (nomi e ruoli trovati nelle pagine "chi siamo"/"team"/"contatti"),
-i recapiti pubblici, e un messaggio di sei righe pronto da mandare. Giovanni
-lo manda; il sistema tiene traccia di chi e' gia' stato proposto.
+La mail delle 18:05 dice cosa e' USCITO (offerte e pagine careers). Questa
+dice cosa FARE, ed e' la parte che dipende da Giovanni. Tre blocchi:
+
+1. Due PMI della lista a cui scrivere oggi, con: come si presentano sul sito,
+   i nomi con ruolo decisore trovati nelle pagine chi-siamo/team/contatti, i
+   recapiti pubblici, e un messaggio di sei righe scritto sul loro business.
+   Perche' due al giorno e non dieci il lunedi': dieci in blocco si rimandano,
+   due si fanno.
+2. I consulenti delle societa' di ricerca che hanno gestito le offerte
+   recapitate negli ultimi giorni e a cui non e' ancora stato proposto di
+   scrivere: entrare nel loro database vale piu' della singola offerta.
+3. Le candidature ferme da troppo, da sollecitare (dal tracker).
+
+Il ritmo e' stato deciso il 15/09/2026 sui numeri veri: 45 candidature in tre
+mesi, tutte su LinkedIn, 3 colloqui e nessuno scarto sul merito. Il problema
+era il volume su un canale solo, non il profilo.
 
 Uso:
-    python outreach.py            prepara e invia il pacchetto (10 aziende)
-    python outreach.py --quante 5 --niente-email   prova a video
+    python outreach.py                          prepara e invia il piano di oggi
+    python outreach.py --quante 3 --niente-email   prova a video
 """
 import json
 import logging
@@ -34,7 +42,9 @@ import scraper as S
 
 AZIENDE_FILE = "aziende_target.json"
 STATO_OUTREACH_FILE = "outreach_stato.json"
-AZIENDE_PER_SETTIMANA = 10
+AZIENDE_AL_GIORNO = 2
+# Consulenti visti nelle offerte recapitate in questa finestra di giorni.
+GIORNI_CONSULENTI = 7
 
 # Quanto un settore ha bisogno di un digital + sales: decide l'ordine con cui
 # le aziende vengono proposte. Stessi pesi usati per costruire la lista.
@@ -298,7 +308,7 @@ def scrivi_pitch(azienda, dossier):
 
 # ---------------------------------------------------------------- pacchetto
 
-def prepara_pacchetto(quante=AZIENDE_PER_SETTIMANA):
+def prepara_pacchetto(quante=AZIENDE_AL_GIORNO):
     stato = carica_stato()
     scelte = scegli_aziende(quante, stato)
     schede = []
@@ -313,10 +323,60 @@ def prepara_pacchetto(quante=AZIENDE_PER_SETTIMANA):
     return schede
 
 
-def testo_pacchetto(schede):
-    righe = [f"Outreach settimanale — {date.today().strftime('%d/%m/%Y')}",
-             f"{len(schede)} aziende. Per ognuna: cosa fanno, a chi scrivere, il messaggio pronto.",
-             "Il messaggio e' una base: cambia una frase se sai qualcosa in piu' di loro.", ""]
+def consulenti_da_contattare(stato):
+    """Consulenti delle societa' di ricerca comparsi nelle offerte recapitate di
+    recente e non ancora proposti. Ognuno esce una volta sola: dopo, sta a
+    Giovanni scrivergli — e registrarlo."""
+    from scraper import carica_storico_offerte
+    from candidature import _giorni_da
+    proposti = stato.setdefault("_consulenti", {})
+    nuovi = []
+    for voce in carica_storico_offerte():
+        if not isinstance(voce, dict) or not voce.get("recruiter"):
+            continue
+        giorni = _giorni_da(voce.get("data_invio", ""))
+        if giorni is None or giorni > GIORNI_CONSULENTI:
+            continue
+        nome = voce["recruiter"].split(" (")[0].strip()
+        if nome in proposti:
+            continue
+        proposti[nome] = {"proposto_il": date.today().isoformat(), "portale": voce.get("portale")}
+        nuovi.append({"nome": voce["recruiter"], "portale": voce.get("portale", ""),
+                      "titolo": voce.get("titolo", ""), "azienda": voce.get("azienda", ""),
+                      "citta": voce.get("citta", ""), "link": voce.get("link", "")})
+    return nuovi
+
+
+def candidature_da_sollecitare():
+    """Le candidature attive ferme da GIORNI_PER_SOLLECITO o piu' (dal tracker)."""
+    from candidature import carica_candidature, _giorni_da, STATI_TERMINALI, GIORNI_PER_SOLLECITO
+    ferme = []
+    for dati in carica_candidature().values():
+        if dati.get("stato") in STATI_TERMINALI:
+            continue
+        giorni = _giorni_da(dati.get("aggiornata") or dati.get("data", ""))
+        if giorni is not None and giorni >= GIORNI_PER_SOLLECITO:
+            ferme.append((giorni, dati))
+    return sorted(ferme, key=lambda x: -x[0])
+
+
+def testo_pacchetto(schede, consulenti=(), solleciti=()):
+    righe = [f"Piano del giorno — {date.today().strftime('%d/%m/%Y')}", ""]
+    if consulenti:
+        righe += ["CONSULENTI A CUI SCRIVERE OGGI (entri nel loro database, non solo in quella ricerca)", ""]
+        for c in consulenti:
+            righe += [f"   - {c['nome']} · {c['portale']}",
+                      f"     ha gestito: {c['titolo']} — {c['azienda']} ({c['citta']})",
+                      f"     {c['link']}", ""]
+    if solleciti:
+        righe += ["CANDIDATURE DA SOLLECITARE (ferme da 10+ giorni)", ""]
+        for giorni, d in solleciti:
+            righe += [f"   - {giorni} giorni · {d.get('azienda') or d.get('titolo') or d.get('link')} [{d.get('stato')}]"
+                      + (f" — {d['note']}" if d.get("note") else "")]
+        righe.append("")
+    righe += [f"AZIENDE A CUI SCRIVERE OGGI ({len(schede)})",
+              "Per ognuna: cosa fanno, a chi scrivere, il messaggio pronto. Controlla i numeri",
+              "nel messaggio prima di mandarlo: li prende dal CV, ma la firma e' tua.", ""]
     for i, s in enumerate(schede, 1):
         a, d = s["azienda"], s["dossier"]
         righe += ["=" * 70,
@@ -340,9 +400,9 @@ def testo_pacchetto(schede):
         righe += ["   " + r for r in s["pitch"].splitlines() if r.strip()]
         righe.append("")
     righe += ["=" * 70, "",
-              "Quando ne mandi una, registrala col sito dell'azienda come riferimento:",
-              "   python candidature.py add https://www.sito-azienda.it",
-              "cosi' il report sa cosa e' partito e quando sollecitare."]
+              "Ogni cosa che mandi, registrala:",
+              "   python candidature.py add <link offerta o sito azienda>",
+              "E' cio' che permette di dire, fra due settimane, quale canale porta colloqui."]
     return "\n".join(righe)
 
 
@@ -350,7 +410,7 @@ def invia_pacchetto(testo, quante):
     msg = MIMEMultipart("mixed")
     msg["From"] = S.GMAIL_USER
     msg["To"] = S.DESTINATION_EMAIL
-    msg["Subject"] = f"[Outreach] {quante} aziende a cui scrivere questa settimana — {date.today().strftime('%d/%m')}"
+    msg["Subject"] = f"[Piano] Cose da fare oggi — {date.today().strftime('%d/%m')}"
     msg.attach(MIMEText(testo, "plain", "utf-8"))
     with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
         server.ehlo()
@@ -361,14 +421,18 @@ def invia_pacchetto(testo, quante):
 
 
 def main():
-    quante = AZIENDE_PER_SETTIMANA
+    quante = AZIENDE_AL_GIORNO
     if "--quante" in sys.argv:
         quante = int(sys.argv[sys.argv.index("--quante") + 1])
+    stato = carica_stato()
+    consulenti = consulenti_da_contattare(stato)
+    salva_stato(stato)
+    solleciti = candidature_da_sollecitare()
     schede = prepara_pacchetto(quante)
-    if not schede:
-        print("Nessuna azienda nuova da proporre: la lista e' esaurita.")
+    if not schede and not consulenti and not solleciti:
+        print("Niente da proporre oggi: lista esaurita, nessun consulente nuovo, nessun sollecito.")
         return 0
-    testo = testo_pacchetto(schede)
+    testo = testo_pacchetto(schede, consulenti, solleciti)
     print(testo)
     if "--niente-email" in sys.argv:
         return 0

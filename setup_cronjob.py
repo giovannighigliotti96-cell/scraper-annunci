@@ -40,12 +40,12 @@ JOB = [
     ("Scraper — scraping 15:15", "scraping.yml", 15, 15),
     ("Scraper — scraping 17:30", "scraping.yml", 17, 30),
     ("Scraper — email riepilogo 18:05", "email.yml", 18, 5),
+    ("Scraper — piano del giorno 10:00", "outreach.yml", 10, 0),
 ]
 
-# Settimanale: il pacchetto di aziende a cui scrivere, il lunedi' mattina.
-JOB_SETTIMANALI = [
-    ("Scraper — outreach lunedi' 09:00", "outreach.yml", 9, 0, 1),  # wday 1 = lunedi'
-]
+# Job con giorni della settimana specifici (wday: 0 = domenica ... 6 = sabato).
+# Vuoto al momento: il piano del giorno e' passato a quotidiano il 15/09/2026.
+JOB_SETTIMANALI = []
 
 
 def _chiama(metodo, percorso, api_key, corpo=None):

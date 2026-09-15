@@ -1,18 +1,18 @@
-name: Outreach settimanale
+name: Piano del giorno
 
 on:
   schedule:
-    # RETE DI SICUREZZA: il trigger puntuale (lunedi' 09:00 Europe/Rome) lo da'
-    # cron-job.org via workflow_dispatch, come per scraping ed email. Questa
-    # entry parte piu' tardi nella giornata e serve solo se il trigger esterno
-    # manca; il modulo non manda doppioni perche' propone solo aziende mai
-    # proposte, quindi un secondo giro nello stesso giorno al massimo ne
-    # aggiunge altre dieci.
-    - cron: '0 12 * * 1'    # lunedi' 14:00 CEST / 13:00 CET
+    # RETE DI SICUREZZA: il trigger puntuale (ogni giorno alle 10:00
+    # Europe/Rome) lo da' cron-job.org via workflow_dispatch, come per scraping
+    # ed email. Questa entry parte piu' tardi e serve solo se il trigger esterno
+    # manca; il modulo non manda doppioni perche' propone solo aziende e
+    # consulenti mai proposti, quindi un secondo giro nello stesso giorno al
+    # massimo aggiunge altre due aziende.
+    - cron: '30 10 * * *'    # 12:30 CEST / 11:30 CET
   workflow_dispatch:
 
 concurrency:
-  group: outreach
+  group: piano
   cancel-in-progress: false
 
 permissions:
@@ -36,7 +36,7 @@ jobs:
       - name: Installa dipendenze
         run: pip install -r requirements.txt
 
-      - name: Prepara e invia il pacchetto
+      - name: Prepara e invia il piano del giorno
         env:
           GMAIL_USER: ${{ secrets.GMAIL_USER }}
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
@@ -60,7 +60,7 @@ jobs:
               echo "Nessuna modifica allo stato."
               exit 0
             fi
-            git commit -m "chore: aziende proposte nell'outreach [skip ci]"
+            git commit -m "chore: aggiorna stato piano del giorno [skip ci]"
             if git push origin HEAD:main; then
               exit 0
             fi
