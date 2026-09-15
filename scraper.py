@@ -804,7 +804,7 @@ _CV_GAP = {
 # richiesta non è soddisfatta.
 ANNI_ESPERIENZA_CV = 8
 _RE_ANNI_ESPERIENZA = re.compile(
-    r"(?:almeno\s+|minimo\s+|min\.?\s*|oltre\s+|)(\d{1,2})\s*\+?\s*"
+    r"(?:almeno\s+|minimo\s+|min\.?\s*|oltre\s+|\b)(\d{1,2})\s*\+?\s*"
     r"(?:anni|years?)(?:\s+di)?\s*(?:esperienz|experience|seniority)",
     re.IGNORECASE,
 )
@@ -1011,6 +1011,35 @@ def _safe_get(url, headers, timeout, max_redirects=5):
 # i chiamanti, con il rischio di sbagliarne uno in silenzio.
 _DATE_ANNUNCIO_DA_JSONLD = {}
 
+# Nome del consulente che gestisce l'annuncio, per URL: stessa logica della
+# cache delle date. Le societa' di ricerca con la qualita' media piu' alta
+# (Hays 90, ReverseGroup 91, MichaelPage) lo scrivono nella pagina di
+# dettaglio. Conta piu' dell'annuncio: un candidato che scrive alla persona
+# entra nel suo database e nelle ricerche successive, non solo in quella.
+_RECRUITER_DA_PAGINA = {}
+
+_RE_RECRUITER = [
+    # ReverseGroup: "Offer posted and managed by Sara Bombardini - Senior ..."
+    re.compile(r"managed by\s+([A-ZÀ-Ý][a-zà-ÿ']+\s+[A-ZÀ-Ý][a-zà-ÿ']+)"),
+    # MichaelPage: "... consulente Martina Valori Numero dell'offerta ..."
+    re.compile(r"[Cc]onsulente\s+([A-ZÀ-Ý][a-zà-ÿ']+\s+[A-ZÀ-Ý][a-zà-ÿ']+)"),
+    # Hays: "Il Consulente | Daria Collarini | , | e' il nostro esperto ..."
+    re.compile(r"Il Consulente\s+([A-ZÀ-Ý][a-zà-ÿ']+\s+[A-ZÀ-Ý][a-zà-ÿ']+)"),
+]
+_RE_TELEFONO_UFFICIO = re.compile(r"Telefono:?\s*([0-9][0-9 .]{6,14})")
+
+
+def _estrai_recruiter(testo_pagina: str) -> str:
+    """"Nome Cognome" del consulente, con il telefono dell'ufficio se c'e'
+    (Hays lo espone). Stringa vuota se la pagina non lo indica."""
+    for rx in _RE_RECRUITER:
+        m = rx.search(testo_pagina or "")
+        if m:
+            nome = m.group(1).strip()
+            tel = _RE_TELEFONO_UFFICIO.search(testo_pagina[m.end():m.end() + 400])
+            return f"{nome} (tel. {tel.group(1).strip()})" if tel else nome
+    return ""
+
 _RE_DATE_POSTED = re.compile(r'"datePosted"\s*:\s*"(\d{4}-\d{2}-\d{2})')
 
 
@@ -1045,6 +1074,9 @@ def calcola_punteggio_e_modalita(url, snippet):
             data_ld = _estrai_date_posted(resp.text)
             if data_ld:
                 _DATE_ANNUNCIO_DA_JSONLD[url] = data_ld
+            recruiter = _estrai_recruiter(soup.get_text(" ", strip=True))
+            if recruiter:
+                _RECRUITER_DA_PAGINA[url] = recruiter
         else:
             fetch_status = "http_error"
     except requests.exceptions.Timeout:
@@ -1750,7 +1782,7 @@ def portali_sospetti():
 # ==========================================
 
 class ScrapedJob:
-    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita="", valutato_da=""):
+    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita="", valutato_da="", recruiter=""):
         # title/snippet guardati come company/date: un valore None (es. da un record
         # legacy con "title": null in offerte_giornaliere.json) non deve far crashare
         # il costruttore con AttributeError su .strip().
@@ -1793,6 +1825,8 @@ class ScrapedJob:
         # se dal conteggio di keyword. Distinzione necessaria perche' la soglia
         # minima si applica solo al primo caso: vedi offerta_sotto_soglia.
         self.valutato_da = valutato_da if valutato_da else "euristica"
+        # Consulente che gestisce l'annuncio (societa' di ricerca): vedi _RECRUITER_DA_PAGINA.
+        self.recruiter = recruiter if recruiter else ""
 
     def to_dict(self):
         return {
@@ -1813,6 +1847,7 @@ class ScrapedJob:
             "ral": self.ral,
             "dettaglio_modalita": self.dettaglio_modalita,
             "valutato_da": self.valutato_da,
+            "recruiter": self.recruiter,
         }
 
     @classmethod
@@ -1829,6 +1864,7 @@ class ScrapedJob:
             data.get("probabilita", 0), data.get("motivazione", ""),
             data.get("testo_completo", ""), data.get("ral", ""),
             data.get("dettaglio_modalita", ""), data.get("valutato_da", ""),
+            data.get("recruiter", ""),
         )
 
 class BaseScraper:
@@ -3285,6 +3321,8 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
                 body += f"   Modalità: {modalita_display}\n"
                 if job.ral:
                     body += f"   Retribuzione: {job.ral}\n"
+                if job.recruiter:
+                    body += f"   Consulente: {job.recruiter} — scrivigli direttamente, non solo il form\n"
                 body += f"   Portale: {job.portal}\n"
                 body += f"   Probabilità richiamata: {prob}% - {etichetta}\n"
                 body += f"   -> {job.motivazione}\n"
@@ -3420,6 +3458,9 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                 )
                 if job.ral:
                     parti.append(f'<div style="margin-bottom:6px"><b>Retribuzione:</b> {esc(job.ral)}</div>')
+                if job.recruiter:
+                    parti.append(f'<div style="margin-bottom:6px"><b>Consulente:</b> {esc(job.recruiter)} '
+                                 f'<span style="color:#666">— scrivigli direttamente, non solo il form</span></div>')
                 if job.motivazione:
                     parti.append(f'<div style="margin-bottom:6px">{esc(job.motivazione)}</div>')
                 if job.snippet:
@@ -3599,6 +3640,8 @@ def invia_alert_immediato(offerte):
         righe.append(f"   {job.company} · {job.city} · {job.portal}")
         if job.ral:
             righe.append(f"   Retribuzione: {job.ral}")
+        if job.recruiter:
+            righe.append(f"   Consulente: {job.recruiter}")
         if job.motivazione:
             righe.append(f"   {job.motivazione}")
         righe.append(f"   {job.link}")
@@ -3899,6 +3942,9 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
         # trovata una nella pagina di elenco, la si porta sull'offerta: serve al
         # filtro qui sotto ma soprattutto la si vede in email, dove finora
         # compariva "Data non disponibile" pur avendo il dato in mano.
+        if not job.recruiter:
+            job.recruiter = _RECRUITER_DA_PAGINA.get(job.link, "")
+
         data_reale = data_pubblicazione_effettiva(job)
         if data_reale and data_reale != job.date:
             if not job.date or job.date == "Data non disponibile" or job.portal == "MichaelPage":
