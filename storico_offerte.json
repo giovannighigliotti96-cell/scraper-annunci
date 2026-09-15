@@ -1,5 +1,35 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-emea-retail-wholesale-at-tom-ford-fashion-4467724716",
+    "data_invio": "2026-09-15",
+    "titolo": "Marketing Manager EMEA Retail & Wholesale",
+    "azienda": "TOM FORD FASHION",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 29,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-emea-retail-wholesale-at-tom-ford-fashion-4467724716"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-settore-geotecnico-at-geojob-4465736779",
+    "data_invio": "2026-09-15",
+    "titolo": "RESPONSABILE COMMERCIALE - SETTORE GEOTECNICO",
+    "azienda": "geoJOB Recruitment",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 27,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-settore-geotecnico-at-geojob-4465736779"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-saneco-srl-4467704915",
+    "data_invio": "2026-09-15",
+    "titolo": "Responsabile commerciale",
+    "azienda": "Saneco srl",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 20,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-saneco-srl-4467704915"
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/co-founder-coo-head-of-growth-healthtech-at-pronto-visite-4466464825",
     "data_invio": "2026-09-12",
     "titolo": "Co-Founder & COO - Head of Growth (HealthTech)",
