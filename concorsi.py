@@ -47,6 +47,13 @@ import state_io
 import scraper as S
 
 STATO_CONCORSI_FILE = "concorsi_stato.json"
+
+# Cosa arriva in email: solo i bandi con verdetto "fai" e RAL almeno pari a
+# questa. Deciso da Giovanni il 15/09/2026 dopo la prima mail: 23 bandi, i
+# Funzionari degli enti locali tutti a 25.114 lordi — "non ne voglio vedere".
+# Gli altri vengono comunque valutati e segnati come visti, cosi' non tornano.
+RAL_MINIMA = 35000
+VERDETTI_IN_EMAIL = {"fai"}
 API = "https://portale.inpa.gov.it/concorsi-smart/api/concorso-public-area"
 MEDIA = "https://portale.inpa.gov.it/api/media/{}"
 PAGINA_PUBBLICA = "https://www.inpa.gov.it/bandi-e-avvisi/dettaglio-bando-avviso/?concorso_id={}"
@@ -209,7 +216,8 @@ IL CANDIDATO: Digital Sales & Marketing Manager, Laurea Triennale L-18 (Business
 Campi:
 - titolo_studio_richiesto: cosa chiede il bando, con le classi di laurea se indicate.
 - laurea_triennale_basta: "si" se una laurea triennale in economia/management (L-18 o classe 28/17 vecchio ordinamento, o "qualsiasi laurea") e' ammessa; "no" se serve la magistrale, una classe diversa, un'abilitazione o un'esperienza in PA; "dubbio" se non e' chiaro.
-- ral_annua: stipendio lordo annuo stimato. Se il bando indica solo l'inquadramento, stima: Area Funzionari enti locali 24.000-28.000; Area Istruttori 21.000-24.000; Elevata Qualificazione 30.000-40.000; Ministeri/Agenzie Funzionario 28.000-35.000. Scrivi la cifra e da cosa la deduci.
+- ral_annua: stipendio lordo annuo stimato. Se il bando indica solo l'inquadramento, stima: Area Funzionari enti locali 24.000-28.000; Area Istruttori 21.000-24.000; Elevata Qualificazione 30.000-40.000; Ministeri/Agenzie Funzionario 28.000-35.000; dirigenti 45.000+. Scrivi la cifra e da cosa la deduci.
+- ral_minima_euro: la stessa stima come numero intero (solo cifre, lordo annuo, il valore piu' basso della forchetta). 0 se davvero impossibile da stimare.
 - prove: elenco sintetico (preselezione, scritto, orale, materie principali).
 - requisiti_bloccanti: requisiti che il candidato NON ha, se ce ne sono. Altrimenti "nessuno".
 - ruolo_in_pratica: cosa farebbe davvero, in una frase.
@@ -222,11 +230,13 @@ BANDO:
 
 _SCHEMA = {
     "type": "object",
-    "properties": {k: {"type": "string"} for k in (
+    "properties": {**{k: {"type": "string"} for k in (
         "titolo_studio_richiesto", "laurea_triennale_basta", "ral_annua", "prove",
         "requisiti_bloccanti", "ruolo_in_pratica", "verdetto", "motivazione")},
+                   "ral_minima_euro": {"type": "integer"}},
     "required": ["titolo_studio_richiesto", "laurea_triennale_basta", "ral_annua", "prove",
-                 "requisiti_bloccanti", "ruolo_in_pratica", "verdetto", "motivazione"],
+                 "requisiti_bloccanti", "ruolo_in_pratica", "verdetto", "motivazione",
+                 "ral_minima_euro"],
 }
 
 
@@ -284,6 +294,7 @@ def nuovi_bandi(tutti=False):
         })
         stato[cid] = {"visto_il": date.today().isoformat(),
                       "verdetto": (val or {}).get("verdetto", "non valutato"),
+                      "ral": (val or {}).get("ral_minima_euro"),
                       "titolo": c.get("titolo", "")[:120]}
         time.sleep(1)
     salva_stato(stato)
@@ -291,11 +302,25 @@ def nuovi_bandi(tutti=False):
     return schede
 
 
+def da_mostrare(s):
+    """Solo i "fai" con RAL almeno RAL_MINIMA. Un bando non valutato (modello
+    giu' o PDF illeggibile) non si mostra: senza RAL e verdetto non
+    rispetterebbe il criterio, e tornerebbe a chiedere lavoro a Giovanni."""
+    v = s.get("valutazione") or {}
+    if str(v.get("verdetto", "")).lower() not in VERDETTI_IN_EMAIL:
+        return False
+    try:
+        return int(v.get("ral_minima_euro") or 0) >= RAL_MINIMA
+    except (TypeError, ValueError):
+        return False
+
+
 def testo_sezione(schede):
+    schede = [s for s in schede if da_mostrare(s)]
     if not schede:
         return ""
-    righe = [f"CONCORSI PUBBLICI — {len(schede)} bandi nuovi pertinenti (Genova, Milano)",
-             "Rete di sicurezza, non canale: RAL PA 24-40k contro 40-65k del privato. Ma la stabilita' conta.", ""]
+    righe = [f"CONCORSI PUBBLICI — {len(schede)} bandi nuovi: verdetto FAI e RAL da {RAL_MINIMA // 1000}k in su",
+             ""]
     for s in schede:
         v = s["valutazione"] or {}
         verdetto = v.get("verdetto", "?").upper()
@@ -311,10 +336,6 @@ def testo_sezione(schede):
                       f"   Requisiti che mancano: {v.get('requisiti_bloccanti', '')[:140]}",
                       f"   In pratica: {v.get('ruolo_in_pratica', '')[:160]}",
                       f"   -> {v.get('motivazione', '')[:260]}"]
-        elif not s["bando_letto"]:
-            righe.append("   (PDF del bando non leggibile: apri il link e valuta a mano)")
-        else:
-            righe.append("   (modello non disponibile: bando letto ma non valutato)")
         righe += [f"   {s['link']}", ""]
     return "\n".join(righe)
 
@@ -336,7 +357,8 @@ def invia_email_concorsi(testo, quanti):
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     schede = nuovi_bandi(tutti="--tutti" in sys.argv)
-    testo = testo_sezione(schede) or "Nessun bando nuovo pertinente."
+    scartati = len(schede) - sum(1 for s in schede if da_mostrare(s))
+    testo = testo_sezione(schede) or f"Nessun bando nuovo da mostrare ({scartati} valutati e scartati per verdetto o RAL)."
     print(testo)
     if "--email" in sys.argv and schede:
         invia_email_concorsi(testo, len(schede))
