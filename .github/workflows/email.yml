@@ -89,6 +89,9 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          # Serve alla seconda valutazione: le offerte che al mattino non sono
+          # state valutate (Gemini giu') vengono riprovate qui prima dell'invio.
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python run_email_job.py
 
       - name: Salva stato post-email

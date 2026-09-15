@@ -3850,6 +3850,23 @@ def citta_coerente_col_testo(job) -> bool:
     return not any(c in testo for c in ALTRE_CITTA_ITALIANE)
 
 
+# Dichiarazioni inequivocabili di lavoro interamente da remoto. Non basta
+# "smart working" o "da remoto" (spesso 1-2 giorni a settimana): serve la
+# forma piena, altrimenti si riaprirebbe la porta agli annunci ibridi di
+# citta' fuori area.
+_RE_FULL_REMOTE = re.compile(
+    r"full[\s-]*remote|fully remote|remote[\s-]*first|100\s*%\s*(?:remot|da remoto|smart)"
+    r"|(?:completamente|totalmente|interamente|esclusivamente) (?:da |in )?remoto"
+    r"|remoto al 100|lavoro (?:esclusivamente|solo) da remoto",
+    re.IGNORECASE,
+)
+
+
+def e_full_remote(job) -> bool:
+    """True se l'annuncio dichiara esplicitamente lavoro interamente da remoto."""
+    return _RE_FULL_REMOTE.search(f"{job.title} {job.snippet} {job.testo_completo}") is not None
+
+
 def filtra_offerte_per_citta(offerte_scraper, city_config):
     """Filtra le offerte in base alla configurazione della città.
     Genova (filter_hybrid_only=False): accetta in sede e ibrido, esclude da remoto.
@@ -3873,10 +3890,6 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
         # nel testo dell'annuncio, ma ne compaiono altre. Se il testo non nomina
         # alcuna citta' (o non e' stato scaricato) l'offerta si tiene, perche'
         # l'assenza di prova non e' prova di assenza.
-        if job.city in CITTA_TARGET_PATTERN and not citta_coerente_col_testo(job):
-            logging.info(f"Offerta scartata (sede reale diversa da {job.city}): {job.title} — {job.link}")
-            continue
-
         # Freschezza: un annuncio pubblicato mesi fa è quasi sempre una ricerca
         # già chiusa lasciata online. Il controllo sta qui perché questa funzione
         # è il gate comune a entrambi gli entry point (esegui_scraping_job e
@@ -3894,6 +3907,22 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
         if offerta_troppo_vecchia(job):
             logging.info(f"Offerta scartata (pubblicata da oltre {MAX_ETA_GIORNI_ANNUNCIO} giorni, "
                          f"data={job.date}): {job.title} — {job.link}")
+            continue
+
+        # Full remote dichiarato: la sede non conta piu'. Va PRIMA dei controlli
+        # di citta', perche' un annuncio "100% remoto" con sede legale a Roma
+        # verrebbe altrimenti scartato come "fuori area" — ed e' invece uno dei
+        # pochi casi in cui la geografia non e' un ostacolo. Vale solo per il
+        # remoto esplicito: un annuncio senza sede e senza questa dichiarazione
+        # resta escluso, come deciso il 09/09 ("Italia toglilo").
+        if e_full_remote(job):
+            job.city = "Remoto"
+            job.work_mode = "da remoto"
+            offerte_filtrate.append(job)
+            continue
+
+        if job.city in CITTA_TARGET_PATTERN and not citta_coerente_col_testo(job):
+            logging.info(f"Offerta scartata (sede reale diversa da {job.city}): {job.title} — {job.link}")
             continue
 
         # Portali nazionali: risolvi la sede reale dal testo prima di applicare
@@ -4111,6 +4140,19 @@ def invia_email_job():
             offerte_da_inviare.append(ScrapedJob.from_dict(d))
         except Exception as e:
             logging.error(f"Voce malformata in offerte_giornaliere.json scartata: {e} — dati: {d!r}")
+
+    # Seconda possibilita' per chi al mattino non e' stato valutato: quando
+    # Gemini e' giu' (il 15/09/2026: errori 500 "high demand" su tutti i run
+    # della giornata) l'offerta resta col punteggio euristico, che per scelta
+    # non viene filtrato — e in email sono arrivate tre offerte al 20-29%.
+    # Qui si riprova solo su quelle, ore dopo: se l'LLM risponde, il filtro
+    # per punteggio si applica come avrebbe fatto al mattino; se e' ancora
+    # giu', restano com'erano — meglio un'offerta in piu' che una persa.
+    da_rivalutare = [j for j in offerte_da_inviare if j.valutato_da != "llm"]
+    if da_rivalutare:
+        print(f"Seconda valutazione di {len(da_rivalutare)} offerte non valutate al mattino...")
+        gia_valutate = [j for j in offerte_da_inviare if j.valutato_da == "llm"]
+        offerte_da_inviare = gia_valutate + arricchisci_offerte_con_llm(da_rivalutare)
 
     success = invia_email(offerte_da_inviare)
 
