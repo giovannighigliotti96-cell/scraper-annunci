@@ -27,14 +27,18 @@ Digital Economy): e' il requisito che apre o chiude quasi tutto.
 Uso:
     python concorsi.py                 nuovi bandi pertinenti, con scheda (stampa)
     python concorsi.py --tutti         anche quelli gia' visti
+    python concorsi.py --email         invia la sezione come email a se' stante
 """
 import io
 import json
 import logging
 import re
+import smtplib
 import sys
 import time
 from datetime import date, datetime
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 
 import PyPDF2
 from curl_cffi import requests as cr
@@ -315,7 +319,25 @@ def testo_sezione(schede):
     return "\n".join(righe)
 
 
+def invia_email_concorsi(testo, quanti):
+    msg = MIMEMultipart("mixed")
+    msg["From"] = S.GMAIL_USER
+    msg["To"] = S.DESTINATION_EMAIL
+    msg["Subject"] = f"[Concorsi] {quanti} bandi pertinenti — {date.today().strftime('%d/%m')}"
+    msg.attach(MIMEText(testo, "plain", "utf-8"))
+    with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
+        server.ehlo()
+        server.starttls()
+        server.ehlo()
+        server.login(S.GMAIL_USER, S.GMAIL_APP_PASSWORD)
+        server.send_message(msg)
+
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(message)s")
     schede = nuovi_bandi(tutti="--tutti" in sys.argv)
-    print(testo_sezione(schede) or "Nessun bando nuovo pertinente.")
+    testo = testo_sezione(schede) or "Nessun bando nuovo pertinente."
+    print(testo)
+    if "--email" in sys.argv and schede:
+        invia_email_concorsi(testo, len(schede))
+        print(f"\nEmail inviata: {len(schede)} bandi.")

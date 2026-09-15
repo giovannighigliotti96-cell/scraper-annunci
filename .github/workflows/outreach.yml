@@ -10,6 +10,11 @@ on:
     # massimo aggiunge altre tre aziende.
     - cron: '30 10 * * *'    # 12:30 CEST / 11:30 CET
   workflow_dispatch:
+    inputs:
+      solo_concorsi:
+        description: "Manda solo la sezione concorsi, come email a se' stante (non consuma le aziende del giorno)"
+        type: boolean
+        default: false
 
 concurrency:
   group: piano
@@ -42,13 +47,18 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-        run: python outreach.py
+        run: |
+          if [ "${{ github.event.inputs.solo_concorsi }}" = "true" ]; then
+            python concorsi.py --email
+          else
+            python outreach.py
+          fi
 
       - name: Salva lo stato (aziende proposte, bandi visti)
         run: |
           git config --local user.email "actions@github.com"
           git config --local user.name "GitHub Actions"
-          cp outreach_stato.json /tmp/outreach_stato.json
+          cp outreach_stato.json /tmp/outreach_stato.json 2>/dev/null || echo '{}' > /tmp/outreach_stato.json
           cp concorsi_stato.json /tmp/concorsi_stato.json 2>/dev/null || echo '{}' > /tmp/concorsi_stato.json
           for i in 1 2 3; do
             git fetch origin main
