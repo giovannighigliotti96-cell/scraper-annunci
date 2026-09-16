@@ -126,5 +126,28 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Farmacia Pescetto Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Luigi Pescetto",
+        "fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Mec Shopping Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Farmacie Genovesi Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
