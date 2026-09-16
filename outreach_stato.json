@@ -89,5 +89,41 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "_consulenti": {},
+  "Manydesigns Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Angelo Lupo Vice",
+        "presidente"
+      ],
+      [
+        "Ermanno Sacchi",
+        "Presidente"
+      ],
+      [
+        "Simona Lanza Vice",
+        "presidente"
+      ]
+    ],
+    "email": [
+      "info@manydesigns.com",
+      "recruiting@manydesigns.com",
+      "sales@manydesigns.com"
+    ]
+  },
+  "Italiaonline Local Web Agencies Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Il Libraccio Srl": {
+    "proposta_il": "2026-09-16",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
