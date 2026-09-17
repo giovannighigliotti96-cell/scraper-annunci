@@ -181,5 +181,25 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Farmacie Riunite Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Doublej Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Helldorado Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@helldorado.it"
+    ]
   }
 }
