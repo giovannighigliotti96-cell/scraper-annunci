@@ -1176,6 +1176,9 @@ EXACT_TITLES = [
     "crm & marketing automation director",
     "commercial strategy director",
     "digital sales director",
+    # Digitale + vendita al livello di responsabilita' giusto: e' il titolo
+    # con cui TeamSystem e altre tech company chiamano il ruolo (17/09/2026).
+    "head of digital sales",
     "growth and gtm director",
     "growth & gtm director",
     "marketing director",
@@ -4105,6 +4108,7 @@ def dedup_offerte(tutte_le_offerte, viste):
 
 def esegui_scraping_job(orario_label):
     print(f"[{datetime.now()}] Avvio scraping delle {orario_label} in corso...")
+    from aziende_dirette import AziendeDiretteScraper
 
     scrapers = [
         LinkedInScraper(),
@@ -4120,6 +4124,9 @@ def esegui_scraping_job(orario_label):
         HaysScraper(),
         ReverseGroupScraper(),
         AdamiScraper(),
+        # Siti careers delle grandi aziende, letti alla fonte (ATS): un
+        # "portale" solo per la pipeline, molte aziende dentro.
+        AziendeDiretteScraper(),
     ]
 
     tutte_le_offerte = []

@@ -9,6 +9,7 @@ from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(__file__))
 
+from aziende_dirette import AziendeDiretteScraper
 from scraper import (
     LinkedInScraper, MichaelPageScraper, PagePersonnelScraper,
     WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
@@ -41,6 +42,9 @@ if __name__ == "__main__":
         HaysScraper(),
         ReverseGroupScraper(),
         AdamiScraper(),
+        # Siti careers delle grandi aziende, letti alla fonte (ATS): un
+        # "portale" solo per la pipeline, molte aziende dentro.
+        AziendeDiretteScraper(),
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")
