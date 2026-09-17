@@ -1,5 +1,49 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/ecommerce-manager-at-lhh-4468323028",
+    "data_invio": "2026-09-17",
+    "titolo": "eCommerce Manager",
+    "azienda": "LHH",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 82,
+    "link": "https://it.linkedin.com/jobs/view/ecommerce-manager-at-lhh-4468323028",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-lead-peer4med-at-testbusters-4467538912",
+    "data_invio": "2026-09-17",
+    "titolo": "Marketing Lead Peer4Med",
+    "azienda": "Testbusters srl Società Benefit",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 82,
+    "link": "https://it.linkedin.com/jobs/view/marketing-lead-peer4med-at-testbusters-4467538912",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4467134491",
+    "data_invio": "2026-09-17",
+    "titolo": "Growth manager",
+    "azienda": "Bending Spoons",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 80,
+    "link": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4467134491",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-marketing-milano-at-lavoropi%C3%B9-spa-4468398590",
+    "data_invio": "2026-09-17",
+    "titolo": "Responsabile Marketing - Milano",
+    "azienda": "Lavoropiù SpA",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-milano-at-lavoropi%C3%B9-spa-4468398590",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-emea-retail-wholesale-at-tom-ford-fashion-4467724716",
     "data_invio": "2026-09-15",
     "titolo": "Marketing Manager EMEA Retail & Wholesale",
