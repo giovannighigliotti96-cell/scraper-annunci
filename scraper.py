@@ -3608,10 +3608,12 @@ def offerta_sotto_soglia(job) -> bool:
     return job.valutato_da == "llm" and _prob_ordinabile(job) < SOGLIA_MINIMA_PUNTEGGIO
 
 
-# Soglia oltre la quale un'offerta merita di essere segnalata SUBITO, senza
-# aspettare il riepilogo serale. Alta di proposito: due o tre avvisi al giorno
-# restano un segnale, dieci diventano rumore e si smette di aprirli.
-SOGLIA_ALERT_IMMEDIATO = 85
+# Soglia (inclusa) oltre la quale un'offerta merita di essere segnalata
+# SUBITO, senza aspettare il riepilogo serale. Alta di proposito: due o tre
+# avvisi al giorno restano un segnale, dieci diventano rumore. Abbassata da 85
+# a 80 il 17/09/2026 su richiesta di Giovanni: le tre offerte a cui si e'
+# candidato quel giorno stavano a 78-82, sotto la vecchia soglia.
+SOGLIA_ALERT_IMMEDIATO = 80
 
 
 def invia_alert_immediato(offerte):

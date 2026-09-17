@@ -31,13 +31,13 @@
   },
   "https://manydesigns.com": {
     "data": "2026-09-16",
-    "stato": "inviata",
-    "aggiornata": "2026-09-16",
+    "stato": "chiusa",
+    "aggiornata": "2026-09-17",
     "titolo": "",
     "azienda": "",
     "citta": "",
     "link": "https://manydesigns.com",
-    "note": "Candidatura spontanea via email a recruiting@manydesigns.com, 16/09/2026. Software house genovese, prodotto Adrenaline (sanita')."
+    "note": "Risposta 17/09: nessuna posizione in linea al momento. Cortese, restare in contatto tra qualche mese."
   },
   "https://www.libraccio.it": {
     "data": "2026-09-16",
@@ -48,5 +48,35 @@
     "citta": "",
     "link": "https://www.libraccio.it",
     "note": "Candidatura spontanea, 16/09/2026. Catena librerie + e-commerce, sede Genova."
+  },
+  "https://it.linkedin.com/jobs/view/ecommerce-manager-at-lhh-4468323028": {
+    "data": "2026-09-17",
+    "stato": "inviata",
+    "aggiornata": "2026-09-17",
+    "titolo": "eCommerce Manager",
+    "azienda": "LHH",
+    "citta": "Milano",
+    "link": "https://it.linkedin.com/jobs/view/ecommerce-manager-at-lhh-4468323028",
+    "note": ""
+  },
+  "https://it.linkedin.com/jobs/view/marketing-lead-peer4med-at-testbusters-4467538912": {
+    "data": "2026-09-17",
+    "stato": "inviata",
+    "aggiornata": "2026-09-17",
+    "titolo": "Marketing Lead Peer4Med",
+    "azienda": "Testbusters srl Società Benefit",
+    "citta": "Milano",
+    "link": "https://it.linkedin.com/jobs/view/marketing-lead-peer4med-at-testbusters-4467538912",
+    "note": ""
+  },
+  "https://it.linkedin.com/jobs/view/responsabile-marketing-milano-at-lavoropi%C3%B9-spa-4468398590": {
+    "data": "2026-09-17",
+    "stato": "inviata",
+    "aggiornata": "2026-09-17",
+    "titolo": "Responsabile Marketing - Milano",
+    "azienda": "Lavoropiù SpA",
+    "citta": "Milano",
+    "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-milano-at-lavoropi%C3%B9-spa-4468398590",
+    "note": ""
   }
 }

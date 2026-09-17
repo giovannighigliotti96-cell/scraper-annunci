@@ -14,6 +14,8 @@ ATS supportati (tutti verificati dal vivo il 17/09/2026):
 - successfactors Career Site Builder, pagina /search/ in HTML (Intesa Sanpaolo,
                  EssilorLuxottica)
 - bnp            pagina di gruppo BNP Paribas, card HTML (Arval)
+- ashby          API JSON pubblica del job board (Satispay)
+- lutech         tabella HTML del sito Lutech, con sede e modalita' in chiaro
 
 Per aggiungere un'azienda: python aziende_dirette.py --scopri <url careers>
 stampa la riga da incollare in AZIENDE, se l'ATS e' riconosciuto.
@@ -36,12 +38,19 @@ AZIENDE = [
     {"nome": "Intesa Sanpaolo", "ats": "successfactors", "base": "https://jobs.intesasanpaolo.com"},
     {"nome": "EssilorLuxottica", "ats": "successfactors", "base": "https://careers.essilorluxottica.com"},
     {"nome": "Arval", "ats": "bnp", "entita": "arval"},
+    # Tech company italiane simili a TeamSystem (aggiunte il 17/09/2026)
+    {"nome": "Cerved", "ats": "workday",
+     "host": "cerved.wd3.myworkdayjobs.com", "tenant": "cerved", "sito": "Cerved"},
+    {"nome": "Tinexta / InfoCert", "ats": "successfactors", "base": "https://job.tinexta.com"},
+    {"nome": "Satispay", "ats": "ashby", "slug": "satispay"},
+    {"nome": "Lutech", "ats": "lutech"},
 ]
 
 # Citta' target come compaiono nei campi "location" di questi ATS.
 CITTA = {
     "Genova": ["genova", "genoa"],
-    "Milano": ["milano", "milan", "assago", "sesto san giovanni", "segrate", "rho"],
+    "Milano": ["milano", "milan", "assago", "sesto san giovanni", "segrate", "rho",
+               "san donato milanese", "cologno monzese", "peschiera borromeo"],
     "Torino": ["torino", "turin"],
 }
 PAESE_ITALIA = re.compile(r",\s*IT\b|\bIT\s*-|ital", re.IGNORECASE)
@@ -256,10 +265,61 @@ def _bnp(sessione, az):
     return out
 
 
+# ---------------------------------------------------------------- ATS: Ashby
+
+def _ashby(sessione, az):
+    """api.ashbyhq.com/posting-api/job-board/<slug>: tutto in un JSON, con
+    sede, data e descrizione gia' dentro."""
+    r = sessione.get(f"https://api.ashbyhq.com/posting-api/job-board/{az['slug']}",
+                     headers={"Accept": "application/json"}, timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(f"ashby HTTP {r.status_code}")
+    out = []
+    for j in r.json().get("jobs") or []:
+        luogo = " ".join(filter(None, [j.get("location", ""), j.get("workplaceType", "")]))
+        out.append({"titolo": j.get("title", ""), "luogo": luogo,
+                    "data": str(j.get("publishedAt") or "")[:10], "link": j.get("jobUrl", ""),
+                    "_testo": _testo_html(j.get("descriptionHtml") or "")})
+    return out
+
+
+def _testo_incorporato(sessione, offerta):
+    return offerta.get("_testo", ""), ""
+
+
+# ---------------------------------------------------------------- Lutech
+
+def _lutech(sessione, az):
+    """Tabella server-side: posizione | profilo | contratto (Ibrido/In sede) |
+    sede | area. La modalita' scritta in chiaro si mette nel testo, cosi'
+    detect_work_mode la legge senza aprire il dettaglio."""
+    r = sessione.get("https://www.lutech.group/it/careers/search", timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(f"lutech HTTP {r.status_code}")
+    soup = BeautifulSoup(r.text, "html.parser")
+    out = []
+    for tr in soup.select("table tbody tr"):
+        celle = [td.get_text(" ", strip=True) for td in tr.find_all("td")]
+        td0 = tr.find("td")
+        if len(celle) < 4 or not td0 or not td0.get("data-href"):
+            continue
+        link = "https://www.lutech.group" + td0["data-href"]
+        out.append({"titolo": celle[0], "luogo": celle[3], "data": "", "link": link,
+                    "_testo": f"Sede: {celle[3]}. Contratto: {celle[2]}. Profilo: {celle[1]}. Area: {celle[4] if len(celle) > 4 else ''}"})
+    return out
+
+
+def _lutech_testo(sessione, offerta):
+    testo, data = _html_testo(sessione, offerta)
+    return f"{offerta.get('_testo', '')}\n{testo}", data
+
+
 LETTORI = {
     "workday": (_workday, _workday_testo),
     "successfactors": (_successfactors, _html_testo),
     "bnp": (_bnp, _html_testo),
+    "ashby": (_ashby, _testo_incorporato),
+    "lutech": (_lutech, _lutech_testo),
 }
 
 
