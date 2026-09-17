@@ -149,5 +149,37 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Generalmarine Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "india@generalmarine.it",
+      "info@generalmarine.it",
+      "venezia@generalmarine.it",
+      "viareggio@generalmarine.it"
+    ]
+  },
+  "Cegeka Business Solutions Italia Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Park Belgium",
+        "managing director"
+      ],
+      [
+        "Park Belgium Continued",
+        "managing director"
+      ]
+    ],
+    "email": []
+  },
+  "Macchine Edili Repetto Srl": {
+    "proposta_il": "2026-09-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
