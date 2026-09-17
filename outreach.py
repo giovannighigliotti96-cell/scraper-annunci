@@ -148,17 +148,24 @@ def _testo(html):
     return soup.get_text(" ", strip=True)
 
 
+# Testi che non descrivono l'azienda: banner cookie, privacy, consensi. Il
+# 17/09/2026 la "descrizione" di Generalmarine era il pannello dei consensi.
+_RUMORE_DESCRIZIONE = re.compile(
+    r"cookie|consent|consenso|tracking|privacy|gdpr|preferenz|accett|browser|javascript",
+    re.IGNORECASE)
+
+
 def _descrizione(html):
     """Meta description o primo paragrafo sostanzioso: e' come l'azienda si
     presenta, ed e' la base per scriverle qualcosa di specifico."""
     soup = BeautifulSoup(html, "html.parser")
     for attr in ({"name": "description"}, {"property": "og:description"}):
         m = soup.find("meta", attrs=attr)
-        if m and len(m.get("content", "")) > 40:
+        if m and len(m.get("content", "")) > 40 and not _RUMORE_DESCRIZIONE.search(m["content"]):
             return m["content"].strip()[:400]
     for p in soup.find_all("p"):
         t = p.get_text(" ", strip=True)
-        if len(t) > 80:
+        if len(t) > 80 and not _RUMORE_DESCRIZIONE.search(t):
             return t[:400]
     return ""
 
@@ -205,6 +212,10 @@ _NON_PERSONA = {
     "effettivo", "verifica", "impresa", "compliance", "protect", "servizi", "lingua",
     "indietro", "avanti", "home", "news", "blog", "login", "area", "riservata",
     "ultimate", "beneficial", "entrepreneur", "per", "the", "and", "our", "your",
+    "continued", "park", "belgium", "belgio", "netherlands", "olanda", "germany", "germania",
+    "france", "francia", "spain", "spagna", "austria", "switzerland", "svizzera", "romania",
+    "poland", "polonia", "italy", "europa", "europe", "uk", "usa", "america", "asia",
+    "region", "regione", "office", "ufficio", "headquarters", "branch", "filiale",
     "product", "products", "brand", "brands", "customer", "customers", "client", "clients",
 }
 
