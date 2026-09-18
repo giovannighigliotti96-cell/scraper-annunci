@@ -201,5 +201,25 @@
     "email": [
       "info@helldorado.it"
     ]
+  },
+  "Eurocolors Srl": {
+    "proposta_il": "2026-09-18",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@eurocolorsuno.it"
+    ]
+  },
+  "Cassetti Gioielli Srl": {
+    "proposta_il": "2026-09-18",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Fratelli Villa Srl": {
+    "proposta_il": "2026-09-18",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
