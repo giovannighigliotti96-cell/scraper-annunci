@@ -239,5 +239,56 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Trumpytours Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Federico Costa",
+        "CEO"
+      ],
+      [
+        "Giovanni Costa",
+        "Presidente"
+      ],
+      [
+        "Giovanni Costa President",
+        "CEO"
+      ],
+      [
+        "Eugenio Kielland Board",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "info@trumpytours.it"
+    ]
+  },
+  "Orologeria Luigi Verga Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Luigi Verga",
+        "fondatore"
+      ],
+      [
+        "Umberto Verga",
+        "Presidente"
+      ]
+    ],
+    "email": [
+      "negozio.capelli@verga1947.it",
+      "negozio.mazzini@verga1947.it",
+      "patekphilippe@verga1947.it",
+      "portofino@verga1947.it"
+    ]
+  },
+  "Giver Viaggi E Crociere Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
