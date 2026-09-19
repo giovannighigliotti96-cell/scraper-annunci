@@ -290,5 +290,36 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Cordua Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@cordua.org",
+      "risorseumane@cordua.org",
+      "ufficiostampa@cordua.org"
+    ]
+  },
+  "Diesel Italia Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Velabus Srl": {
+    "proposta_il": "2026-09-19",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Google Ireland Limited",
+        "Titolare"
+      ],
+      [
+        "Meta Platforms",
+        "Titolare"
+      ]
+    ],
+    "email": []
   }
 }
