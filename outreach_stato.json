@@ -321,5 +321,38 @@
       ]
     ],
     "email": []
+  },
+  "Marine Consultant And Services Srl": {
+    "proposta_il": "2026-09-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@marineconsultantservices.com",
+      "sales@marineconsultantservices.com"
+    ]
+  },
+  "Bredaquaranta Srl": {
+    "proposta_il": "2026-09-20",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Pakistan About",
+        "Talent"
+      ],
+      [
+        "Bredaquaranta Entra",
+        "Talent"
+      ]
+    ],
+    "email": []
+  },
+  "Timossi Commerciale Spa": {
+    "proposta_il": "2026-09-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "commerciale@timossi.it",
+      "marketing@timossi.it"
+    ]
   }
 }
