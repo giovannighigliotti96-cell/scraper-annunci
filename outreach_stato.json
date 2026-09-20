@@ -354,5 +354,27 @@
       "commerciale@timossi.it",
       "marketing@timossi.it"
     ]
+  },
+  "Cavo Luigi Beverage Solutions Srl": {
+    "proposta_il": "2026-09-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@cavo.net"
+    ]
+  },
+  "Far.Com. Srl": {
+    "proposta_il": "2026-09-20",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Appetais Italia Società Per Azioni": {
+    "proposta_il": "2026-09-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "appetais@appetais.it"
+    ]
   }
 }
