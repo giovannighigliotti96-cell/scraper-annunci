@@ -376,5 +376,28 @@
     "email": [
       "appetais@appetais.it"
     ]
+  },
+  "Kongsberg Maritime Italy Srl": {
+    "proposta_il": "2026-09-21",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Lisa Edvardsen Haugan",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Gruppo Mobili Quattrozeta Srl": {
+    "proposta_il": "2026-09-21",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Riunione Industrie Alimentari Srl": {
+    "proposta_il": "2026-09-21",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
