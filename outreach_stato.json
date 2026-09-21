@@ -399,5 +399,35 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Arrow Diagnostics Srl": {
+    "proposta_il": "2026-09-21",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Yoon Chun",
+        "CEO"
+      ],
+      [
+        "Story Works",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "dpo@arrowdiagnostics.it",
+      "info@arrowdiagnostics.it"
+    ]
+  },
+  "Trendevice Spa": {
+    "proposta_il": "2026-09-21",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Spiga Nord Società Per Azioni": {
+    "proposta_il": "2026-09-21",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
