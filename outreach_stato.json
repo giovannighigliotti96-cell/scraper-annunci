@@ -454,5 +454,47 @@
     "email": [
       "meditalia@meditalia.net"
     ]
+  },
+  "Benefis Srl": {
+    "proposta_il": "2026-09-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Sprea Spa": {
+    "proposta_il": "2026-09-22",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Esprime Nega",
+        "titolare"
+      ],
+      [
+        "Luca Sprea",
+        "Presidente"
+      ],
+      [
+        "Alessandro Agnoli",
+        "Presidente"
+      ],
+      [
+        "Mario Sprea",
+        "Amministratore Delegato"
+      ]
+    ],
+    "email": [
+      "abbonamenti@sprea.it",
+      "cv@sprea.it",
+      "distribuzione@sprea.it",
+      "fornitori@sprea.it"
+    ]
+  },
+  "Mantero Sistemi Srl": {
+    "proposta_il": "2026-09-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@manterosistemi.it"
+    ]
   }
 }
