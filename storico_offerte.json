@@ -1,5 +1,27 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/digital-marketing-manager-at-assist-digital-4468554326",
+    "data_invio": "2026-09-22",
+    "titolo": "Digital Marketing Manager",
+    "azienda": "Assist Digital",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 88,
+    "link": "https://it.linkedin.com/jobs/view/digital-marketing-manager-at-assist-digital-4468554326",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4468777479",
+    "data_invio": "2026-09-22",
+    "titolo": "Growth manager",
+    "azienda": "Bending Spoons",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 80,
+    "link": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4468777479",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/operations-marketing-manager-at-vol%C3%A9e-football-societ%C3%A0-benefit-4468385907",
     "data_invio": "2026-09-18",
     "titolo": "OPERATIONS & MARKETING MANAGER",
