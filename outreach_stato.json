@@ -429,5 +429,30 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Unistara Spa": {
+    "proposta_il": "2026-09-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "aluminium@unistara.com",
+      "amministrazione@pec.unistara.com",
+      "brescia@unistara.com",
+      "building@unistara.com"
+    ]
+  },
+  "Dbinformation Spa": {
+    "proposta_il": "2026-09-22",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Med Italia Biomedica Srl": {
+    "proposta_il": "2026-09-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "meditalia@meditalia.net"
+    ]
   }
 }
