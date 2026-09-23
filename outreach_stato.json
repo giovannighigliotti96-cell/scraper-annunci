@@ -496,5 +496,36 @@
     "email": [
       "info@manterosistemi.it"
     ]
+  },
+  "Meccanocar Italia Srl": {
+    "proposta_il": "2026-09-23",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "mec@meccanocar.it"
+    ]
+  },
+  "Gaia Servizi Srl": {
+    "proposta_il": "2026-09-23",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Società Mission Struttura",
+        "Direttore Generale"
+      ],
+      [
+        "Amministrazione Personale Organigram",
+        "Direttore Generale"
+      ]
+    ],
+    "email": [
+      "info@gaiaservizi.eu"
+    ]
+  },
+  "Clinicalfarma Srl": {
+    "proposta_il": "2026-09-23",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
