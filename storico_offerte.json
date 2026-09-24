@@ -1,5 +1,38 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-atlante-4469708801",
+    "data_invio": "2026-09-24",
+    "titolo": "Marketing Manager Italy",
+    "azienda": "Atlante",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 72,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-atlante-4469708801",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-wyser-4469333997",
+    "data_invio": "2026-09-24",
+    "titolo": "Marketing Manager",
+    "azienda": "Wyser",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-wyser-4469333997",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.wyser-search.com/offerte-lavoro-dettaglio/marketing/marketing-manager-milano/1371917/",
+    "data_invio": "2026-09-24",
+    "titolo": "Marketing Manager",
+    "azienda": "Azienda non specificata",
+    "citta": "Milano",
+    "portale": "Wyser",
+    "probabilita": 50,
+    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/marketing/marketing-manager-milano/1371917/",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-jefferson-wells-italia-4470906916",
     "data_invio": "2026-09-23",
     "titolo": "Marketing Manager",
