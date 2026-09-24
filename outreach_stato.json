@@ -545,5 +545,27 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Dalf Srl": {
+    "proposta_il": "2026-09-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@dalfcarnishoponline.it"
+    ]
+  },
+  "Libraccio Outlet Srl": {
+    "proposta_il": "2026-09-24",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Mercury Spa": {
+    "proposta_il": "2026-09-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "operativo2@mercuryitaly.com"
+    ]
   }
 }
