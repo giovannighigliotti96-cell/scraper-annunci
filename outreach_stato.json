@@ -567,5 +567,39 @@
     "email": [
       "operativo2@mercuryitaly.com"
     ]
+  },
+  "Manuport Srl": {
+    "proposta_il": "2026-09-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "claudia.bisso@manuport.it",
+      "commerciale@manuport.it",
+      "contabilita@manuport.it",
+      "ricambi@manuport.it"
+    ]
+  },
+  "Officine Tessili Srl": {
+    "proposta_il": "2026-09-24",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@officinetessili.com"
+    ]
+  },
+  "Paredes Italia Spa": {
+    "proposta_il": "2026-09-24",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Simon Paredes",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "info@paredes.it",
+      "magazzino@paredes.it",
+      "servizioclienti@paredes.it"
+    ]
   }
 }
