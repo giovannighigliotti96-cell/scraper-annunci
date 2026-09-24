@@ -38,5 +38,25 @@
     "dettaglio_modalita": "",
     "valutato_da": "llm",
     "recruiter": ""
+  },
+  {
+    "title": "Marketing Manager",
+    "company": "Azienda non specificata",
+    "portal": "Wyser",
+    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/marketing/marketing-manager-milano/1371917/",
+    "date": "Pubblicato il 23/09/2026",
+    "snippet": "",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "timeout",
+    "probabilita": 50,
+    "motivazione": "L'annuncio è estremamente scarno ('Marketing Manager Azienda non specificata') e non offre dettagli su budget, canali o requisiti specifici. La tua esperienza nella definizione di strategie di marketing integrate e gestione di budget si allinea al titolo, ma l'assenza di informazioni rende impossibile valutare i requisiti chiave o eventuali gap.",
+    "testo_completo": "",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": ""
   }
 ]
