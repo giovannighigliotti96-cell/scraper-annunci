@@ -601,5 +601,30 @@
       "magazzino@paredes.it",
       "servizioclienti@paredes.it"
     ]
+  },
+  "Relab Srl": {
+    "proposta_il": "2026-09-25",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@relabsrl.it"
+    ]
+  },
+  "Bcd Travel Italy Spa": {
+    "proposta_il": "2026-09-25",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Careers About",
+        "founder"
+      ]
+    ],
+    "email": []
+  },
+  "Netafim Italia Srl": {
+    "proposta_il": "2026-09-25",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
