@@ -626,5 +626,56 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "G.F.E. Distribuzione Associata Srl": {
+    "proposta_il": "2026-09-25",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Simmons Farm",
+        "Owner"
+      ],
+      [
+        "Read More Simon",
+        "Owner"
+      ]
+    ],
+    "email": []
+  },
+  "Medacta Italia Srl": {
+    "proposta_il": "2026-09-25",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Francesco Siccardi",
+        "CEO"
+      ],
+      [
+        "Risk Committee",
+        "Founder"
+      ],
+      [
+        "Medacta Executive",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Panificio Pasticceria Tossini 1 Spa": {
+    "proposta_il": "2026-09-25",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Pro Recco Rugby",
+        "amministratore delegato"
+      ],
+      [
+        "Maurizio Tossini",
+        "presidente"
+      ]
+    ],
+    "email": [
+      "commerciale@tossini.it"
+    ]
   }
 }
