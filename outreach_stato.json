@@ -677,5 +677,36 @@
     "email": [
       "commerciale@tossini.it"
     ]
+  },
+  "Carestream Health Italia Srl": {
+    "proposta_il": "2026-09-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "corporatesecurity@carestream.com",
+      "health.imaging.tsc@carestream.com",
+      "li.teng@carestream.com",
+      "melody.warner@carestream.com"
+    ]
+  },
+  "Tesa Spa": {
+    "proposta_il": "2026-09-26",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Norman Goldberg",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Il Pesto Di Pra' Di Bruzzone E Ferrari Srl": {
+    "proposta_il": "2026-09-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "commerciale@ilpestodipra.com",
+      "shop@ilpestodipra.com"
+    ]
   }
 }
