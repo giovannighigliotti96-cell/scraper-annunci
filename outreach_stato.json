@@ -761,5 +761,33 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Mantero Srl": {
+    "proposta_il": "2026-09-27",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@manterosistemi.it"
+    ]
+  },
+  "Zamasport Spa": {
+    "proposta_il": "2026-09-27",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Reggio Calabria",
+        "titolare"
+      ]
+    ],
+    "email": []
+  },
+  "Mikai Spa": {
+    "proposta_il": "2026-09-27",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "mikai@mikai.it",
+      "quality.assurance@mikai.it"
+    ]
   }
 }
