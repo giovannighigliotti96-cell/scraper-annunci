@@ -736,5 +736,30 @@
       "info@tonitto.com",
       "servizioconsumatori@tonitto.com"
     ]
+  },
+  "Audio Effetti Srl": {
+    "proposta_il": "2026-09-27",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Marco Medica",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Menghi Spa": {
+    "proposta_il": "2026-09-27",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@menghi.com"
+    ]
+  },
+  "Stemarpast Srl": {
+    "proposta_il": "2026-09-27",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
