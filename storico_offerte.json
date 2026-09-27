@@ -1,5 +1,27 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-navla-4470576084",
+    "data_invio": "2026-09-27",
+    "titolo": "Marketing Manager",
+    "azienda": "Navla",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-navla-4470576084",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4471086018",
+    "data_invio": "2026-09-27",
+    "titolo": "Growth manager",
+    "azienda": "Bending Spoons",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 80,
+    "link": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4471086018",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-navla-4470571391",
     "data_invio": "2026-09-26",
     "titolo": "Marketing Manager",
