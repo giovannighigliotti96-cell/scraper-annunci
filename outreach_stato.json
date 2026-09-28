@@ -826,5 +826,29 @@
       ]
     ],
     "email": []
+  },
+  "Ligurmar Srl": {
+    "proposta_il": "2026-09-28",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@ligurmar.it"
+    ]
+  },
+  "Giochi Preziosi Italia Srl": {
+    "proposta_il": "2026-09-28",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "servizio.consumatori@giochipreziosi.it"
+    ]
+  },
+  "Biscottificio Grondona Spa": {
+    "proposta_il": "2026-09-28",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@biscottificiogrondona.com"
+    ]
   }
 }
