@@ -1,5 +1,49 @@
 [
   {
+    "job_id": "https://www.linkedin.com/jobs/view/head-of-growth-operations-at-digital-nomad-world-4470852143",
+    "data_invio": "2026-09-28",
+    "titolo": "Head of Growth & Operations",
+    "azienda": "Digital Nomad World",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 85,
+    "link": "https://www.linkedin.com/jobs/view/head-of-growth-operations-at-digital-nomad-world-4470852143",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/ecommerce-manager-at-aline-bond-talent-to-business-4472715177",
+    "data_invio": "2026-09-28",
+    "titolo": "Ecommerce Manager",
+    "azienda": "ALINE - Bond talent to business",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/ecommerce-manager-at-aline-bond-talent-to-business-4472715177",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-sales-h-f-milan-at-eskimoz-4471386175",
+    "data_invio": "2026-09-28",
+    "titolo": "Head of Sales H/F - Milan",
+    "azienda": "Eskimoz",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 60,
+    "link": "https://it.linkedin.com/jobs/view/head-of-sales-h-f-milan-at-eskimoz-4471386175",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://fr.linkedin.com/jobs/view/head-of-growth-cdi-paris-f-h-at-mobsuccess-group-4470327070",
+    "data_invio": "2026-09-28",
+    "titolo": "Head of Growth - CDI - Paris - F/H",
+    "azienda": "Mobsuccess Group",
+    "citta": "Torino",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://fr.linkedin.com/jobs/view/head-of-growth-cdi-paris-f-h-at-mobsuccess-group-4470327070",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-navla-4470576084",
     "data_invio": "2026-09-27",
     "titolo": "Marketing Manager",
