@@ -789,5 +789,42 @@
       "mikai@mikai.it",
       "quality.assurance@mikai.it"
     ]
+  },
+  "Matermoll Srl": {
+    "proposta_il": "2026-09-28",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@matermoll.com"
+    ]
+  },
+  "Qiagen Srl": {
+    "proposta_il": "2026-09-28",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Wilhelmsen Ships Service Spa": {
+    "proposta_il": "2026-09-28",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Wilhelmsen Ship",
+        "General Manager"
+      ],
+      [
+        "Meet Marty",
+        "CEO"
+      ],
+      [
+        "Tom Wilhelmsen Foundation",
+        "talent"
+      ],
+      [
+        "Tom Wilhelmsen",
+        "owner"
+      ]
+    ],
+    "email": []
   }
 }
