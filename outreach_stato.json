@@ -850,5 +850,49 @@
     "email": [
       "info@biscottificiogrondona.com"
     ]
+  },
+  "Gadomed Srl": {
+    "proposta_il": "2026-09-29",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "mail@gadomed.it"
+    ]
+  },
+  "Milexia Italia Spa": {
+    "proposta_il": "2026-09-29",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Virginie Laurent",
+        "Marketing Director"
+      ],
+      [
+        "Electronics Laure",
+        "Sales Director"
+      ],
+      [
+        "Florian Pivit",
+        "Managing Director"
+      ],
+      [
+        "Electrical Engineering",
+        "Sales Director"
+      ]
+    ],
+    "email": [
+      "comercial@milexia.com",
+      "de-sales@milexia.com",
+      "info_italy@milexia.com",
+      "nordics-sales@milexia.com"
+    ]
+  },
+  "Verso Giusto 2 Srl": {
+    "proposta_il": "2026-09-29",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "web@lacristallinawater.it"
+    ]
   }
 }
