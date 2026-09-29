@@ -894,5 +894,38 @@
     "email": [
       "web@lacristallinawater.it"
     ]
+  },
+  "Veridea Srl": {
+    "proposta_il": "2026-09-29",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@veridea.it"
+    ]
+  },
+  "Ascensia Diabetes Care Italy Srl": {
+    "proposta_il": "2026-09-29",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Slam.Com Spa": {
+    "proposta_il": "2026-09-29",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Boet Brinkgreve",
+        "CEO"
+      ],
+      [
+        "Alessandro Locatelli",
+        "Amministratore Delegato"
+      ],
+      [
+        "Enrico Chieffi",
+        "Presidente"
+      ]
+    ],
+    "email": []
   }
 }
