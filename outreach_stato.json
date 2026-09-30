@@ -947,5 +947,39 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Monti E Barabino Spa": {
+    "proposta_il": "2026-09-30",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Lorenzo Sanna",
+        "Amministratore Delegato"
+      ],
+      [
+        "Angelo Melegari",
+        "Amministratore Delegato"
+      ]
+    ],
+    "email": []
+  },
+  "Eae Italia Srl": {
+    "proposta_il": "2026-09-30",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "amministrazione@eaeitalia.it",
+      "commerciale@eaeitalia.it",
+      "communication@eaeitalia.it",
+      "info@eaeitalia.it"
+    ]
+  },
+  "Columbus Informatica Srl": {
+    "proposta_il": "2026-09-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@columbusinformatica.it"
+    ]
   }
 }
