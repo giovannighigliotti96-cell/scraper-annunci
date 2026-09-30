@@ -927,5 +927,25 @@
       ]
     ],
     "email": []
+  },
+  "Drago Forneria Genovese Srl": {
+    "proposta_il": "2026-09-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@dragoforneria.it"
+    ]
+  },
+  "Synthesis Spa": {
+    "proposta_il": "2026-09-30",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Cresta & Delfino Srl": {
+    "proposta_il": "2026-09-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
