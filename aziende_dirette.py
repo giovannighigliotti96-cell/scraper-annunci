@@ -56,6 +56,9 @@ AZIENDE = [
     # lista senza sessione e non contiene le posizioni italiane; quelle stanno
     # su careers.kpmg.it, che e' SuccessFactors come Intesa.
     {"nome": "KPMG Italia", "ats": "successfactors", "base": "https://careers.kpmg.it"},
+    {"nome": "Accenture", "ats": "workday",
+     "host": "accenture.wd103.myworkdayjobs.com", "tenant": "accenture",
+     "sito": "AccentureCareers"},
 ]
 
 # Citta' target come compaiono nei campi "location" di questi ATS.
@@ -177,8 +180,14 @@ def _workday_testo(sessione, offerta):
     if r.status_code != 200:
         return "", ""
     info = r.json().get("jobPostingInfo") or {}
+    paese = info.get("country")
+    paese = paese.get("descriptor", "") if isinstance(paese, dict) else (paese or "")
     luoghi = " ".join(filter(None, [info.get("location", ""),
-                                    " ".join(info.get("additionalLocations") or [])]))
+                                    " ".join(info.get("additionalLocations") or []), paese]))
+    # I tenant grandi (Accenture) non mettono la sede nell'elenco: si prende da
+    # qui, cosi' il filtro geografico ha qualcosa su cui lavorare.
+    if luoghi.strip():
+        offerta["luogo"] = luoghi
     return f"{luoghi}\n{_testo_html(info.get('jobDescription', ''))}", ""
 
 
@@ -433,9 +442,7 @@ LETTORI = {
     "avature": (_avature, _avature_testo),
 }
 
-# ATS in cui la citta' non compare nell'elenco ma solo nel dettaglio: per
-# questi il filtro geografico si applica DOPO aver letto la pagina, non prima.
-CITTA_SOLO_NEL_DETTAGLIO = {"avature"}
+
 
 
 # ---------------------------------------------------------------- scraper per la pipeline
@@ -466,13 +473,15 @@ def _scraper_class():
                     logging.warning(f"{az['nome']}: lettura fallita: {type(e).__name__}: {e}")
                     continue
                 logging.info(f"{az['nome']}: {len(offerte)} offerte lette")
-                # Per alcuni ATS la sede non e' nell'elenco (Avature): li' il
-                # filtro geografico puo' essere applicato solo dopo aver letto
-                # il dettaglio, che il lettore di testo scarica comunque.
-                tardi = az["ats"] in CITTA_SOLO_NEL_DETTAGLIO
                 for o in offerte:
                     if not S.is_valid_job_title(o["titolo"]):
                         continue
+                    # Alcuni ATS non mettono la sede nell'elenco (Avature di
+                    # Deloitte, Workday di Accenture): li' il filtro geografico
+                    # si applica dopo aver letto il dettaglio, che il lettore di
+                    # testo scarica comunque. Dove la sede c'e' si filtra subito,
+                    # cosi' non si aprono pagine inutili.
+                    tardi = not (o["luogo"] or "").strip()
                     citta = citta_da_testo(o["luogo"])
                     if citta is None and not tardi:
                         continue
