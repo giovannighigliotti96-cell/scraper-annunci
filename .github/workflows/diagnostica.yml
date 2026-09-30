@@ -1,0 +1,28 @@
+name: Diagnostica
+
+# Solo a richiesta: serve a ricalibrare, non fa parte del flusso quotidiano.
+# Qui c'e' la chiave Gemini, che in locale il .env non contiene.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verifica:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - run: pip install -r requirements.txt
+
+      - name: Rivaluta le offerte scartate con le regole di oggi
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python verifica_punteggi.py
