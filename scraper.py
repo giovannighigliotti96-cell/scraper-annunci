@@ -1214,6 +1214,13 @@ EXACT_TITLES = [
     "responsabile sales & marketing",
     "responsabile sales e marketing",
     "direttore marketing",
+    # La combinazione vendita+marketing in un titolo solo: tipica delle aziende
+    # che uniscono le due funzioni, ed e' la configurazione in cui il profilo
+    # rende di piu'. C'erano gia' le varianti "responsabile" e inglesi, mancava
+    # quella con "direttore" (vista dal vivo il 30/09/2026 e scartata).
+    "direttore commerciale e marketing",
+    "direttore commerciale & marketing",
+    "direttore vendite e marketing",
 
     # --- Livello "Head of" e C-level ---
     # Verificato dal vivo (test end-to-end 08/09/2026, MichaelPage e Hays):
@@ -1291,6 +1298,13 @@ EXACT_TITLES = [
     "head of customer acquisition",
     "head of crm",
     "responsabile crm",
+    # C'erano "head of crm" e "responsabile crm" ma non la forma piu' comune.
+    "crm manager",
+    # Il CRM e il performance marketing sono al centro del CV (HubSpot,
+    # lifecycle, CAC/ROAS): le varianti con "lead" mancavano.
+    "digital performance lead",
+    "performance marketing lead",
+    "crm lead",
 ]
 
 # Titoli che valgono SOLO se il titolo dell'annuncio corrisponde esattamente,
