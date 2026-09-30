@@ -1321,6 +1321,13 @@ TITOLI_MATCH_ESATTO = [
 
 _SEPARATORI_TITOLO = re.compile(r"\s*[-–—|(/,:]")
 
+# Il secondo mestiere che, unito a un titolo di TITOLI_MATCH_ESATTO, lo rende
+# accettabile: vendita o marketing, non "innovation" o "transformation".
+_RE_SECONDO_RUOLO = re.compile(
+    r"sales|vendit|commercial|marketing|revenue|growth|business development|e-?commerce",
+    re.IGNORECASE,
+)
+
 
 def _titolo_base(titolo: str) -> str:
     """Parte significativa del titolo, prima del suffisso descrittivo che i
@@ -1557,8 +1564,21 @@ def is_valid_job_title(title: str) -> bool:
             return True
 
     # 3. Titoli ammessi solo per corrispondenza esatta (vedi TITOLI_MATCH_ESATTO)
-    if _titolo_base(t) in TITOLI_MATCH_ESATTO:
+    base = _titolo_base(t)
+    if base in TITOLI_MATCH_ESATTO:
         return True
+
+    # 4. Stesso titolo unito a un secondo ruolo di vendita o marketing:
+    # "Head of Digital & Inside Sales" non e' un "Head of Digital qualcosa",
+    # sono due ruoli in uno — ed e' la combinazione in cui il profilo rende di
+    # piu'. Resta escluso "Head of Digital & Innovation", perche' il secondo
+    # pezzo non nomina ne' vendita ne' marketing (era il motivo della regola).
+    for esatto in TITOLI_MATCH_ESATTO:
+        for giunzione in (" & ", " e ", " and ", " + "):
+            if base.startswith(esatto + giunzione):
+                secondo = base[len(esatto) + len(giunzione):]
+                if _RE_SECONDO_RUOLO.search(secondo):
+                    return True
 
     return False
 
