@@ -16,6 +16,8 @@ ATS supportati (tutti verificati dal vivo il 17/09/2026):
 - bnp            pagina di gruppo BNP Paribas, card HTML (Arval)
 - ashby          API JSON pubblica del job board (Satispay)
 - lutech         tabella HTML del sito Lutech, con sede e modalita' in chiaro
+- phenom         POST /widgets del career site Phenom People (PwC)
+- avature        pagina di ricerca Avature, HTML paginato (Deloitte)
 
 Per aggiungere un'azienda: python aziende_dirette.py --scopri <url careers>
 stampa la riga da incollare in AZIENDE, se l'ATS e' riconosciuto.
@@ -44,6 +46,16 @@ AZIENDE = [
     {"nome": "Tinexta / InfoCert", "ats": "successfactors", "base": "https://job.tinexta.com"},
     {"nome": "Satispay", "ats": "ashby", "slug": "satispay"},
     {"nome": "Lutech", "ats": "lutech"},
+    # Societa' di consulenza (aggiunte il 30/09/2026)
+    {"nome": "PwC Italia", "ats": "phenom", "base": "https://jobs-it.pwc.com",
+     "pagina": "/it/it/search-results"},
+    {"nome": "Deloitte Italia", "ats": "avature",
+     "base": "https://deloittecm.avature.net/en_US/careers/SearchJobs/",
+     "filtro": "729=5946&729_format=1565&listFilterMode=1"},
+    # KPMG: il portale Taleo sudafricano indicato da Giovanni non espone la
+    # lista senza sessione e non contiene le posizioni italiane; quelle stanno
+    # su careers.kpmg.it, che e' SuccessFactors come Intesa.
+    {"nome": "KPMG Italia", "ats": "successfactors", "base": "https://careers.kpmg.it"},
 ]
 
 # Citta' target come compaiono nei campi "location" di questi ATS.
@@ -95,7 +107,11 @@ def data_da_posted(testo):
 
 
 def _testo_html(html):
-    soup = BeautifulSoup(html or "", "html.parser")
+    # Un teaser senza tag fa credere a BeautifulSoup di aver ricevuto un nome
+    # di file: si restituisce com'e'.
+    if "<" not in (html or ""):
+        return (html or "").strip()
+    soup = BeautifulSoup(html, "html.parser")
     for tag in soup(["script", "style"]):
         tag.decompose()
     return soup.get_text(" ", strip=True)
@@ -314,13 +330,112 @@ def _lutech_testo(sessione, offerta):
     return f"{offerta.get('_testo', '')}\n{testo}", data
 
 
+# ---------------------------------------------------------------- ATS: Phenom People
+
+def _phenom(sessione, az):
+    """POST /widgets con il csrfToken preso dalla pagina di ricerca. Risponde
+    con i job gia' completi di citta', data e link di candidatura."""
+    r = sessione.get(az["base"] + az["pagina"], timeout=30)
+    if r.status_code != 200:
+        raise RuntimeError(f"phenom pagina HTTP {r.status_code}")
+    m = re.search(r'"csrfToken"\s*:\s*"([a-f0-9]+)', r.text)
+    if not m:
+        raise RuntimeError("phenom: csrfToken non trovato")
+    intestazioni = {"Content-Type": "application/json", "Accept": "application/json",
+                    "X-CSRF-Token": m.group(1), "Referer": r.url}
+    out, inizio = [], 0
+    while inizio < MAX_OFFERTE_PER_AZIENDA:
+        corpo = {"lang": "it", "deviceType": "desktop", "country": "it",
+                 "pageName": "search-results", "ddoKey": "refineSearch", "sortBy": "",
+                 "subsearch": "", "from": inizio, "jobs": True, "counts": True,
+                 "all_fields": ["category", "state", "city", "type"], "size": 50,
+                 "clearAll": False, "jdsource": "facets", "isSliderEnable": False,
+                 "pageId": "page19", "siteType": "external", "keywords": "", "global": True}
+        rr = sessione.post(az["base"] + "/widgets", json=corpo, headers=intestazioni, timeout=30)
+        if rr.status_code != 200:
+            raise RuntimeError(f"phenom widgets HTTP {rr.status_code}")
+        ricerca = rr.json().get("refineSearch") or {}
+        elenco = (ricerca.get("data") or {}).get("jobs") or []
+        for j in elenco:
+            out.append({"titolo": j.get("title", ""),
+                        "luogo": j.get("cityStateCountry") or j.get("city", ""),
+                        "data": str(j.get("postedDate") or "")[:10],
+                        "link": j.get("applyUrl", ""),
+                        "_testo": _testo_html(j.get("descriptionTeaser") or "")})
+        inizio += 50
+        if inizio >= (ricerca.get("totalHits") or 0) or not elenco:
+            break
+        time.sleep(0.3)
+    return out
+
+
+# ---------------------------------------------------------------- ATS: Avature
+
+def _avature(sessione, az):
+    """HTML paginato con jobOffset, sei annunci per pagina (il parametro per
+    aumentarli viene ignorato). La sede non e' nella lista ma nel dettaglio,
+    che serve comunque per il testo."""
+    out, visti = [], set()
+    offset = 0
+    while offset < MAX_OFFERTE_PER_AZIENDA:
+        r = sessione.get(f"{az['base']}?{az['filtro']}&jobOffset={offset}", timeout=30)
+        if r.status_code != 200:
+            raise RuntimeError(f"avature HTTP {r.status_code}")
+        soup = BeautifulSoup(r.text, "html.parser")
+        ancore = [a for a in soup.find_all("a", href=True) if "/JobDetail/" in a["href"]]
+        if not ancore:
+            break
+        nuovi = 0
+        for a in ancore:
+            link = a["href"]
+            link = link if link.startswith("http") else "https://deloittecm.avature.net" + link
+            if link in visti:
+                continue
+            visti.add(link)
+            nuovi += 1
+            scheda = a.find_parent(["li", "article", "div"])
+            out.append({"titolo": a.get_text(" ", strip=True),
+                        "luogo": "",  # sta solo nel dettaglio
+                        "data": "", "link": link,
+                        "_contesto": scheda.get_text(" ", strip=True)[:200] if scheda else ""})
+        if not nuovi:
+            break
+        offset += 6
+        time.sleep(0.3)
+    return out
+
+
+# "Location Milano Business Area TECHNOLOGY": la sede finisce dove comincia
+# l'etichetta successiva, cioe' alla prima parola tutta maiuscola o a una
+# delle voci note della scheda.
+_RE_LUOGO_AVATURE = re.compile(
+    r"Location\s+([A-Za-zÀ-ÿ']+(?:[ ,]+[A-Za-zÀ-ÿ']+){0,3}?)"
+    r"(?=\s+(?:Business|Seniority|Job|Area|Function|Contract|[A-Z]{3,})|$)")
+
+
+def _avature_testo(sessione, offerta):
+    """Il dettaglio porta "Location <citta>": si antepone al testo cosi' la
+    citta' viene letta da citta_da_testo come per gli altri ATS."""
+    testo, data = _html_testo(sessione, offerta)
+    m = _RE_LUOGO_AVATURE.search(testo)
+    if m:
+        offerta["luogo"] = m.group(1).strip()
+    return f"{offerta.get('_contesto', '')} {offerta['luogo']}\n{testo}", data
+
+
 LETTORI = {
     "workday": (_workday, _workday_testo),
     "successfactors": (_successfactors, _html_testo),
     "bnp": (_bnp, _html_testo),
     "ashby": (_ashby, _testo_incorporato),
     "lutech": (_lutech, _lutech_testo),
+    "phenom": (_phenom, _testo_incorporato),
+    "avature": (_avature, _avature_testo),
 }
+
+# ATS in cui la citta' non compare nell'elenco ma solo nel dettaglio: per
+# questi il filtro geografico si applica DOPO aver letto la pagina, non prima.
+CITTA_SOLO_NEL_DETTAGLIO = {"avature"}
 
 
 # ---------------------------------------------------------------- scraper per la pipeline
@@ -351,16 +466,24 @@ def _scraper_class():
                     logging.warning(f"{az['nome']}: lettura fallita: {type(e).__name__}: {e}")
                     continue
                 logging.info(f"{az['nome']}: {len(offerte)} offerte lette")
+                # Per alcuni ATS la sede non e' nell'elenco (Avature): li' il
+                # filtro geografico puo' essere applicato solo dopo aver letto
+                # il dettaglio, che il lettore di testo scarica comunque.
+                tardi = az["ats"] in CITTA_SOLO_NEL_DETTAGLIO
                 for o in offerte:
                     if not S.is_valid_job_title(o["titolo"]):
                         continue
                     citta = citta_da_testo(o["luogo"])
-                    if citta is None:
+                    if citta is None and not tardi:
                         continue
                     try:
                         testo, data_dettaglio = testo_di(sessione, o)
                     except Exception:
                         testo, data_dettaglio = "", ""
+                    if tardi:
+                        citta = citta_da_testo(o["luogo"])
+                        if citta is None:
+                            continue
                     if not o["data"] and data_dettaglio:
                         o["data"] = data_dettaglio
                     (match_level, match_count, work_mode, fetch_status,
