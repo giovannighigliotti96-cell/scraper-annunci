@@ -378,11 +378,14 @@ COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un
 - 15-39 → uno o più requisiti bloccanti non soddisfatti (una lingua che non parla, un settore molto distante, seniority molto sopra o sotto).
 - 0-14 → ruolo fuori perimetro.
 Non concentrare i punteggi nella fascia alta, ma distingui i requisiti BLOCCANTI da quelli DESIDERATI: i selezionatori applicano le liste di requisiti con flessibilità, e un requisito mancante non equivale a una porta chiusa.
-- Sono BLOCCANTI (portano sotto 40): una lingua che il candidato non parla, una sede fuori dalle tre città o il full remote, un'abilitazione o un titolo obbligatorio che non ha, un settore fortemente regolamentato dove l'esperienza specifica è un prerequisito reale (farmaceutico, bancario, assicurativo), una seniority enormemente distante (ruoli da CEO/DG di grande gruppo, oppure junior).
-- NON sono bloccanti (abbassano di 10-20 punti, non affossano): qualche anno di esperienza in più rispetto ai suoi, uno strumento specifico che non ha usato (es. Salesforce al posto di HubSpot), un modello di vendita o un tipo di struttura che non ha praticato, un settore diverso ma non regolamentato, una dimensione aziendale maggiore.
+Il confine non passa tra requisiti "importanti" e "secondari", ma tra requisiti FORMALI e BIOGRAFICI. Un requisito formale o lo hai o non lo hai, e chi seleziona non può aggirarlo. Un requisito biografico descrive il percorso tipico di chi ha fatto quel lavoro: è una preferenza scritta come una regola, e in sede di selezione pesa molto meno di quanto sembri.
+- Sono BLOCCANTI (portano sotto 40), e sono solo FORMALI: una lingua che il candidato non parla, una sede fuori dalle tre città (il full remote dichiarato invece va bene), un'abilitazione, un albo o un titolo di studio obbligatorio che non ha, una seniority enormemente distante (CEO o DG di grande gruppo, oppure ruoli junior).
+- NON sono bloccanti, e vanno trattati come uno sconto di 10-20 punti al massimo, mai come una porta chiusa: gli anni di esperienza richiesti, l'esperienza "nel settore X" o "in società di consulenza", uno strumento che non ha usato (Salesforce al posto di HubSpot), un modello di vendita o una struttura che non ha praticato, una dimensione aziendale maggiore. Vale anche per i settori regolamentati (farmaceutico, bancario, assicurativo) quando l'esperienza di settore è una preferenza e non un requisito di legge: in quel caso è uno sconto, non un'esclusione.
 COERENZA DEL PERCORSO, non solo delle competenze. Prima di dare un punteggio alto, chiediti se il candidato ha mai FATTO quel mestiere, non solo se ha competenze che vi si sovrappongono. Un ruolo di vendita pura (Sales Director, Direttore Vendite, Area Manager, Key Account) richiede una carriera fatta di gestione di reti commerciali, distributori, agenti, quote e sell-in/sell-out: il candidato non ha nulla di tutto questo nel CV, e nessuno dei suoi titoli lo dice. Che sappia di revenue, KPI, B2B e interlocutori C-level non lo rende un direttore vendite — e candidarsi con un titolo che il suo profilo non sostiene lo espone a un rifiuto immediato. Lo stesso vale per settori con un mestiere proprio: wholesale e fashion, reti di agenti, GDO. Se il ruolo è vendita senza componente digitale o di marketing, il punteggio non deve superare 45 per quanto le competenze si assomiglino.
 
-Calibrazione verificata su un caso reale: un "Digital Sales Manager" che chiedeva 8-10 anni ed esperienza come manager di manager — requisiti che il candidato non soddisfa alla lettera — lo ha in realtà portato fino all'ultimo step della selezione. Un annuncio così merita 70-80, non 50.
+Due calibrazioni verificate su casi reali, entrambe nella stessa direzione: i requisiti di anzianità e di settore contano meno di quanto l'annuncio lasci credere.
+- Un "Digital Sales Manager" che chiedeva 8-10 anni ed esperienza come manager di manager — requisiti che il candidato non soddisfa alla lettera — lo ha portato fino all'ultimo step della selezione. Un annuncio così merita 70-80, non 50.
+- Un "Senior Manager Energy" in una società di consulenza (JAKALA, settembre 2026) chiedeva 6-7 anni maturati in consulenza nell'industry Energy o affini: il candidato non viene dalla consulenza, e al primo colloquio quel punto non è nemmeno stato sollevato. È arrivato al secondo colloquio. Un annuncio del genere, se le competenze richieste (CRM, loyalty, campaign automation, lead management, go-to-market) sono le sue, merita 70-80.
 
 MOTIVAZIONE (massimo 3 righe, in italiano):
 Cita elementi concreti e specifici presi DALL'ANNUNCIO, non impressioni generiche. Dì (1) qual è il requisito principale e se il candidato lo soddisfa, e (2) qual è il gap più rilevante, nominando ciò che l'annuncio chiede.
@@ -822,7 +825,9 @@ _PENALITA_REQUISITI = {
     "Salesforce richiesto": (10, ["salesforce"]),
     "Marketo / Eloqua / Adobe": (8, ["marketo", "eloqua", "adobe campaign", "adobe analytics"]),
     "SQL / Python avanzati": (8, ["sql avanzato", "python", "power bi developer", "data engineering"]),
-    "Settore regolamentato o distante": (12, [
+    # Sconto, non esclusione: l'esperienza di settore e' quasi sempre una
+    # preferenza. Era 12 fino al 30/09/2026.
+    "Settore regolamentato o distante": (8, [
         "farmaceut", "pharma", "dispositivi medici", "life science",
         "bancario", "banking", "assicurativ", "credito al consumo",
     ]),
@@ -848,8 +853,12 @@ def _penalita_esperienza(testo: str):
     massimo = max(anni_richiesti)
     if massimo <= ANNI_ESPERIENZA_CV:
         return 0, None
-    # 4 punti per ogni anno mancante, fino a un tetto di 20.
-    return min(20, (massimo - ANNI_ESPERIENZA_CV) * 4), f"{massimo} anni richiesti"
+    # 2 punti per ogni anno mancante, fino a un tetto di 10. Pesava il doppio
+    # fino al 30/09/2026: due casi reali (un Digital Sales Manager che chiedeva
+    # 8-10 anni, un Senior Manager che ne chiedeva 6-7 in consulenza) sono
+    # arrivati agli ultimi step della selezione, quindi la soglia dichiarata
+    # nell'annuncio non e' il muro che sembra.
+    return min(10, (massimo - ANNI_ESPERIENZA_CV) * 2), f"{massimo} anni richiesti"
 
 
 def calcola_probabilita_callback(testo: str) -> tuple:
