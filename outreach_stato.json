@@ -999,5 +999,28 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Cressi Sub Società Per Azioni": {
+    "proposta_il": "2026-10-01",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Eurosyn Spa": {
+    "proposta_il": "2026-10-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "amministrazione@eurosyn.it",
+      "assistenza.clienti@eurosyn.it",
+      "info@eurosyn.it",
+      "marketing@eurosyn.it"
+    ]
+  },
+  "Ansaldo Nucleare Spa": {
+    "proposta_il": "2026-10-01",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
