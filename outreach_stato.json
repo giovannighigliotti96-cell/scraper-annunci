@@ -981,5 +981,23 @@
     "email": [
       "info@columbusinformatica.it"
     ]
+  },
+  "Liguroil Srl": {
+    "proposta_il": "2026-10-01",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Fratelli Rossetti Spa": {
+    "proposta_il": "2026-10-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "S.Erasmo Zinkal Srl": {
+    "proposta_il": "2026-10-01",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
