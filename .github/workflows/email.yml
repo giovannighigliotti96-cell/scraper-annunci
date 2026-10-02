@@ -81,6 +81,7 @@ jobs:
           # esattamente le offerte che questa run sta per inviare/svuotare. Serve
           # per il merge dopo il reset allo stato remoto più recente più sotto.
           cp offerte_giornaliere.json /tmp/before_email.json 2>/dev/null || echo '[]' > /tmp/before_email.json
+          rm -f /tmp/email_inviata
 
       - name: Invia email e svuota accumulo giornaliero
         if: steps.check_time.outputs.should_run == 'true'
@@ -145,7 +146,14 @@ jobs:
           # leggermente diverse).
           from state_io import load_json_or_raise as load, atomic_write_json
 
-          inviate = load('/tmp/before_email.json', [])
+          import os
+          # La coda si svuota solo se run_email_job.py ha davvero inviato: la
+          # sentinella la scrive lui come ultima istruzione. Senza questo
+          # controllo, un'uscita anticipata ("riepilogo gia' inviato") faceva
+          # comunque considerare "spedite" le offerte in coda, che sparivano.
+          inviate = load('/tmp/before_email.json', []) if os.path.exists('/tmp/email_inviata') else []
+          if not inviate:
+              print("Nessun invio in questo run: la coda resta intatta.")
           # Solo link non vuoti: un record senza link (None/"") non deve entrare nel
           # set, altrimenti un'offerta arrivata nel frattempo da uno scraping
           # concorrente con link altrettanto vuoto/mancante verrebbe rimossa per

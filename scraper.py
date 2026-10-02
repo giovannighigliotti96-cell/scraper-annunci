@@ -9,7 +9,8 @@ import html as html_lib
 import socket
 import ipaddress
 import urllib.parse
-from datetime import datetime
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
@@ -3608,24 +3609,45 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
 ULTIMO_INVIO_FILE = "ultimo_invio.json"
 
 
+def giornata_riepilogo(momento=None) -> str:
+    """La "giornata" a cui appartiene un riepilogo, in ora italiana.
+
+    Non e' la data di calendario, per due motivi che insieme hanno rotto
+    l'invio delle 18:05 per giorni (diagnosticato il 02/10/2026):
+    1. il runner di GitHub Actions lavora in UTC, quindi datetime.now() non e'
+       l'ora italiana e cambia giorno alle 02:00 di Roma;
+    2. le cron di sicurezza slittano di ore e finiscono dopo mezzanotte, ma il
+       riepilogo che mandano e' ancora quello della sera prima.
+    Il risultato era che il run notturno registrava l'invio con la data del
+    giorno DOPO, e quello delle 18:05 trovava "gia' inviata" e usciva senza
+    mandare nulla: il riepilogo arrivava solo alle 2 di notte.
+
+    Qui la giornata e' quella di sei ore fa, in ora di Roma: la finestra
+    18:05 -> 06:00 del mattino seguente appartiene tutta allo stesso giorno,
+    esattamente come la finestra dello step "Verifica orario" nel workflow."""
+    adesso = momento or datetime.now(ZoneInfo("Europe/Rome"))
+    return (adesso - timedelta(hours=6)).strftime("%Y-%m-%d")
+
+
 def email_gia_inviata_oggi() -> bool:
-    """True se il riepilogo di oggi e' gia' partito. In caso di file illeggibile
-    ritorna False: meglio una mail doppia che nessuna mail."""
+    """True se il riepilogo di questa giornata e' gia' partito. In caso di file
+    illeggibile ritorna False: meglio una mail doppia che nessuna mail."""
     try:
         dati = state_io.load_json_or_raise(ULTIMO_INVIO_FILE, {})
-        return isinstance(dati, dict) and dati.get("data") == datetime.now().strftime("%Y-%m-%d")
+        return isinstance(dati, dict) and dati.get("giornata") == giornata_riepilogo()
     except Exception as e:
         logging.warning(f"Errore lettura {ULTIMO_INVIO_FILE}: {e}")
         return False
 
 
 def registra_invio_email():
-    """Segna che il riepilogo di oggi e' stato inviato. Chiamata solo dopo un
-    invio SMTP riuscito."""
+    """Segna che il riepilogo di questa giornata e' stato inviato. Chiamata solo
+    dopo un invio SMTP riuscito."""
     try:
+        adesso = datetime.now(ZoneInfo("Europe/Rome"))
         _atomic_write_json(ULTIMO_INVIO_FILE,
-                           {"data": datetime.now().strftime("%Y-%m-%d"),
-                            "orario": datetime.now().strftime("%H:%M:%S")},
+                           {"giornata": giornata_riepilogo(adesso),
+                            "inviata_il": adesso.strftime("%Y-%m-%d %H:%M:%S %Z")},
                            ensure_ascii=False, indent=2)
     except Exception as e:
         logging.error(f"Errore scrittura {ULTIMO_INVIO_FILE}: {e}")
