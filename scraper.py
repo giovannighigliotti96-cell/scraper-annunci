@@ -570,10 +570,28 @@ def _attendi_slot_gemini():
     _gemini_ultima_chiamata = time.monotonic()
 
 
+# Timeout della singola richiesta a Gemini, in millisecondi. Senza, l'SDK
+# aspetta indefinitamente: il 02/10/2026 l'invio delle 18:05 e' rimasto appeso
+# 25 minuti su una chiamata che non rispondeva, e il riepilogo non e' partito.
+# Una valutazione non vale il blocco dell'email: scaduto il tempo l'offerta
+# tiene il punteggio euristico e il flusso prosegue.
+GEMINI_TIMEOUT_MS = 45_000
+
+
 def _get_gemini_client():
     global _gemini_client
     if _gemini_client is None and GEMINI_SDK_AVAILABLE and GEMINI_API_KEY:
-        _gemini_client = google_genai.Client(api_key=GEMINI_API_KEY)
+        try:
+            from google.genai import types as _genai_types
+            _gemini_client = google_genai.Client(
+                api_key=GEMINI_API_KEY,
+                http_options=_genai_types.HttpOptions(timeout=GEMINI_TIMEOUT_MS))
+        except Exception as e:
+            # Se questa versione dell'SDK non accetta http_options, meglio un
+            # client senza timeout che nessun client: il budget complessivo
+            # della valutazione resta comunque a proteggere l'invio.
+            logging.warning(f"Gemini senza timeout esplicito ({type(e).__name__}): {e}")
+            _gemini_client = google_genai.Client(api_key=GEMINI_API_KEY)
     return _gemini_client
 
 
