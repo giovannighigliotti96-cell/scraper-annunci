@@ -1022,5 +1022,30 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Bruschettini Srl": {
+    "proposta_il": "2026-10-02",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Advanz Pharma Italia Srl": {
+    "proposta_il": "2026-10-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "businessdevelopment@advanzpharma.com",
+      "compliance@advanzpharma.com",
+      "customercare-intl@advanzpharma.com",
+      "customercare@advanzpharma.com"
+    ]
+  },
+  "Gts Spa": {
+    "proposta_il": "2026-10-02",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@gtsspa.com"
+    ]
   }
 }
