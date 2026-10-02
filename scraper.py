@@ -52,6 +52,11 @@ ANTHROPIC_API_KEY = os.getenv("ANTHROPIC_API_KEY", "").strip()
 INCLUDE_UNVERIFIED = True
 SOGLIA_CV_PERSONALIZZATO = 80  # probabilita >= a questa soglia attiva la personalizzazione CV
 CV_PERSONALIZZAZIONE_BUDGET_SECONDI = 480  # tempo massimo totale dedicato alla personalizzazione CV per run email
+# Tempo massimo per la seconda valutazione semantica all'ora dell'email. Oltre
+# questo, le offerte restanti tengono il punteggio euristico e la mail parte
+# comunque: il 02/10/2026 l'invio e' rimasto appeso per ore a un modello in
+# quota, e il riepilogo non e' mai arrivato.
+BUDGET_VALUTAZIONE_EMAIL_S = 300
 
 import sys
 
@@ -622,11 +627,20 @@ def _e_errore_di_quota(errore) -> bool:
     return "429" in testo or "RESOURCE_EXHAUSTED" in testo or "too_many_requests" in testo
 
 
+# Oltre questo tempo non vale la pena aspettare un modello: meglio tenere il
+# punteggio euristico e andare avanti. Senza tetto, il 02/10/2026 l'invio
+# dell'email e' rimasto bloccato quasi due ore perche' Gemini, a quota
+# giornaliera esaurita, aveva risposto con un ritardo di ritentativo lunghissimo.
+ATTESA_MASSIMA_QUOTA_S = 60
+
+
 def _secondi_di_attesa(errore) -> float:
     """Secondi indicati dal server nel messaggio 429 ("Please retry in 18.6s"),
-    con un margine di 1s: ripartire spaccando il secondo rifallisce."""
+    con un margine di 1s: ripartire spaccando il secondo rifallisce. Limitati a
+    ATTESA_MASSIMA_QUOTA_S: nessuna valutazione vale il blocco dell'invio."""
     trovato = _RE_ATTESA_429.search(str(errore or ""))
-    return float(trovato.group(1)) + 1 if trovato else 30.0
+    attesa = float(trovato.group(1)) + 1 if trovato else 30.0
+    return min(attesa, ATTESA_MASSIMA_QUOTA_S)
 
 
 def _chiama_gemini(client, istruzioni, job_text, modello):
@@ -680,7 +694,7 @@ def valuta_match_candidato(job_text: str) -> tuple:
     return calcola_probabilita_callback(job_text.lower())
 
 
-def arricchisci_offerte_con_llm(offerte):
+def arricchisci_offerte_con_llm(offerte, scadenza=None):
     """Rivaluta con l'LLM le offerte che arriveranno davvero in email,
     sostituendo probabilità e motivazione calcolate dall'euristica.
 
@@ -696,7 +710,18 @@ def arricchisci_offerte_con_llm(offerte):
         return offerte
 
     riuscite = 0
+    scaduto = False
     for job in offerte:
+        # Oltre la scadenza si smette di valutare e si tiene il punteggio
+        # euristico: le offerte non valutate dall'LLM non vengono filtrate per
+        # punteggio (vedi offerta_sotto_soglia), quindi arrivano comunque in
+        # email. Meglio un punteggio approssimativo che una mail che non parte.
+        if scadenza is not None and time.monotonic() > scadenza:
+            if not scaduto:
+                logging.warning("Tempo per la valutazione semantica esaurito: "
+                                "le offerte restanti tengono il punteggio euristico.")
+                scaduto = True
+            continue
         testo = job.testo_completo or f"{job.title} {job.company} {job.snippet}"
         try:
             risultato = valuta_match_semantico(testo)
@@ -4275,7 +4300,8 @@ def invia_email_job():
     if da_rivalutare:
         print(f"Seconda valutazione di {len(da_rivalutare)} offerte non valutate al mattino...")
         gia_valutate = [j for j in offerte_da_inviare if j.valutato_da == "llm"]
-        offerte_da_inviare = gia_valutate + arricchisci_offerte_con_llm(da_rivalutare)
+        offerte_da_inviare = gia_valutate + arricchisci_offerte_con_llm(
+            da_rivalutare, scadenza=time.monotonic() + BUDGET_VALUTAZIONE_EMAIL_S)
 
     success = invia_email(offerte_da_inviare)
 
