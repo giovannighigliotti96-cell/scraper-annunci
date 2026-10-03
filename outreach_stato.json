@@ -1047,5 +1047,45 @@
     "email": [
       "info@gtsspa.com"
     ]
+  },
+  "Everllence Italia Srl": {
+    "proposta_il": "2026-10-03",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Uwe Lauber",
+        "CEO"
+      ],
+      [
+        "Everllence What",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Lectra Italia Spa": {
+    "proposta_il": "2026-10-03",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Greg Zemor",
+        "CEO"
+      ],
+      [
+        "Aivar Kaus",
+        "CEO"
+      ],
+      [
+        "Helland Baltic Connected",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Cartiera San Giorgio Srl": {
+    "proposta_il": "2026-10-03",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
