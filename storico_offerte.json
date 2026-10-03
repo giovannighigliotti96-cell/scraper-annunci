@@ -1,5 +1,27 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-marketing-at-peoitaly-4473157527",
+    "data_invio": "2026-10-03",
+    "titolo": "Head of Marketing",
+    "azienda": "Peoitaly",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/head-of-marketing-at-peoitaly-4473157527",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/digital-marketing-manager-fashion-at-mynameis-4474768416",
+    "data_invio": "2026-10-03",
+    "titolo": "Digital Marketing Manager - Fashion",
+    "azienda": "Mynameis",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/digital-marketing-manager-fashion-at-mynameis-4474768416",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/growth-manager-at-bending-spoons-4472837586",
     "data_invio": "2026-10-02",
     "titolo": "Growth manager",
