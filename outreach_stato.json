@@ -1087,5 +1087,40 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Isma Controlli Spa": {
+    "proposta_il": "2026-10-04",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Accenture Services And Technology Srl": {
+    "proposta_il": "2026-10-04",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Chain Sustainability",
+        "Talent"
+      ],
+      [
+        "Julie Sweet",
+        "CEO"
+      ],
+      [
+        "Best Companies",
+        "talent"
+      ],
+      [
+        "Commerce Strategy Supply",
+        "Talent"
+      ]
+    ],
+    "email": []
+  },
+  "Iemme Srl": {
+    "proposta_il": "2026-10-04",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
