@@ -1122,5 +1122,39 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Phase Motion Control Spa": {
+    "proposta_il": "2026-10-04",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Marco Venturini",
+        "CEO"
+      ],
+      [
+        "Phase Motion Control",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "info@phase.eu"
+    ]
+  },
+  "Longlife Srl": {
+    "proposta_il": "2026-10-04",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Directors Giuseppe Galliani",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Savi Srl": {
+    "proposta_il": "2026-10-04",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
