@@ -1156,5 +1156,32 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Marinoni Spa": {
+    "proposta_il": "2026-10-05",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Yokogawa Italia Srl": {
+    "proposta_il": "2026-10-05",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Mectron Società Per Azioni": {
+    "proposta_il": "2026-10-05",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Medical Line",
+        "Marketing Director"
+      ],
+      [
+        "Lars Drekopf",
+        "Marketing Director"
+      ]
+    ],
+    "email": []
   }
 }
