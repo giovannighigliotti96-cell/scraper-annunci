@@ -1587,6 +1587,25 @@ def offerta_troppo_vecchia(job) -> bool:
     eta = _eta_giorni_da_data(data_pubblicazione_effettiva(job))
     return eta is not None and eta > MAX_ETA_GIORNI_ANNUNCIO
 
+# "Business development" da solo e' vendita pura, ed e' escluso dal 09/09/2026.
+# Ma a livello di guida e unito a growth, digitale o marketing e' un mestiere
+# diverso — ed e' il suo. Il 05/10/2026 Giovanni era arrivato alla lettera
+# motivazionale per un "Head of BD e Growth" che il filtro avrebbe scartato.
+# Servono tutt'e tre le cose: il livello, il BD e la leva di crescita; in
+# qualunque ordine, perche' i titoli li scrivono come capita.
+_LIVELLO = r"head of|director|direttore|chief|vp\b|vice president|responsabile"
+_BD = r"business develop\w*|\bbd\b|sviluppo commerciale"
+_CRESCITA = r"growth|digital|marketing|e-?commerce"
+_RE_BD_CON_CRESCITA = re.compile(
+    rf"(?:{_LIVELLO}).*(?:(?:{_BD}).*(?:{_CRESCITA})|(?:{_CRESCITA}).*(?:{_BD}))",
+    re.IGNORECASE,
+)
+# Le sole esclusioni che la regola qui sopra puo' scavalcare: tutte le altre
+# (lingue, settori, seniority) restano valide comunque.
+_ESCLUSIONI_SCAVALCABILI = {"business development", "business developer",
+                            "business develop", "sviluppo commerciale", "bizdev"}
+
+
 def is_valid_job_title(title: str) -> bool:
     """
     Restituisce True se il titolo corrisponde a uno dei ruoli target.
@@ -1598,21 +1617,29 @@ def is_valid_job_title(title: str) -> bool:
     t = re.sub(r"\s+", " ", title.lower()).strip()
 
     # 1. Controlla esclusioni prima di tutto
+    bd_con_crescita = _RE_BD_CON_CRESCITA.search(t) is not None
     for excl in TITLE_EXCLUSIONS:
         if excl in t:
+            if bd_con_crescita and excl in _ESCLUSIONI_SCAVALCABILI:
+                continue
             return False
+
+    # 2. Business development a livello di guida, insieme a growth/digitale/
+    # marketing: vedi _RE_BD_CON_CRESCITA.
+    if bd_con_crescita:
+        return True
     
-    # 2. Match sui titoli target (sottostringa)
+    # 3. Match sui titoli target (sottostringa)
     for exact in EXACT_TITLES:
         if exact in t:
             return True
 
-    # 3. Titoli ammessi solo per corrispondenza esatta (vedi TITOLI_MATCH_ESATTO)
+    # 4. Titoli ammessi solo per corrispondenza esatta (vedi TITOLI_MATCH_ESATTO)
     base = _titolo_base(t)
     if base in TITOLI_MATCH_ESATTO:
         return True
 
-    # 4. Stesso titolo unito a un secondo ruolo di vendita o marketing:
+    # 5. Stesso titolo unito a un secondo ruolo di vendita o marketing:
     # "Head of Digital & Inside Sales" non e' un "Head of Digital qualcosa",
     # sono due ruoli in uno — ed e' la combinazione in cui il profilo rende di
     # piu'. Resta escluso "Head of Digital & Innovation", perche' il secondo
