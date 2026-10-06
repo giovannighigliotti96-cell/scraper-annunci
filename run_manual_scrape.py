@@ -82,6 +82,10 @@ if __name__ == "__main__":
     # nell'email. Isolato in try/except come sopra: e' un canale accessorio.
     try:
         import aziende_target
+        # Avviso prima: controlla 50 aziende provando fino a dodici percorsi
+        # ciascuna, e il 06/10/2026 ha preso undici minuti in silenzio, che nel
+        # log sembravano un blocco.
+        print("Aziende target: controllo pagine careers (puo' richiedere minuti)...", flush=True)
         off_az, auto_az = aziende_target.controlla_aziende_target()
         if off_az or auto_az:
             accumula_segnalazioni_aziende(off_az, auto_az)

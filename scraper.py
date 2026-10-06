@@ -595,7 +595,11 @@ _gemini_warning_shown = False
 # 4 e non 5: il limite dichiarato e' 5, ma e' misurato su una finestra
 # scorrevole e i retry consumano anch'essi slot. Un margine sotto la soglia
 # costa ~3 secondi in piu' per offerta e evita di rimbalzare sul 429.
-GEMINI_RICHIESTE_AL_MINUTO = 4
+# Alzata da 4 a 10 il 06/10/2026: con 4 la sola spaziatura faceva 15 secondi
+# per offerta, cioe' 21 minuti per valutarne 40 — la parte piu' lenta
+# dell'intero run. Il free tier dei modelli flash ne tollera di piu', e se
+# arriva un 429 la cascata sui quattro modelli lo assorbe gia'.
+GEMINI_RICHIESTE_AL_MINUTO = 10
 _GEMINI_INTERVALLO_MINIMO_S = 60.0 / GEMINI_RICHIESTE_AL_MINUTO
 _gemini_ultima_chiamata = 0.0
 
@@ -758,7 +762,7 @@ def valuta_match_groq(job_text: str) -> tuple:
                          "probabilita (intero 0-100), motivazione (stringa), "
                          "modalita (stringa), dettaglio_modalita (stringa), "
                          "ral (stringa).\n\n"
-                         f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}")},
+                         f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:4000]}")},
         ],
         # json_object invece di uno schema: e' il formato che tutti i modelli
         # Groq supportano, e lo schema vero lo descrive gia' il prompt.
@@ -778,7 +782,9 @@ def valuta_match_groq(job_text: str) -> tuple:
             logging.warning(f"Match Groq fallito su {modello}: {type(e).__name__}: {e}")
             continue
         if r.status_code == 429:
-            logging.info(f"{modello} in quota su Groq, provo il modello successivo.")
+            # warning e non info: nei log di GitHub il livello info non compare,
+            # e il 06/10/2026 trenta minuti di cascata sono passati invisibili.
+            logging.warning(f"{modello} in quota su Groq, provo il modello successivo.")
             continue
         if r.status_code != 200:
             logging.warning(f"Match Groq su {modello}: HTTP {r.status_code} {r.text[:120]}")
@@ -792,26 +798,26 @@ def valuta_match_groq(job_text: str) -> tuple:
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
-    """Valutazione semantica: prima Groq, poi Gemini come riserva. Ritorna None
+    """Valutazione semantica: prima Gemini, poi Groq come riserva. Ritorna None
     se nessuno dei due e' utilizzabile, e in quel caso il chiamante tiene il
     punteggio dell'euristica.
 
-    L'ordine e' stato invertito il 06/10/2026 dopo aver misurato un run vero:
-    valutare 40 offerte con Gemini aveva richiesto 21 minuti, perche' il suo
-    free tier tollera 4 chiamate al minuto e la spaziatura e' quasi tutta
-    attesa. Groq ne regge 30 al minuto, usa un modello da 120 miliardi di
-    parametri invece di un flash, e soprattutto dichiara di non addestrare sui
-    dati inviati: il CV viaggia in ogni chiamata, ed era il limite noto del
-    free tier di Gemini. Gemini resta dietro, con la quota intatta per quando
-    Groq esaurisce le mille chiamate giornaliere.
+    L'ordine e' stato provato in entrambi i sensi il 06/10/2026. Una singola
+    chiamata a Groq risponde in 2,4 secondi contro i ~30 di Gemini, e sembrava
+    ovvio metterlo davanti — ma su un run vero la valutazione e' peggiorata, da
+    21 a oltre 30 minuti. Il motivo e' un limite che la prova isolata non
+    mostra: Groq concede 8.000 token al minuto per modello, e ogni nostra
+    chiamata ne usa circa 4.900 tra prompt e annuncio. Fa 1,6 chiamate al
+    minuto, non 30. Groq resta quindi la riserva, dove il suo valore e' intatto:
+    subentra quando Gemini esaurisce la quota, e non addestra sui dati inviati.
 
     Claude e' uscito dalla cascata lo stesso giorno: il credito e' finito da un
     mese e ogni offerta spendeva una chiamata per ricevere un 400. Resta usato
     dalla personalizzazione del CV, che ha una sua gestione."""
-    risultato = valuta_match_groq(job_text)
+    risultato = valuta_match_gemini(job_text)
     if risultato is not None:
         return risultato
-    return valuta_match_gemini(job_text)
+    return valuta_match_groq(job_text)
 
 def valuta_match_candidato(job_text: str) -> tuple:
     """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,
