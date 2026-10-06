@@ -642,8 +642,24 @@ GROQ_SFORZO_RAGIONAMENTO = "low"
 GROQ_TOKEN_AL_MINUTO = 8000
 
 # Oltre questa attesa non si resta in fila su Groq: si passa alla riserva. Un
-# minuto e' il tempo in cui i token di un modello si ricaricano per intero.
+# minuto e' il tempo in cui i token al minuto di un modello si ricaricano.
 GROQ_ATTESA_MASSIMA_S = 60
+
+# Il limite che morde davvero, scoperto il 06/10/2026 leggendo il messaggio di un
+# 429 invece di presumerlo: "Rate limit reached for model `openai/gpt-oss-120b`
+# ... on tokens per day (TPD): Limit 200000, Used 196850". Non sono gli 8.000
+# token al minuto — quelli si ricaricano in un minuto — ma 200.000 al GIORNO per
+# modello. A 4.746 token per valutazione fanno 42 valutazioni al giorno per
+# modello, circa 126 con i tre insieme. Tutto il resto del ritmo serve a non
+# sprecarli, non a crearne di piu'.
+GROQ_TOKEN_AL_GIORNO = 200_000
+
+# Un modello che ha esaurito il tetto giornaliero non torna utile entro il run:
+# si mette da parte fino a fine processo invece di interrogarlo a ogni offerta.
+# Senza questo, nella passata serale del 06/10/2026 due modelli esauriti hanno
+# incassato 66 errori su 25 offerte — tre tentativi a vuoto ciascuna, uno dopo
+# l'altro, per sapere ogni volta la stessa cosa.
+_GROQ_FINITO_PER_OGGI = set()
 
 # Quando ogni modello torna disponibile, per nome. Prima si mandava e si
 # aspettava il 429: funzionava, ma scoprire un limite sbattendoci contro vuol
@@ -668,19 +684,36 @@ _GROQ_LIMITE_MODELLO = {}
 def _modello_groq_disponibile():
     """Il modello libero adesso, o None se bisogna aspettare.
 
-    Si preferisce l'ordine di GROQ_MODELLI, cioe' il piu' capace per primo."""
+    Si preferisce l'ordine di GROQ_MODELLI, cioe' il piu' capace per primo. Chi
+    ha finito il tetto giornaliero non si considera affatto."""
     adesso = time.monotonic()
     for modello in GROQ_MODELLI:
+        if modello in _GROQ_FINITO_PER_OGGI:
+            continue
         if _GROQ_LIBERO_DA.get(modello, 0.0) <= adesso:
             return modello
     return None
 
 
 def _attesa_prossimo_modello_groq() -> float:
-    """Secondi da aspettare perche' almeno un modello torni libero."""
-    if not _GROQ_LIBERO_DA:
+    """Secondi da aspettare perche' almeno un modello torni libero. Infinito se
+    non ne resta nessuno utilizzabile oggi, cosi' il chiamante lascia subito la
+    parola alla riserva invece di mettersi in fila per niente."""
+    attese = [q for m, q in _GROQ_LIBERO_DA.items() if m not in _GROQ_FINITO_PER_OGGI]
+    if len(_GROQ_FINITO_PER_OGGI) >= len(GROQ_MODELLI):
+        return float("inf")
+    if not attese:
         return 0.0
-    return max(0.0, min(_GROQ_LIBERO_DA.values()) - time.monotonic())
+    return max(0.0, min(attese) - time.monotonic())
+
+
+def _tetto_giornaliero_esaurito(risposta) -> bool:
+    """True se il 429 dice che e' finito il budget del GIORNO, non del minuto."""
+    try:
+        testo = risposta.text.lower()
+    except Exception:
+        return False
+    return "tokens per day" in testo or "tpd" in testo
 
 
 def _segna_consumo_groq(modello, token_usati):
@@ -937,8 +970,12 @@ def valuta_match_groq(job_text: str) -> tuple:
             # Si aspetta solo se l'attesa e' breve: oltre, conviene lasciare la
             # parola alla riserva o all'euristica invece di allungare il run.
             if attesa > GROQ_ATTESA_MASSIMA_S:
-                logging.warning(f"Tutti i modelli Groq occupati per altri {attesa:.0f}s: "
-                                f"lascio la parola alla riserva.")
+                if len(_GROQ_FINITO_PER_OGGI) >= len(GROQ_MODELLI):
+                    logging.warning("Groq ha esaurito il tetto giornaliero su tutti i modelli: "
+                                    "da qui in avanti tocca alla riserva.")
+                else:
+                    logging.warning(f"Tutti i modelli Groq occupati per altri {attesa:.0f}s: "
+                                    f"lascio la parola alla riserva.")
                 return None
             time.sleep(attesa)
             continue
@@ -958,6 +995,13 @@ def valuta_match_groq(job_text: str) -> tuple:
             # se accade, il modello va messo in pausa per il tempo che indica.
             # warning e non info: nei log di GitHub il livello info non compare,
             # e il 06/10/2026 trenta minuti di cascata sono passati invisibili.
+            if _tetto_giornaliero_esaurito(r):
+                # Niente da aspettare: il budget di oggi e' finito, e riprovare
+                # a ogni offerta costa solo tempo per sapere la stessa cosa.
+                _GROQ_FINITO_PER_OGGI.add(modello)
+                logging.warning(f"{modello}: esaurito il tetto giornaliero di Groq "
+                                f"({GROQ_TOKEN_AL_GIORNO} token), lo metto da parte per oggi.")
+                continue
             logging.warning(f"{modello} in quota su Groq nonostante il ritmo, lo metto in pausa.")
             _impara_limite_groq(modello, r)
             _GROQ_LIBERO_DA[modello] = time.monotonic() + _attesa_da_header(r)
