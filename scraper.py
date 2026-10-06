@@ -82,8 +82,6 @@ BUDGET_VALUTAZIONE_EMAIL_S = 300
 # qualche ora il giudizio accurato.
 MAX_VALUTAZIONI_LLM_PER_RUN = 40
 
-import sys
-
 
 CITIES = {
     "Genova": {
@@ -4655,8 +4653,37 @@ def dedup_offerte(tutte_le_offerte, viste):
     return nuove_offerte
 
 
+class Cronometro:
+    """Tiene i tempi delle fasi di un run e li stampa in fondo.
+
+    Il 06/10/2026 un run e' stato in esecuzione un'ora senza che si potesse dire
+    dove andasse il tempo: GitHub pubblica i log solo a run finito, quindi per
+    tutta la durata si tirava a indovinare. Con questo, l'ultima cosa che il
+    log dice e' quanto e' costata ogni fase — la prima domanda che ci si fa
+    ogni volta che un run sembra lento."""
+
+    def __init__(self):
+        self.inizio = time.monotonic()
+        self.fasi = []
+        self._ultimo = self.inizio
+
+    def segna(self, nome):
+        adesso = time.monotonic()
+        self.fasi.append((nome, adesso - self._ultimo))
+        self._ultimo = adesso
+
+    def riepilogo(self):
+        totale = time.monotonic() - self.inizio
+        righe = [f"TEMPI DEL RUN (totale {totale/60:.1f} min)"]
+        for nome, secondi in self.fasi:
+            quota = (secondi / totale * 100) if totale else 0
+            righe.append(f"  {nome:28} {secondi/60:5.1f} min  ({quota:4.1f}%)")
+        return "\n".join(righe)
+
+
 def esegui_scraping_job(orario_label):
     print(f"[{datetime.now()}] Avvio scraping delle {orario_label} in corso...")
+    cronometro = Cronometro()
     from aziende_dirette import AziendeDiretteScraper
 
     scrapers = [
@@ -4704,6 +4731,7 @@ def esegui_scraping_job(orario_label):
             # Filtro modalità ibrida/unverified se richiesto dalla città
             tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
 
+    cronometro.segna("portali")
     aggiorna_stato_portali(conteggi_grezzi, errori_portali)
 
     # Monitoraggio delle pagine "lavora con noi" delle aziende target: e' un
@@ -4716,6 +4744,7 @@ def esegui_scraping_job(orario_label):
             accumula_segnalazioni_aziende(off_az, auto_az)
     except Exception as e:
         logging.error(f"Monitoraggio aziende target fallito: {e}")
+    cronometro.segna("aziende target")
 
     viste = load_viste()  # ora è un set
     nuove_offerte = dedup_offerte(tutte_le_offerte, viste)
@@ -4725,8 +4754,11 @@ def esegui_scraping_job(orario_label):
     # ognuna arrivera' in email, quindi ogni chiamata a pagamento e' spesa bene.
     # arricchisci_offerte_con_llm ora RITORNA la lista filtrata (scarta le offerte
     # sotto la soglia di punteggio), quindi il valore di ritorno va usato.
+    cronometro.segna("dedup")
     nuove_offerte = arricchisci_offerte_con_llm(nuove_offerte)
+    cronometro.segna("valutazione LLM")
     invia_alert_immediato(nuove_offerte)
+    cronometro.segna("alert immediato")
 
     giornaliere = load_giornaliere()
     for job in nuove_offerte:
@@ -4736,6 +4768,8 @@ def esegui_scraping_job(orario_label):
     msg_log = f"[SCRAPING {orario_label}] {len(nuove_offerte)} nuove offerte trovate"
     logging.info(msg_log)
     print(msg_log)
+    # Ultima riga del log, cosi' si legge subito aprendo il run finito.
+    print(cronometro.riepilogo())
 
 def invia_email_job():
     print(f"[{datetime.now()}] Avvio invio email report giornaliero...")
