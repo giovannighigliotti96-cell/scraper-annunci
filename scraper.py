@@ -427,6 +427,24 @@ CV DEL CANDIDATO:
 _MODALITA_AMMESSE = {"ibrido", "in sede", "da remoto"}
 
 
+def _estratto_annuncio(testo: str, limite: int) -> str:
+    """L'annuncio ridotto al limite, prendendo testa E coda.
+
+    Tagliare solo dall'inizio perde proprio cio' che serve: retribuzione,
+    modalita' di lavoro e sede stanno quasi sempre in fondo. Nell'annuncio
+    Peoitaly del 06/10/2026 "Working model: 100% remote" e "RAL 40.000-70.000"
+    erano nell'ultimo terzo, dopo seimila caratteri di descrizione del ruolo.
+    Si tiene il 60% dalla testa, dove stanno responsabilita' e requisiti, e il
+    resto dalla coda."""
+    testo = testo or ""
+    if len(testo) <= limite:
+        return testo
+    separatore = "\n[...]\n"
+    testa = int(limite * 0.6)
+    coda = limite - testa - len(separatore)
+    return testo[:testa] + separatore + testo[-coda:]
+
+
 def _leggi_valutazione(dati: dict) -> tuple:
     """Normalizza la risposta JSON di un fornitore in
     (probabilita, motivazione, modalita, dettaglio_modalita, ral).
@@ -719,7 +737,7 @@ def _chiama_gemini(client, istruzioni, job_text, modello):
     risposta = client.interactions.create(
         model=modello,
         input=(f"{istruzioni}\n\n"
-               f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"),
+               f"TESTO DELL'OFFERTA DI LAVORO:\n{_estratto_annuncio(job_text, 8000)}"),
         response_format={
             "type": "text",
             "mime_type": "application/json",
@@ -762,7 +780,7 @@ def valuta_match_groq(job_text: str) -> tuple:
                          "probabilita (intero 0-100), motivazione (stringa), "
                          "modalita (stringa), dettaglio_modalita (stringa), "
                          "ral (stringa).\n\n"
-                         f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:4000]}")},
+                         f"TESTO DELL'OFFERTA DI LAVORO:\n{_estratto_annuncio(job_text, 4000)}")},
         ],
         # json_object invece di uno schema: e' il formato che tutti i modelli
         # Groq supportano, e lo schema vero lo descrive gia' il prompt.
