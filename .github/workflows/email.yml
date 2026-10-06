@@ -97,6 +97,7 @@ jobs:
           # Serve alla seconda valutazione: le offerte che al mattino non sono
           # state valutate (Gemini giu') vengono riprovate qui prima dell'invio.
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: python run_email_job.py
 
       - name: Salva stato post-email

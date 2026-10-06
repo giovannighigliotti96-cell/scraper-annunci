@@ -541,6 +541,28 @@ GEMINI_MODELLI = [
 ]
 GEMINI_MODEL = GEMINI_MODELLI[0]  # compatibilita' con chi legge il singolo nome
 
+# ==========================================
+# GROQ (secondo fornitore gratuito)
+# ==========================================
+# Subentra appena Gemini esaurisce la quota o non risponde. Scelto il
+# 06/10/2026 dopo aver confrontato i tier gratuiti: 1.000 richieste al giorno
+# sul modello da 70B e 14.400 su quello piccolo, 30 al minuto contro le 4 che
+# Gemini tollera — e soprattutto Groq dichiara di non addestrare sui dati dei
+# clienti e di non conservare prompt e risposte, con le stesse garanzie sul
+# piano gratuito e su quello a pagamento. Conta, perche' il CV viaggia in ogni
+# chiamata: e' esattamente il limite noto del free tier di Gemini.
+# Mistral ha la quota piu' generosa ma impone di accettare l'addestramento sui
+# dati, quindi e' stato scartato.
+GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
+GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
+# Dal piu' capace al piu' leggero: il secondo ha una quota dieci volte piu'
+# ampia e serve da rete quando il primo e' esaurito.
+GROQ_MODELLI = [
+    "llama-3.3-70b-versatile",
+    "llama-3.1-8b-instant",
+]
+GROQ_TIMEOUT_S = 45
+
 try:
     from google import genai as google_genai
     GEMINI_SDK_AVAILABLE = True
@@ -698,15 +720,63 @@ def _chiama_gemini(client, istruzioni, job_text, modello):
     return _leggi_valutazione(json.loads(risposta.output_text))
 
 
+def valuta_match_groq(job_text: str) -> tuple:
+    """Stessa valutazione di valuta_match_gemini, via Groq. Ritorna
+    (probabilita, motivazione, modalita, dettaglio, ral) oppure None.
+
+    Si parla HTTP diretto invece di un SDK: l'endpoint e' compatibile con
+    quello di OpenAI, requests c'e' gia', e una dipendenza in meno e' una cosa
+    in meno che si rompe su GitHub Actions."""
+    if not GROQ_API_KEY or not CV_TESTO_COMPLETO:
+        return None
+    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
+    corpo_base = {
+        "messages": [
+            {"role": "system", "content": istruzioni},
+            {"role": "user",
+             "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"},
+        ],
+        # json_object invece di uno schema: e' il formato che tutti i modelli
+        # Groq supportano, e lo schema vero lo descrive gia' il prompt.
+        "response_format": {"type": "json_object"},
+        "temperature": 0.2,
+    }
+    for modello in GROQ_MODELLI:
+        try:
+            r = requests.post(
+                GROQ_URL, json=dict(corpo_base, model=modello),
+                headers={"Authorization": f"Bearer {GROQ_API_KEY}",
+                         "Content-Type": "application/json"},
+                timeout=GROQ_TIMEOUT_S)
+        except Exception as e:
+            logging.warning(f"Match Groq fallito su {modello}: {type(e).__name__}: {e}")
+            continue
+        if r.status_code == 429:
+            logging.info(f"{modello} in quota su Groq, provo il modello successivo.")
+            continue
+        if r.status_code != 200:
+            logging.warning(f"Match Groq su {modello}: HTTP {r.status_code} {r.text[:120]}")
+            continue
+        try:
+            contenuto = r.json()["choices"][0]["message"]["content"]
+            return _leggi_valutazione(json.loads(contenuto))
+        except Exception as e:
+            logging.warning(f"Risposta Groq non leggibile ({modello}): {type(e).__name__}: {e}")
+    return None
+
+
 def valuta_match_semantico(job_text: str) -> tuple:
-    """Valutazione semantica con i fornitori disponibili, in ordine: prima
-    Claude (qualità migliore, a pagamento), poi Gemini (free tier). Ritorna
-    None se nessuno dei due è utilizzabile, e in quel caso il chiamante tiene
-    il punteggio dell'euristica."""
-    risultato = valuta_match_llm(job_text)
+    """Valutazione semantica: prima Gemini, poi Groq appena il primo esaurisce
+    la quota o non risponde. Ritorna None se nessuno dei due e' utilizzabile, e
+    in quel caso il chiamante tiene il punteggio dell'euristica.
+
+    Claude e' uscito dalla cascata il 06/10/2026: il credito e' finito da un
+    mese e ogni offerta spendeva una chiamata per ricevere un 400. Resta usato
+    dalla personalizzazione del CV, che ha una sua gestione."""
+    risultato = valuta_match_gemini(job_text)
     if risultato is not None:
         return risultato
-    return valuta_match_gemini(job_text)
+    return valuta_match_groq(job_text)
 
 def valuta_match_candidato(job_text: str) -> tuple:
     """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,

@@ -51,6 +51,7 @@ jobs:
           GMAIL_APP_PASSWORD: ${{ secrets.GMAIL_APP_PASSWORD }}
           DESTINATION_EMAIL: ${{ secrets.DESTINATION_EMAIL }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
           if [ "${{ github.event.inputs.solo_concorsi }}" = "true" ]; then
             python concorsi.py --email
