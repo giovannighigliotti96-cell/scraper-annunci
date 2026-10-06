@@ -82,7 +82,11 @@ BUDGET_VALUTAZIONE_EMAIL_S = 300
 # lasciare al run il tempo di salvare. Chi resta fuori dal tetto non si perde:
 # tiene il punteggio euristico, arriva comunque in email e viene rivalutato la
 # sera dalla seconda passata, che esiste proprio per questo.
-BUDGET_VALUTAZIONE_SCRAPING_S = 20 * 60
+# Venticinque minuti, non venti: col tetto delle valutazioni alzato a 120 serve
+# spazio per 120 offerte (23,7 minuti al ritmo misurato). Il run resta
+# comodamente sotto il tetto del workflow, perche' le altre fasi sono scese —
+# portali 15 minuti, aziende target 3,5.
+BUDGET_VALUTAZIONE_SCRAPING_S = 25 * 60
 # Quante offerte valutare con l'LLM in un singolo run di scraping. Serve per i
 # picchi: allargando il filtro sui titoli (06/10/2026) le offerte che superano
 # citta', modalita' e freschezza sono passate da una manciata a 65, e i titoli
@@ -91,7 +95,22 @@ BUDGET_VALUTAZIONE_SCRAPING_S = 20 * 60
 # punteggio euristico, arriva comunque in email e viene rivalutato la sera,
 # dove c'e' la seconda passata: nessuna offerta si perde, si sposta solo di
 # qualche ora il giudizio accurato.
-MAX_VALUTAZIONI_LLM_PER_RUN = 40
+# Alzato da 40 a 120 il 06/10/2026, su richiesta di Giovanni: "e' importante che
+# groq passi tutte le offerte del giorno perche' con l'euristica abbiamo visto
+# che cantonate prendiamo". Aveva in mano un caso suo: un Sales Manager che
+# chiedeva diploma di perito elettrotecnico e conoscenza di ATEX/Seveso, a cui
+# l'euristica aveva dato 78% contando parole chiave come "B2B" e "CRM" senza
+# capire che quei requisiti lo escludevano.
+#
+# I conti, sui numeri misurati quel giorno: tre modelli Groq da 8.000 token al
+# minuto ciascuno e 4.746 token per valutazione fanno 5,06 valutazioni al minuto,
+# quindi 69 offerte (il volume di oggi) stanno in 13,6 minuti e 120 in 23,7. Le
+# richieste giornaliere non sono un problema: Groq ne concede 1.000 e oggi ne
+# abbiamo usate circa 200. Il freno vero non e' questo tetto ma
+# BUDGET_VALUTAZIONE_SCRAPING_S, che taglia partendo dalle offerte meno
+# promettenti secondo l'euristica — e chi resta fuori viene ripreso la sera dalla
+# seconda passata.
+MAX_VALUTAZIONI_LLM_PER_RUN = 120
 
 
 CITIES = {
