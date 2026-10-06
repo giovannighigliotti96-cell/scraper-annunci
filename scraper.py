@@ -10,6 +10,7 @@ import socket
 import ipaddress
 import urllib.parse
 from datetime import datetime, timedelta
+from concurrent.futures import ThreadPoolExecutor
 from zoneinfo import ZoneInfo
 import smtplib
 from email.mime.multipart import MIMEMultipart
@@ -1202,6 +1203,38 @@ def _safe_get(url, headers, timeout, max_redirects=5):
 # i chiamanti, con il rischio di sbagliarne uno in silenzio.
 _DATE_ANNUNCIO_DA_JSONLD = {}
 
+# HTML delle pagine di dettaglio gia' scaricate, per URL. Serve a scaricarle in
+# parallelo invece che in fila: misurato il 06/10/2026, MichaelPage e LHH da
+# soli spendevano 15 dei 42 minuti di un run facendo 99 richieste una dietro
+# l'altra. E' una cache di processo, non uno stato persistente: vive quanto il
+# run e serve solo a far incontrare il prefetch con chi poi legge la pagina.
+_HTML_PAGINE = {}
+PREFETCH_OPERAI = 8
+
+
+def prefetch_pagine(urls, operai=PREFETCH_OPERAI):
+    """Scarica in parallelo le pagine indicate e le mette in cache.
+
+    Chi poi chiama calcola_punteggio_e_modalita sugli stessi URL le trova
+    pronte. Gli errori si ignorano in silenzio: se una pagina non arriva, il
+    chiamante la richiedera' da solo e gestira' l'errore come sempre, quindi il
+    peggio che puo' capitare e' tornare alla lentezza di prima."""
+    da_fare = [u for u in dict.fromkeys(urls)
+               if u and u not in _HTML_PAGINE and _url_is_safe_to_fetch(u)]
+    if not da_fare:
+        return
+
+    def scarica(u):
+        try:
+            r = _safe_get(u, headers={"User-Agent": USER_AGENT_CHROME}, timeout=5)
+            if r.status_code == 200:
+                _HTML_PAGINE[u] = r.text
+        except Exception:
+            pass
+
+    with ThreadPoolExecutor(max_workers=operai) as pool:
+        list(pool.map(scarica, da_fare))
+
 # Nome del consulente che gestisce l'annuncio, per URL: stessa logica della
 # cache delle date. Le societa' di ricerca con la qualita' media piu' alta
 # (Hays 90, ReverseGroup 91, MichaelPage) lo scrivono nella pagina di
@@ -1268,13 +1301,16 @@ def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
         logging.warning(f"URL scartato (non http/https o punta a un indirizzo privato/interno): {url}")
         return "Base", 0, "unverified", "http_error", 0, "", testo_originale
     try:
-        headers = {"User-Agent": USER_AGENT_CHROME}
-        resp = _safe_get(url, headers=headers, timeout=5)
-        if resp.status_code == 200:
-            soup = BeautifulSoup(resp.text, "html.parser")
+        html = _HTML_PAGINE.get(url)
+        if html is None:
+            headers = {"User-Agent": USER_AGENT_CHROME}
+            resp = _safe_get(url, headers=headers, timeout=5)
+            html = resp.text if resp.status_code == 200 else None
+        if html is not None:
+            soup = BeautifulSoup(html, "html.parser")
             testo_originale += " " + soup.get_text(" ", strip=True)
             fetch_status = "ok"
-            data_ld = _estrai_date_posted(resp.text)
+            data_ld = _estrai_date_posted(html)
             if data_ld:
                 _DATE_ANNUNCIO_DA_JSONLD[url] = data_ld
             recruiter = _estrai_recruiter(soup.get_text(" ", strip=True))
@@ -2473,6 +2509,11 @@ class MichaelPageScraper(BaseScraper):
                     jobs_json_ld = self._parse_json_ld(soup, url)
                     jobs.extend(j for j in jobs_json_ld if j.link not in seen)
                     seen.update(j.link for j in jobs_json_ld)
+                    # Prima si raccolgono i titoli validi della pagina, poi si
+                    # scaricano i dettagli in parallelo: farlo uno alla volta
+                    # costava a questo portale 7 minuti per 69 offerte
+                    # (misurato il 06/10/2026).
+                    da_leggere = []
                     for a in soup.find_all("a", href=lambda h: h and "/job-detail/" in h):
                         title = a.get_text(strip=True)
                         href = a.get("href", "")
@@ -2482,11 +2523,15 @@ class MichaelPageScraper(BaseScraper):
                         if title and title != "Candidati" and link not in seen:
                             seen.add(link)
                             if is_valid_job_title(title):
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
-                                jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                                       date=self._data_da_ref(link),
-                                                       match_level=match_level, match_count=match_count,
-                                                       city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
+                                da_leggere.append((title, link))
+
+                    prefetch_pagine([l for _, l in da_leggere])
+                    for title, link in da_leggere:
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                        jobs.append(ScrapedJob(title, "", self.portal_name, link,
+                                               date=self._data_da_ref(link),
+                                               match_level=match_level, match_count=match_count,
+                                               city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     # Nessun link nuovo su questa pagina: oltre l'ultima pagina reale
                     # Drupal ripropone contenuto già visto invece di un 404 pulito.
                     if len(seen) == prima:
@@ -3504,6 +3549,15 @@ class LhhScraper(BaseScraper):
                     if not jobs_data:
                         break
 
+                    # Dettagli in parallelo: un annuncio alla volta costava a
+                    # questo portale 7 minuti per 30 offerte (06/10/2026).
+                    prefetch_pagine([
+                        (j.get("applyUri")
+                         or f"https://www.lhh.com/it-it/cerca-lavoro/job-description/?id={j.get('jobId')}")
+                        for j in jobs_data
+                        if is_valid_job_title(_safe_str(j, "jobTitle"))
+                        and (j.get("applyUri") or j.get("jobId"))
+                    ])
                     for job in jobs_data:
                         try:
                             title = _safe_str(job, "jobTitle")
@@ -4543,7 +4597,6 @@ def esegui_scraping_job(orario_label):
         MichaelPageScraper(),
         WyserScraper(),
         LhhScraper(),
-        GiGroupScraper(),
         IQMSelezioneScraper(),
         PraxiScraper(),
         HaysScraper(),
@@ -4555,7 +4608,10 @@ def esegui_scraping_job(orario_label):
     # PagePersonnel (reindirizza a MichaelPage, e' un doppione), Manpower
     # (offerte di tutt'altro mercato), Antal (API 401 senza token pubblico),
     # Adami (boutique troppo piccola). In un mese non hanno consegnato una
-    # sola offerta, e ogni run spendeva tempo su di loro.
+    # sola offerta, e ogni run spendeva tempo su di loro. Spento anche
+    # GiGroup il 06/10/2026: cinque minuti per restituire due offerte
+    # (fa 18 ricerche per parola chiave con 2 secondi di pausa fissa) e
+    # nessuna consegnata in un mese.
     ]
 
     tutte_le_offerte = []

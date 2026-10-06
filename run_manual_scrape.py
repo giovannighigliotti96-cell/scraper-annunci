@@ -33,7 +33,6 @@ if __name__ == "__main__":
         MichaelPageScraper(),
         WyserScraper(),
         LhhScraper(),
-        GiGroupScraper(),
         IQMSelezioneScraper(),
         PraxiScraper(),
         HaysScraper(),
@@ -45,7 +44,10 @@ if __name__ == "__main__":
     # PagePersonnel (reindirizza a MichaelPage, e' un doppione), Manpower
     # (offerte di tutt'altro mercato), Antal (API 401 senza token pubblico),
     # Adami (boutique troppo piccola). In un mese non hanno consegnato una
-    # sola offerta, e ogni run spendeva tempo su di loro.
+    # sola offerta, e ogni run spendeva tempo su di loro. Spento anche
+    # GiGroup il 06/10/2026: cinque minuti per restituire due offerte
+    # (fa 18 ricerche per parola chiave con 2 secondi di pausa fissa) e
+    # nessuna consegnata in un mese.
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")
