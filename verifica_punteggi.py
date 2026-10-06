@@ -14,8 +14,10 @@ Uso:
     python verifica_punteggi.py                 usa casi_calibrazione.json
     python verifica_punteggi.py altri_casi.json
 """
+import contextlib
 import json
 import logging
+import signal
 import sys
 import time
 
@@ -30,6 +32,35 @@ FILE_CASI = "casi_calibrazione.json"
 # Il 05/10/2026 e' rimasta appesa sei ore su un caso e l'ha uccisa il limite
 # di GitHub, senza lasciare nulla: meglio un risultato parziale e leggibile.
 BUDGET_TOTALE_S = 20 * 60
+
+# Tetto sul singolo caso. Il budget complessivo si controlla solo tra un caso
+# e l'altro: se uno si blocca dentro, non scatta mai. E' successo due volte di
+# fila (05-06/10/2026), con 1-2 misure su 8 e il job ucciso dal limite di sei
+# ore di GitHub.
+BUDGET_CASO_S = 150
+
+
+@contextlib.contextmanager
+def tetto_di_tempo(secondi):
+    """Interrompe il blocco se supera i secondi indicati.
+
+    Usa SIGALRM, che esiste solo su Unix: in locale su Windows il contesto non
+    fa nulla e il caso puo' durare quanto vuole — accettabile, perche' la
+    diagnostica gira su GitHub (Linux) e in locale la si guarda a vista."""
+    if not hasattr(signal, "SIGALRM"):
+        yield
+        return
+
+    def scaduto(signum, frame):
+        raise TimeoutError(f"caso oltre {secondi}s")
+
+    precedente = signal.signal(signal.SIGALRM, scaduto)
+    signal.alarm(secondi)
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, precedente)
 
 
 def testo_annuncio(link):
@@ -51,7 +82,8 @@ def main(percorso=FILE_CASI):
             break
         testo = ""
         try:
-            testo = testo_annuncio(c["link"])
+            with tetto_di_tempo(BUDGET_CASO_S // 3):
+                testo = testo_annuncio(c["link"])
         except Exception as e:
             print(f"  {c['titolo'][:44]:46s} annuncio non raggiungibile ({type(e).__name__})")
         if not testo:
@@ -59,7 +91,13 @@ def main(percorso=FILE_CASI):
             # si prosegue, senza inquinare il conteggio.
             falliti += 1
             continue
-        risultato = S.valuta_match_semantico(testo)
+        try:
+            with tetto_di_tempo(BUDGET_CASO_S):
+                risultato = S.valuta_match_semantico(testo)
+        except TimeoutError:
+            print(f"  {c['titolo'][:44]:46s} valutazione oltre {BUDGET_CASO_S}s, salto")
+            falliti += 1
+            continue
         if risultato is None:
             print(f"  {c['titolo'][:44]:46s} nessun fornitore LLM disponibile")
             falliti += 1
