@@ -792,17 +792,26 @@ def valuta_match_groq(job_text: str) -> tuple:
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
-    """Valutazione semantica: prima Gemini, poi Groq appena il primo esaurisce
-    la quota o non risponde. Ritorna None se nessuno dei due e' utilizzabile, e
-    in quel caso il chiamante tiene il punteggio dell'euristica.
+    """Valutazione semantica: prima Groq, poi Gemini come riserva. Ritorna None
+    se nessuno dei due e' utilizzabile, e in quel caso il chiamante tiene il
+    punteggio dell'euristica.
 
-    Claude e' uscito dalla cascata il 06/10/2026: il credito e' finito da un
+    L'ordine e' stato invertito il 06/10/2026 dopo aver misurato un run vero:
+    valutare 40 offerte con Gemini aveva richiesto 21 minuti, perche' il suo
+    free tier tollera 4 chiamate al minuto e la spaziatura e' quasi tutta
+    attesa. Groq ne regge 30 al minuto, usa un modello da 120 miliardi di
+    parametri invece di un flash, e soprattutto dichiara di non addestrare sui
+    dati inviati: il CV viaggia in ogni chiamata, ed era il limite noto del
+    free tier di Gemini. Gemini resta dietro, con la quota intatta per quando
+    Groq esaurisce le mille chiamate giornaliere.
+
+    Claude e' uscito dalla cascata lo stesso giorno: il credito e' finito da un
     mese e ogni offerta spendeva una chiamata per ricevere un 400. Resta usato
     dalla personalizzazione del CV, che ha una sua gestione."""
-    risultato = valuta_match_gemini(job_text)
+    risultato = valuta_match_groq(job_text)
     if risultato is not None:
         return risultato
-    return valuta_match_groq(job_text)
+    return valuta_match_gemini(job_text)
 
 def valuta_match_candidato(job_text: str) -> tuple:
     """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,
