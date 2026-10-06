@@ -1610,8 +1610,10 @@ def data_pubblicazione_effettiva(job) -> str:
 # segnale. Con la soglia dei portali questo canale era inutilizzabile:
 # misurato il 06/10/2026, delle 14 offerte ammesse dalle aziende dirette
 # (Satispay, Leonardo, PwC, Accenture) ne sopravvivevano zero, con eta' da 11
-# a 280 giorni.
-MAX_ETA_GIORNI_SITO_AZIENDALE = 60
+# a 280 giorni. Trenta giorni e' il compromesso scelto da Giovanni: abbastanza
+# per non perdere un annuncio aperto, abbastanza poco da non proporre ricerche
+# che si trascinano da mesi.
+MAX_ETA_GIORNI_SITO_AZIENDALE = 30
 PORTALI_SENZA_ROTAZIONE = {"AziendeDirette"}
 
 
