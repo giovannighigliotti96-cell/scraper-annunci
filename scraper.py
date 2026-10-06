@@ -57,6 +57,15 @@ CV_PERSONALIZZAZIONE_BUDGET_SECONDI = 480  # tempo massimo totale dedicato alla 
 # comunque: il 02/10/2026 l'invio e' rimasto appeso per ore a un modello in
 # quota, e il riepilogo non e' mai arrivato.
 BUDGET_VALUTAZIONE_EMAIL_S = 300
+# Quante offerte valutare con l'LLM in un singolo run di scraping. Serve per i
+# picchi: allargando il filtro sui titoli (06/10/2026) le offerte che superano
+# citta', modalita' e freschezza sono passate da una manciata a 65, e i titoli
+# scartati non erano mai stati registrati come "visti" — quindi al primo run
+# dopo la modifica arrivano tutte insieme. Chi resta fuori dal tetto tiene il
+# punteggio euristico, arriva comunque in email e viene rivalutato la sera,
+# dove c'e' la seconda passata: nessuna offerta si perde, si sposta solo di
+# qualche ora il giudizio accurato.
+MAX_VALUTAZIONI_LLM_PER_RUN = 40
 
 import sys
 
@@ -729,7 +738,17 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
 
     riuscite = 0
     scaduto = False
+    # Prima le piu' promettenti secondo l'euristica: se il tetto taglia, taglia
+    # in fondo alla lista, dove le offerte valgono meno.
+    da_valutare = sorted(offerte, key=_prob_ordinabile, reverse=True)[:MAX_VALUTAZIONI_LLM_PER_RUN]
+    if len(offerte) > len(da_valutare):
+        logging.warning(f"{len(offerte)} offerte da valutare, tetto a "
+                        f"{MAX_VALUTAZIONI_LLM_PER_RUN}: le altre tengono il punteggio "
+                        f"euristico e vengono rivalutate all'ora dell'email.")
+    valutabili = {id(j) for j in da_valutare}
     for job in offerte:
+        if id(job) not in valutabili:
+            continue
         # Oltre la scadenza si smette di valutare e si tiene il punteggio
         # euristico: le offerte non valutate dall'LLM non vengono filtrate per
         # punteggio (vedi offerta_sotto_soglia), quindi arrivano comunque in
