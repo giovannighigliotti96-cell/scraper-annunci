@@ -842,27 +842,40 @@ def valuta_match_groq(job_text: str) -> tuple:
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
-    """Valutazione semantica: prima Gemini, poi Groq come riserva. Ritorna None
+    """Valutazione semantica: prima Groq, poi Gemini come riserva. Ritorna None
     se nessuno dei due e' utilizzabile, e in quel caso il chiamante tiene il
     punteggio dell'euristica.
 
-    L'ordine e' stato provato in entrambi i sensi il 06/10/2026. Una singola
-    chiamata a Groq risponde in 2,4 secondi contro i ~30 di Gemini, e sembrava
-    ovvio metterlo davanti — ma su un run vero la valutazione e' peggiorata, da
-    21 a oltre 30 minuti. Il motivo e' un limite che la prova isolata non
-    mostra: Groq concede 8.000 token al minuto per modello, e ogni nostra
-    chiamata ne usa circa 4.900 tra prompt e annuncio. Fa 1,6 chiamate al
-    minuto, non 30. Groq resta quindi la riserva, dove il suo valore e' intatto:
-    subentra quando Gemini esaurisce la quota, e non addestra sui dati inviati.
+    L'ordine e' stato girato tre volte il 06/10/2026 e la ragione finale non e'
+    la velocita' quando funzionano, ma il costo quando NON funzionano.
+
+    Misurato quel giorno: Groq a quota risponde 429 su tutti e tre i modelli in
+    circa 3 secondi e lascia passare; Gemini a quota faceva dormire fino a 60
+    secondi per offerta, e 40 offerte sono diventate 56 minuti. Chi fallisce in
+    fretta va provato prima: nel caso peggiore costa 3 secondi di nulla, non un
+    minuto. Il peggioramento 21->30 minuti osservato la mattina con Groq davanti
+    veniva proprio da questo, al contrario: Gemini dietro non veniva mai
+    interpellato in tempo utile.
+
+    Nessuno dei due regge 40 valutazioni di fila in fretta — Groq concede 8.000
+    token al minuto per modello e una nostra chiamata ne usa qualche migliaio.
+    Per quello esiste il tetto di tempo sulla fase (BUDGET_VALUTAZIONE_*) e la
+    seconda passata la sera: chi non viene valutato non si perde.
+
+    Lo svantaggio accettato: Gemini e' il modello piu' forte, quindi quando
+    entrambi funzionano giudica il meno bravo. Scelta di Giovanni del 06/10/2026,
+    che preferisce un sistema che non si inchioda. Si rigira invertendo queste
+    due chiamate.
 
     Claude e' uscito dalla cascata lo stesso giorno: il credito e' finito da un
     mese e ogni offerta spendeva una chiamata per ricevere un 400. Resta usato
     dalla personalizzazione del CV, che ha una sua gestione."""
+    risultato = valuta_match_groq(job_text)
+    if risultato is not None:
+        return risultato
     if time.monotonic() >= _GEMINI_IN_QUOTA_FINO_A:
-        risultato = valuta_match_gemini(job_text)
-        if risultato is not None:
-            return risultato
-    return valuta_match_groq(job_text)
+        return valuta_match_gemini(job_text)
+    return None
 
 def valuta_match_candidato(job_text: str) -> tuple:
     """Scoring applicato a OGNI annuncio durante lo scraping: solo l'euristica,
