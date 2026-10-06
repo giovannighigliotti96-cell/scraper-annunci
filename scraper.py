@@ -839,6 +839,8 @@ def valuta_match_gemini(job_text: str) -> tuple:
         _attendi_slot_gemini()
         try:
             risultato = _chiama_gemini(client, istruzioni, job_text, modello)
+            global _ULTIMO_MODELLO
+            _ULTIMO_MODELLO = f"Gemini {modello}"
             if indice:
                 logging.info(f"Match Gemini servito da {modello} (i modelli precedenti erano in quota).")
             return risultato
@@ -1024,11 +1026,24 @@ def valuta_match_groq(job_text: str) -> tuple:
             dati = r.json()
             _segna_consumo_groq(modello, (dati.get("usage") or {}).get("total_tokens", 0))
             contenuto = dati["choices"][0]["message"]["content"]
-            return _leggi_valutazione(json.loads(contenuto))
+            valutazione = _leggi_valutazione(json.loads(contenuto))
+            global _ULTIMO_MODELLO
+            _ULTIMO_MODELLO = f"Groq {modello}"
+            return valutazione
         except Exception as e:
             logging.warning(f"Risposta Groq non leggibile ({modello}): {type(e).__name__}: {e}")
             _segna_consumo_groq(modello, 0)
     return None
+
+
+# Nome del modello che ha risposto all'ultima valutazione, per poterlo mostrare
+# in email. Sta qui e non nel valore di ritorno perche' valutato_da continua a
+# valere "llm" o "euristica": quelle due stringhe sono confrontate per uguaglianza
+# in cinque punti del codice (la soglia di punteggio, la seconda passata della
+# sera), e scriverci dentro il nome del modello romperebbe tutto. La fase di
+# valutazione e' sequenziale, quindi una variabile sola e' sufficiente: la si
+# legge subito dopo la chiamata, prima della successiva.
+_ULTIMO_MODELLO = ""
 
 
 def valuta_match_semantico(job_text: str) -> tuple:
@@ -1152,6 +1167,7 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
             # copre ("autonomia sui giorni in ufficio"). Se dice "non indicata"
             # si tiene quella precedente, per non perdere informazione.
             job.valutato_da = "llm"
+            job.modello = _ULTIMO_MODELLO
             if modalita:
                 if modalita != job.work_mode:
                     logging.info(f"Modalita' corretta dall'LLM per '{job.title}': "
@@ -2489,7 +2505,7 @@ def _crollo_di_resa(voce):
 # ==========================================
 
 class ScrapedJob:
-    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita="", valutato_da="", recruiter=""):
+    def __init__(self, title, company, portal, link, date="", snippet="", match_level="Base", match_count=0, city="", work_mode="unverified", fetch_status="no_attempt", probabilita=0, motivazione="", testo_completo="", ral="", dettaglio_modalita="", valutato_da="", recruiter="", modello=""):
         # title/snippet guardati come company/date: un valore None (es. da un record
         # legacy con "title": null in offerte_giornaliere.json) non deve far crashare
         # il costruttore con AttributeError su .strip().
@@ -2532,6 +2548,12 @@ class ScrapedJob:
         # se dal conteggio di keyword. Distinzione necessaria perche' la soglia
         # minima si applica solo al primo caso: vedi offerta_sotto_soglia.
         self.valutato_da = valutato_da if valutato_da else "euristica"
+        # QUALE modello ha dato il punteggio, es. "Groq openai/gpt-oss-120b".
+        # Vuoto quando ha deciso l'euristica. Serve in email: il 06/10/2026
+        # Giovanni si e' candidato a un'offerta col 78%, che era un punteggio a
+        # keyword su un annuncio che chiedeva un diploma di perito elettrotecnico.
+        # Un numero senza l'autore non dice quanto fidarsi.
+        self.modello = modello if modello else ""
         # Consulente che gestisce l'annuncio (societa' di ricerca): vedi _RECRUITER_DA_PAGINA.
         self.recruiter = recruiter if recruiter else ""
 
@@ -2555,6 +2577,7 @@ class ScrapedJob:
             "dettaglio_modalita": self.dettaglio_modalita,
             "valutato_da": self.valutato_da,
             "recruiter": self.recruiter,
+            "modello": self.modello,
         }
 
     @classmethod
@@ -2571,7 +2594,7 @@ class ScrapedJob:
             data.get("probabilita", 0), data.get("motivazione", ""),
             data.get("testo_completo", ""), data.get("ral", ""),
             data.get("dettaglio_modalita", ""), data.get("valutato_da", ""),
-            data.get("recruiter", ""),
+            data.get("recruiter", ""), data.get("modello", ""),
         )
 
 class BaseScraper:
@@ -4053,6 +4076,21 @@ def _carica_prospects():
         return []
 
 
+def chi_ha_valutato(job) -> str:
+    """Chi ha prodotto il punteggio dell'offerta, in forma leggibile.
+
+    Richiesta di Giovanni del 06/10/2026: "aggiungo un flag nella mail con il
+    modello che ha valutato l'offerta LLM o euristica cosi' capisco come prendere
+    la percentuale se seriamente oppure no". Quel giorno si era candidato a
+    un'offerta data al 78% dall'euristica — un conteggio di parole chiave su un
+    annuncio che chiedeva un diploma di perito elettrotecnico e la conoscenza
+    delle normative ATEX. Il numero sembrava autorevole e non lo era: un
+    punteggio senza il suo autore non dice quanto fidarsi."""
+    if job.valutato_da == "llm":
+        return job.modello or "modello non registrato"
+    return "stima a keyword, NON letta da un modello"
+
+
 def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospetti, gia_candidato, ripubblicate, segnalazioni):
     """Versione testo semplice del corpo email: fallback per i client che non
     renderizzano HTML, e copia leggibile del contenuto."""
@@ -4098,6 +4136,7 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
                     body += f"   Consulente: {job.recruiter} — scrivigli direttamente, non solo il form\n"
                 body += f"   Portale: {job.portal}\n"
                 body += f"   Probabilità richiamata: {prob}% - {etichetta}\n"
+                body += f"   Valutata da: {chi_ha_valutato(job)}\n"
                 body += f"   -> {job.motivazione}\n"
                 body += f"   Match CV: {job.match_level} ({job.match_count} keyword)\n"
                 body += f"   Data: {job.date}\n"
@@ -4224,10 +4263,17 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                     f'<div style="color:#59636e;margin-bottom:8px">{esc(job.company)} &middot; '
                     f'{esc(modalita)} &middot; {esc(job.portal)} &middot; {esc(job.date)}</div>'
                 )
+                # L'autore del punteggio si marca in arancione quando NON l'ha
+                # letto un modello: e' l'informazione che cambia quanto fidarsi,
+                # e in grigio come gli altri dettagli passerebbe inosservata.
+                letta_da_modello = job.valutato_da == "llm"
+                colore_autore = "#59636e" if letta_da_modello else "#9a6700"
                 parti.append(
                     f'<div style="margin-bottom:6px"><b style="color:{colore}">{prob}% {esc(etichetta)}</b>'
                     f'<span style="color:#59636e"> &middot; match CV {esc(job.match_level)} '
                     f'({job.match_count} keyword)</span></div>'
+                    f'<div style="margin-bottom:6px;color:{colore_autore};font-size:13px">'
+                    f'Valutata da: {esc(chi_ha_valutato(job))}</div>'
                 )
                 avviso = avviso_presenza(job)
                 if avviso:
