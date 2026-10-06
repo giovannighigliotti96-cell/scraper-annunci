@@ -1,5 +1,6 @@
 import os
 import re
+import sys
 import time
 import calendar
 import json
@@ -8,6 +9,19 @@ import logging
 import html as html_lib
 import socket
 import ipaddress
+
+# La console di Windows usa cp1252, che non sa scrivere molti caratteri che
+# l'LLM mette nelle sue motivazioni. Il 06/10/2026 un trattino unicode (U+2011)
+# in una riga di log ha fatto morire un run locale dopo trenta minuti di
+# lavoro, dentro la print degli scarti: nessuna offerta salvata, nessuna email.
+# Un log non deve poter uccidere un run. Sui runner Linux non succedeva perche'
+# la' lo standard output e' gia' UTF-8, quindi il difetto era invisibile in
+# produzione e letale in locale — il posto peggiore dove tenerlo.
+for _flusso in (sys.stdout, sys.stderr):
+    try:
+        _flusso.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass  # flusso non riconfigurabile (rediretto, chiuso): si lascia com'e'
 import urllib.parse
 from datetime import datetime, timedelta
 from concurrent.futures import ThreadPoolExecutor
