@@ -137,6 +137,11 @@ STATO_PORTALI_FILE = "stato_portali.json"
 STORICO_OFFERTE_FILE = "storico_offerte.json"
 STORICO_OFFERTE_MAX = 400  # tetto: tiene le più recenti, il file resta piccolo e committabile
 
+# Il segnaposto per l'azienda sconosciuta. Era scritto a mano in piu' punti, e
+# chi confronta segnature DEVE riconoscerlo: trattarlo come un nome vero fa
+# collassare tutti i titoli generici senza azienda sulla stessa segnatura.
+AZIENDA_IGNOTA = "Azienda non specificata"
+
 # Candidature inviate davvero, indicizzate per job_id. Le aggiorna `candidature.py`.
 CANDIDATURE_FILE = "candidature.json"
 
@@ -2282,6 +2287,21 @@ def registra_offerte_inviate(offerte):
     return aggiornato
 
 
+def _segnatura_offerta(job):
+    """La segnatura (titolo, azienda) di un'offerta, nella stessa forma con cui
+    segnature_storico() legge lo storico — cosi' le due sono confrontabili.
+
+    Ritorna None quando l'azienda manca o e' il segnaposto: senza azienda la
+    segnatura collasserebbe titoli generici ("Sales Manager") di aziende diverse,
+    e sopprimerebbe offerte nuove. Oggi sono 4 offerte su 65, quindi non e' un
+    caso di scuola."""
+    titolo = _pulisci_per_segnatura(getattr(job, "title", ""))
+    azienda = _pulisci_per_segnatura(getattr(job, "company", ""))
+    if not titolo or not azienda or azienda == _pulisci_per_segnatura(AZIENDA_IGNOTA):
+        return None
+    return (titolo, azienda)
+
+
 def segnature_storico():
     """{segnatura titolo+azienda: data del primo invio} dallo storico.
 
@@ -2301,7 +2321,7 @@ def segnature_storico():
         # Senza azienda la segnatura collasserebbe titoli generici di aziende
         # diverse ("Marketing Manager") e segnalerebbe come ripubblicazione
         # un'offerta nuova di un'altra azienda.
-        if not titolo or not azienda or azienda == _pulisci_per_segnatura("Azienda non specificata"):
+        if not titolo or not azienda or azienda == _pulisci_per_segnatura(AZIENDA_IGNOTA):
             continue
         chiave = (titolo, azienda)
         if chiave not in segnature:
@@ -2402,7 +2422,7 @@ class ScrapedJob:
         # legacy con "title": null in offerte_giornaliere.json) non deve far crashare
         # il costruttore con AttributeError su .strip().
         self.title = title.strip() if title else ""
-        self.company = company.strip() if company else "Azienda non specificata"
+        self.company = company.strip() if company else AZIENDA_IGNOTA
         self.portal = portal
         # Stessa guardia null di title/company/date/snippet, estesa a tutti i campi
         # stringa: prima solo un sottoinsieme era protetto, un record legacy/corrotto
@@ -4845,11 +4865,33 @@ def dedup_offerte(tutte_le_offerte, viste):
     nuove_offerte = []
     seen_titles = set()
     seen_snippets = set()
+    try:
+        gia_recapitate = set(segnature_storico())
+    except Exception as e:
+        # Senza lo storico si perde solo il filtro sulle ripubblicazioni: meglio
+        # una ripubblicazione in email che un run che non consegna niente.
+        logging.error(f"Errore lettura storico per le ripubblicazioni: {e}")
+        gia_recapitate = set()
 
     for job in tutte_le_offerte:
         try:
             job_id = get_job_id(job.link)
             if job_id in viste:
+                continue
+
+            # Ripubblicazioni: LinkedIn rimette online lo stesso annuncio con un
+            # URL nuovo e la data azzerata ("Ripubblicata 1 giorno fa"). Per la
+            # memoria sugli URL sono offerte nuove, e il filtro di freschezza
+            # legge la data della RI-pubblicazione, quindi passavano. La pagina
+            # pubblica non le dichiara: verificato dal vivo il 06/10/2026 sul
+            # caso che Giovanni ha segnalato, nessun marcatore e datePosted di
+            # ieri. L'unico segnale e' il contenuto.
+            #
+            # Finora venivano recapitate con una nota in email ("la data e'
+            # quella della ripubblicazione"). Giovanni non le vuole affatto: le
+            # ha gia' viste e valutate, e rivalutarle e' tempo suo. Si scartano.
+            firma = _segnatura_offerta(job)
+            if firma and firma in gia_recapitate:
                 continue
 
             norm_title = _pulisci_per_segnatura(job.title)
