@@ -30,11 +30,16 @@ jobs:
     # Tetto di sicurezza contro i run appesi (05/10/2026: la diagnostica e'
     # rimasta ferma 6 ore su una chiamata che non rispondeva). Non serve a
     # risparmiare: il repo e' pubblico e i minuti di Actions sono gratuiti.
-    # Alzato da 60 a 110 il 06/10/2026: con il filtro sui titoli allargato le
-    # offerte da scaricare sono passate da ~90 a ~216 per giro, e un run
-    # legittimo sfiorava il vecchio tetto. Resta sotto le tre ore che separano
-    # due run schedulati, cosi' non si accavallano mai.
-    timeout-minutes: 110
+    # Alzato da 60 a 110 e poi a 160 il 06/10/2026: con il filtro sui titoli
+    # allargato le offerte da scaricare sono passate da ~90 a ~216 per giro, e
+    # un run legittimo sfiorava il vecchio tetto. Quel giorno un run e' arrivato
+    # a 76 minuti nel solo step di scraping, con 34 di margine: troncarlo
+    # avrebbe buttato tutto il raccolto, perche' lo stato si salva solo
+    # all'ultimo step. Un tetto troppo basso non protegge, distrugge. Resta
+    # sotto le tre ore che separano due run schedulati, cosi' non si
+    # accavallano mai, e i minuti di Actions su repo pubblico sono gratuiti:
+    # non c'e' ragione di tenerlo stretto.
+    timeout-minutes: 160
     steps:
       - name: Verifica orario italiano (gestisce cambio ora legale/solare)
         id: check_time
