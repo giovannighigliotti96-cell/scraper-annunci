@@ -66,10 +66,14 @@ if __name__ == "__main__":
                 offerte_scraper = scraper.scrape(city_name, city_config)
                 conteggi_grezzi[scraper.portal_name] += len(offerte_scraper)
                 tutte_le_offerte.extend(filtra_offerte_per_citta(offerte_scraper, city_config))
-                print(f"OK {len(offerte_scraper)} offerte")
+                # flush: senza, i timestamp nel log di GitHub non sono
+                # attribuibili al portale giusto e diagnosticare un
+                # rallentamento diventa impossibile (06/10/2026: dieci minuti
+                # non assegnabili a nessuno).
+                print(f"OK {len(offerte_scraper)} offerte", flush=True)
             except Exception as e:
                 errori_portali[scraper.portal_name] = f"{type(e).__name__}: {e}"
-                print(f"ERRORE: {str(e)[:80]}")
+                print(f"ERRORE: {str(e)[:80]}", flush=True)
         print()
 
     aggiorna_stato_portali(conteggi_grezzi, errori_portali)

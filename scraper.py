@@ -1220,11 +1220,23 @@ def _estrai_date_posted(html: str) -> str:
     return match.group(1) if match else ""
 
 
-def calcola_punteggio_e_modalita(url, snippet):
+def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
     """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro.
     Ritorna anche testo_originale (snippet + testo scaricato) come ultimo elemento,
     così i chiamanti possono riusarlo (es. personalizzazione CV) senza doverlo
-    riscaricare da capo."""
+    riscaricare da capo.
+
+    Se il chiamante conosce già la data di pubblicazione e quella data è oltre
+    la soglia di freschezza, il download si salta: quell'annuncio verrà
+    scartato comunque da filtra_offerte_per_citta, e scaricarlo è tempo speso
+    per un'informazione che si butta. Misurato il 06/10/2026: con il filtro sui
+    titoli allargato la fase di scraping era arrivata a 39 minuti, e piu' della
+    meta' delle offerte scaricate finiva scartata subito dopo."""
+    if data_annuncio:
+        eta = _eta_giorni_da_data(data_annuncio)
+        if eta is not None and eta > _soglia_eta(portale):
+            return "Base", 0, "unverified", "saltato_troppo_vecchio", 0, "", snippet or ""
+
     # snippet può arrivare None quando un JSON-LD ha "description": null: senza
     # questa guardia .lower() più sotto solleverebbe AttributeError non catturato.
     testo_originale = snippet or ""
@@ -2324,7 +2336,7 @@ class LinkedInScraper(BaseScraper):
                                     seen_links.add(link)
                                     company = (item.get("hiringOrganization") or {}).get("name", "")
                                     desc = _safe_str(item, "description")
-                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                                    match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc, data_annuncio=date, portale=self.portal_name)
                                     jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                            date=date, match_level=match_level,
                                                            match_count=match_count, city=city_name,
@@ -2365,7 +2377,7 @@ class LinkedInScraper(BaseScraper):
                                     continue
                                 seen_links.add(link)
                                 company = company_elem.get_text(strip=True) if company_elem else ""
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, title)
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, title, data_annuncio=date, portale=self.portal_name)
                                 jobs.append(ScrapedJob(title, company, self.portal_name, link, date=date,
                                                        match_level=match_level, match_count=match_count,
                                                        city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
@@ -2526,7 +2538,7 @@ class MichaelPageScraper(BaseScraper):
                             company = (item.get("hiringOrganization") or {}).get("name", "")
                             date = item.get("datePosted", "")
                             desc = _safe_str(item, "description")
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc, data_annuncio=date, portale=self.portal_name)
                             # city="Italia" (non city_name, sempre "Genova" nella pratica
                             # dato il guard sopra): coerente col percorso di fallback HTML
                             # qui sotto, che etichetta "Italia" per lo stesso tipo di
@@ -2693,7 +2705,7 @@ class WyserScraper(BaseScraper):
                             continue
                         seen_links.add(link)
                         date = date_elem.get_text(strip=True) if date_elem else ""
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "", data_annuncio=date, portale=self.portal_name)
                         jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
                                                match_level=match_level, match_count=match_count,
                                                city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
@@ -2771,7 +2783,7 @@ class PagePersonnelScraper(BaseScraper):
                                 company = (item.get("hiringOrganization") or {}).get("name", "")
                                 date = item.get("datePosted", "")
                                 desc = _safe_str(item, "description")
-                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                                match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc, data_annuncio=date, portale=self.portal_name)
                                 jobs.append(ScrapedJob(title, company, self.portal_name, link,
                                                        date=date, match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     except Exception:
@@ -2786,7 +2798,7 @@ class PagePersonnelScraper(BaseScraper):
                     if title and title != "Candidati" and link not in seen:
                         seen.add(link)
                         if is_valid_job_title(title):
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "", data_annuncio=date, portale=self.portal_name)
                             jobs.append(ScrapedJob(title, "", self.portal_name, link,
                                                    match_level=match_level, match_count=match_count, city=city_name, work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
             if not jobs:
@@ -2978,7 +2990,7 @@ class PraxiScraper(BaseScraper):
                         anteprima_elem = card.find("div", class_="anteprima")
                         snippet = anteprima_elem.get_text(strip=True) if anteprima_elem else ""
 
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet)
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, snippet, data_annuncio=date, portale=self.portal_name)
                         jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
                                                snippet=snippet[:150] + "..." if snippet else "",
                                                match_level=match_level, match_count=match_count,
@@ -3097,7 +3109,7 @@ class AntalScraper(BaseScraper):
                         else:
                             date = str(date_raw)
 
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc_text)
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc_text, data_annuncio=date, portale=self.portal_name)
                         jobs.append(ScrapedJob(title, "", self.portal_name, link, date=date,
                                                snippet=desc_text[:150] + "..." if desc_text else "",
                                                match_level=match_level, match_count=match_count,
@@ -3489,7 +3501,7 @@ class LhhScraper(BaseScraper):
                             citta_reale = citta_lookup.get(_safe_str(job, "cityName").lower().strip(), "Italia")
                             date = job.get("postedDate", "")
                             desc = job.get("description", "") or ""
-                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc)
+                            match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, desc, data_annuncio=date, portale=self.portal_name)
                             if job.get("isRemote") and work_mode == "unverified":
                                 work_mode = "da remoto"
                             jobs.append(ScrapedJob(
