@@ -555,13 +555,28 @@ GEMINI_MODEL = GEMINI_MODELLI[0]  # compatibilita' con chi legge il singolo nome
 # dati, quindi e' stato scartato.
 GROQ_API_KEY = os.getenv("GROQ_API_KEY", "").strip()
 GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
-# Dal piu' capace al piu' leggero: il secondo ha una quota dieci volte piu'
-# ampia e serve da rete quando il primo e' esaurito.
+# Modelli in ordine di capacita'. I nomi e i limiti vanno verificati contro
+# l'API, non dedotti dalla documentazione in giro: il 06/10/2026 i modelli
+# Llama che tutte le guide citavano rispondevano 404. Limiti letti dagli header
+# x-ratelimit della risposta, quel giorno, su questo account:
+#   openai/gpt-oss-120b   1000 richieste/giorno, 8000 token/minuto  (120B)
+#   qwen/qwen3.8-27b      1000 richieste/giorno, 8000 token/minuto  (27B)
+#   openai/gpt-oss-20b    1000 richieste/giorno, 8000 token/minuto  (20B)
+# Si parte dal 120B: mille chiamate al giorno sono venti volte il fabbisogno
+# (5-50), quindi la capacita' non e' il vincolo e tanto vale usare il modello
+# migliore. Gli altri due servono quando il primo e' in quota.
 GROQ_MODELLI = [
-    "llama-3.3-70b-versatile",
-    "llama-3.1-8b-instant",
+    "openai/gpt-oss-120b",
+    "qwen/qwen3.8-27b",
+    "openai/gpt-oss-20b",
 ]
 GROQ_TIMEOUT_S = 45
+# Sono modelli che "ragionano" prima di rispondere, e il ragionamento consuma
+# token della risposta: con il budget di default il JSON finale usciva vuoto.
+# Con effort basso il ragionamento scende da ~340 a ~180 token, il che conta
+# anche per il limite di 8000 token al minuto.
+GROQ_MAX_TOKEN_RISPOSTA = 3000
+GROQ_SFORZO_RAGIONAMENTO = "low"
 
 try:
     from google import genai as google_genai
@@ -734,12 +749,23 @@ def valuta_match_groq(job_text: str) -> tuple:
         "messages": [
             {"role": "system", "content": istruzioni},
             {"role": "user",
-             "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}"},
+             # Due accorgimenti verificati dal vivo il 06/10/2026: la parola
+             # "JSON" deve comparire nei messaggi o Groq rifiuta
+             # response_format con un 400, e i nomi dei campi vanno ripetuti
+             # qui perche' altrimenti il modello li inventa (rispondeva
+             # "punteggio" invece di "probabilita").
+             "content": ("Rispondi in formato JSON con esattamente queste chiavi: "
+                         "probabilita (intero 0-100), motivazione (stringa), "
+                         "modalita (stringa), dettaglio_modalita (stringa), "
+                         "ral (stringa).\n\n"
+                         f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}")},
         ],
         # json_object invece di uno schema: e' il formato che tutti i modelli
         # Groq supportano, e lo schema vero lo descrive gia' il prompt.
         "response_format": {"type": "json_object"},
         "temperature": 0.2,
+        "max_tokens": GROQ_MAX_TOKEN_RISPOSTA,
+        "reasoning_effort": GROQ_SFORZO_RAGIONAMENTO,
     }
     for modello in GROQ_MODELLI:
         try:
