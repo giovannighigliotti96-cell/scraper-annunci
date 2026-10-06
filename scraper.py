@@ -4566,7 +4566,7 @@ def rileva_citta_offerta(job):
         """(città target trovata, città non-target trovata) in un testo."""
         target = next((c for c, varianti in CITTA_TARGET_PATTERN.items()
                        if any(v in testo for v in varianti)), None)
-        altra = any(c in testo for c in ALTRE_CITTA_ITALIANE)
+        altra = nomina_altra_citta(testo)
         return target, altra
 
     # Prima il titolo (+ snippet): è il segnale ad alta precisione, senza il
@@ -4590,20 +4590,85 @@ def rileva_citta_offerta(job):
     return None
 
 
+# Le citta' non target si cercano come PAROLE INTERE. Cercarle come
+# sottostringhe, come si faceva fino al 06/10/2026, era un disastro silenzioso:
+# misurato su un corpus di 65 annunci veri (1,06 milioni di caratteri),
+# "lazio" compariva 77 volte di cui 2 reali — le altre 75 dentro
+# "compilazione", "installazione", "formulazione", "legislazione"; "asti" 28
+# volte di cui 8, dentro "casting", "forecasting", "lasting", "elastico";
+# "turin" 13 volte e NESSUNA reale, dentro "manufacturing", "nurturing",
+# "structuring"; "udine" dentro "abitudine" e "attitudine"; "roma" dentro
+# "romagna". Un annuncio che diceva "installazione" o "forecasting" risultava
+# quindi "fuori area" e veniva scartato come sede non accertata: offerte buone
+# buttate per una parola comune, senza che nessun log lo dicesse.
+_RE_ALTRE_CITTA = None
+
+
+def _re_altre_citta():
+    """Regex che riconosce le citta' non target come parole intere."""
+    global _RE_ALTRE_CITTA
+    if _RE_ALTRE_CITTA is None:
+        alternative = "|".join(re.escape(c) for c in sorted(ALTRE_CITTA_ITALIANE, key=len, reverse=True))
+        _RE_ALTRE_CITTA = re.compile(rf"(?<!\w)(?:{alternative})(?!\w)")
+    return _RE_ALTRE_CITTA
+
+
+def nomina_altra_citta(testo) -> bool:
+    """True se il testo nomina almeno una citta' o regione NON target."""
+    return bool(_re_altre_citta().search(testo or ""))
+
+
+def quante_altre_citta(testo) -> int:
+    """Quante volte compare la citta' non target piu' citata del testo."""
+    trovate = _re_altre_citta().findall(testo or "")
+    if not trovate:
+        return 0
+    conteggi = {}
+    for nome in trovate:
+        conteggi[nome] = conteggi.get(nome, 0) + 1
+    return max(conteggi.values())
+
+
+# Quante volte una citta' NON target deve battere quella attribuita perche'
+# l'attribuzione si consideri sbagliata. Tre: un rapporto del genere non e'
+# ambiguita', e' un'altra sede.
+#
+# Nasce da un caso reale del 06/10/2026 che Giovanni ha trovato in email: un
+# "Key account sales manager" di Randstad con sede a PAVIA, etichettato Milano e
+# arrivato in mail. Nel testo della pagina "pavia" compariva 28 volte e "milano"
+# 3 — e tutte e tre erano impalcatura di LinkedIn: l'intestazione della NOSTRA
+# ricerca ("key account sales manager in zona milano") e due offerte suggerite
+# nella colonna laterale. Bastava che la parola comparisse, e su LinkedIn
+# comparira' sempre, perche' ce la mette la query: il controllo di coerenza era
+# quindi quasi inerte proprio sul portale che consegna piu' offerte.
+FATTORE_DOMINANZA_CITTA = 3
+
+
 def citta_coerente_col_testo(job) -> bool:
     """True se la città attribuita all'offerta è compatibile con il suo testo.
 
-    Ritorna False solo quando il testo nomina città diverse da quella attribuita
-    e NON nomina quella attribuita: è il caso in cui l'annuncio è quasi
-    certamente altrove. Con un testo che non nomina città (o non scaricato) la
-    risposta è True, perché non c'è modo di smentire l'attribuzione."""
-    testo = f"{job.title} {job.snippet} {job.testo_completo}".lower()
+    Non basta che la città attribuita compaia: deve non essere schiacciata da
+    un'altra. Titolo e snippet restano prova forte e decidono da soli, perché lì
+    non c'è boilerplate di pagina. Con un testo che non nomina città (o non
+    scaricato) la risposta è True, perché non c'è modo di smentire
+    l'attribuzione: l'assenza di prova non è prova di assenza."""
+    testa = f"{job.title} {job.snippet}".lower()
+    testo = f"{testa} {job.testo_completo}".lower()
     if not testo.strip():
         return True
     varianti = CITTA_TARGET_PATTERN.get(job.city, [])
-    if any(v in testo for v in varianti):
+
+    # Il titolo nomina la città attribuita: è il segnale più pulito che esista.
+    if any(v in testa for v in varianti):
         return True
-    return not any(c in testo for c in ALTRE_CITTA_ITALIANE)
+
+    nostre = sum(testo.count(v) for v in varianti)
+    altre = quante_altre_citta(testo)
+    if not nostre:
+        # Come prima: senza la città attribuita, decide la presenza di altre.
+        return altre == 0
+    # La città attribuita c'è, ma se un'altra la supera di molto è boilerplate.
+    return altre < nostre * FATTORE_DOMINANZA_CITTA
 
 
 # Dichiarazioni inequivocabili di lavoro interamente da remoto. Non basta
