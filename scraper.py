@@ -3450,6 +3450,16 @@ def _prob_ordinabile(job):
         return 0
 
 
+def avviso_presenza(job):
+    """Avviso per le posizioni che l'LLM conferma tutti i giorni in sede fuori
+    da Genova. Non si scartano piu' (l'etichetta dei portali sbaglia spesso,
+    vedi filtra_offerte_per_citta), ma vanno segnalate: su Milano e Torino una
+    presenza quotidiana e' un pendolarismo vero, e la decisione spetta a lui."""
+    if job.work_mode != "in sede" or job.city not in ("Milano", "Torino"):
+        return ""
+    return f"presenza quotidiana a {job.city}, valuta il pendolarismo"
+
+
 def _fascia_probabilita(prob):
     """(etichetta testuale, colore HTML) per la fascia di probabilità."""
     if prob >= 75:
@@ -3569,6 +3579,9 @@ def _corpo_testo(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospet
                 if job.dettaglio_modalita:
                     modalita_display += f" ({job.dettaglio_modalita})"
                 body += f"   Modalità: {modalita_display}\n"
+                avviso = avviso_presenza(job)
+                if avviso:
+                    body += f"   ATTENZIONE: {avviso}\n"
                 if job.ral:
                     body += f"   Retribuzione: {job.ral}\n"
                 if job.recruiter:
@@ -3706,6 +3719,12 @@ def _corpo_html(offerte_ordinate, offerte_per_citta, info_cv, prospects, sospett
                     f'<span style="color:#59636e"> &middot; match CV {esc(job.match_level)} '
                     f'({job.match_count} keyword)</span></div>'
                 )
+                avviso = avviso_presenza(job)
+                if avviso:
+                    parti.append(
+                        f'<div style="margin-bottom:6px;color:#9a6700">'
+                        f'<b>Attenzione:</b> {esc(avviso)}</div>'
+                    )
                 if job.ral:
                     parti.append(f'<div style="margin-bottom:6px"><b>Retribuzione:</b> {esc(job.ral)}</div>')
                 if job.recruiter:
@@ -4263,8 +4282,15 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
             cfg = CITIES[job.city]
 
         if cfg.get("filter_hybrid_only", False):
-            # Milano/Torino: solo ibrido, non remoto, non in sede
-            if job.work_mode == "ibrido":
+            # Milano/Torino: la preferenza resta l'ibrido, ma "in sede" non si
+            # scarta piu' qui. L'etichetta dei portali sbaglia, e sbaglia nel
+            # verso peggiore: il 06/10/2026 un "Head of Marketing" marcato
+            # "In sede" da LinkedIn era in realta' "100% remote" nel testo
+            # dell'annuncio, con HubSpot, CRM e 40-70k — buttato prima che
+            # l'LLM potesse leggerlo. Ora passa: l'LLM corregge la modalita'
+            # leggendo l'annuncio e l'email segnala quelle davvero in presenza,
+            # cosi' la decisione resta a Giovanni invece che a un'etichetta.
+            if job.work_mode in ("ibrido", "in sede"):
                 offerte_filtrate.append(job)
             elif job.work_mode == "unverified" and INCLUDE_UNVERIFIED:
                 offerte_filtrate.append(job)
