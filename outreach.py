@@ -105,18 +105,60 @@ def _min_dipendenti(fascia):
         return 0
 
 
+def _aziende_gia_contattate():
+    """Nomi e domini delle aziende presenti nel tracker, in qualunque stato.
+
+    Proporre una candidatura spontanea a chi ti ha gia' scartato, o dove sei
+    in mezzo a un processo, e' il modo piu' rapido di sembrare un robot. Il
+    sistema queste cose le sa gia': qui le usa."""
+    try:
+        from candidature import carica_candidature
+    except Exception as e:
+        logging.warning(f"Tracker candidature non leggibile: {e}")
+        return set()
+    chiavi = set()
+    for riferimento, dati in carica_candidature().items():
+        for valore in (dati.get("azienda"), dati.get("link"), riferimento):
+            if not valore:
+                continue
+            testo = str(valore).lower()
+            dominio = urlparse(testo).netloc.replace("www.", "") if "://" in testo else ""
+            chiavi.add(dominio or testo.strip())
+    return {k for k in chiavi if k}
+
+
+def _stessa_azienda(azienda, gia_contattate):
+    nome = (azienda.get("nome") or "").lower()
+    dominio = urlparse(azienda.get("sito", "")).netloc.replace("www.", "").lower()
+    for chiave in gia_contattate:
+        if not chiave:
+            continue
+        if dominio and (chiave == dominio or chiave in dominio or dominio in chiave):
+            return True
+        # Il confronto sui nomi e' sul primo pezzo significativo, perche' il
+        # tracker registra "Testbusters srl Societa' Benefit" e la lista
+        # "Testbusters Srl".
+        primo = nome.split()[0] if nome.split() else ""
+        if primo and len(primo) > 4 and primo in chiave:
+            return True
+    return False
+
+
 def scegli_aziende(quante, stato):
-    """Le prossime aziende da proporre: mai proposte, per priorita' di settore,
-    alternando Genova e Milano cosi' il pacchetto non e' tutto di una citta'."""
+    """Le prossime aziende da proporre: mai proposte, mai gia' contattate, per
+    priorita' di settore, alternando Genova e Milano cosi' il pacchetto non e'
+    tutto di una citta'."""
     try:
         aziende = state_io.load_json_or_raise(AZIENDE_FILE, [])
     except Exception as e:
         logging.error(f"Errore lettura {AZIENDE_FILE}: {e}")
         return []
+    gia = _aziende_gia_contattate()
     # Sopra i 500 dipendenti non decide il titolare e il messaggio diretto non
     # ha lo stesso effetto: quelle aziende passano dai portali e dalle careers.
     nuove = [a for a in aziende if a["nome"] not in stato
-             and _min_dipendenti(a.get("dipendenti")) < 500]
+             and _min_dipendenti(a.get("dipendenti")) < 500
+             and not _stessa_azienda(a, gia)]
     nuove.sort(key=lambda a: (-PESO_SETTORE.get(a.get("settore", ""), 3),
                               -float(a.get("fatturato_mln") or 0)))
     per_citta = {"Genova": [a for a in nuove if a.get("citta") == "Genova"],
@@ -360,6 +402,24 @@ def consulenti_da_contattare(stato):
     return nuovi
 
 
+def processi_aperti():
+    """Le candidature vive, dalla piu' avanzata: colloqui e finali in cima.
+
+    Stanno nel piano perche' un processo in corso vale piu' di tre aziende
+    nuove, e perche' si raffredda in silenzio: nessuno ti scrive per dirti
+    che sta decidendo."""
+    from candidature import carica_candidature, _giorni_da, STATI_TERMINALI, STATI
+    ordine = {stato: i for i, stato in enumerate(STATI)}
+    vivi = []
+    for dati in carica_candidature().values():
+        if dati.get("stato") in STATI_TERMINALI:
+            continue
+        giorni = _giorni_da(dati.get("aggiornata") or dati.get("data", ""))
+        vivi.append((-ordine.get(dati.get("stato"), 0), giorni if giorni is not None else 0, dati))
+    vivi.sort(key=lambda x: (x[0], -x[1]))
+    return [(g, d) for _, g, d in vivi]
+
+
 def candidature_da_sollecitare():
     """Le candidature attive ferme da GIORNI_PER_SOLLECITO o piu' (dal tracker)."""
     from candidature import carica_candidature, _giorni_da, STATI_TERMINALI, GIORNI_PER_SOLLECITO
@@ -402,8 +462,17 @@ def messaggio_sollecito(d):
             f"Giovanni Ghigliotti")
 
 
-def testo_pacchetto(schede, consulenti=(), solleciti=(), concorsi_testo=""):
+def testo_pacchetto(schede, consulenti=(), solleciti=(), concorsi_testo="", processi=()):
     righe = [f"Piano del giorno — {date.today().strftime('%d/%m/%Y')}", ""]
+    if processi:
+        righe += [f"PROCESSI APERTI ({len(processi)}) — valgono piu' di qualunque candidatura nuova", ""]
+        for giorni, d in processi:
+            etichetta = d.get("azienda") or d.get("titolo") or d.get("link")
+            righe.append(f"   - {str(etichetta)[:46]:48s} [{d.get('stato')}] "
+                         + (f"fermo da {giorni} giorni" if giorni else "aggiornato oggi"))
+            if d.get("note"):
+                righe.append(f"     {d['note'][:150]}")
+        righe.append("")
     if consulenti:
         righe += ["CONSULENTI A CUI SCRIVERE OGGI (entri nel loro database, non solo in quella ricerca)", ""]
         for c in consulenti:
@@ -489,7 +558,7 @@ def main():
     if not schede and not consulenti and not solleciti and not concorsi_testo:
         print("Niente da proporre oggi: lista esaurita, nessun consulente nuovo, nessun sollecito, nessun bando.")
         return 0
-    testo = testo_pacchetto(schede, consulenti, solleciti, concorsi_testo)
+    testo = testo_pacchetto(schede, consulenti, solleciti, concorsi_testo, processi_aperti())
     print(testo)
     if "--niente-email" in sys.argv:
         return 0
