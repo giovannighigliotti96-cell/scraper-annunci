@@ -62,12 +62,37 @@ AZIENDE = [
 ]
 
 # Citta' target come compaiono nei campi "location" di questi ATS.
-CITTA = {
-    "Genova": ["genova", "genoa"],
-    "Milano": ["milano", "milan", "assago", "sesto san giovanni", "segrate", "rho",
-               "san donato milanese", "cologno monzese", "peschiera borromeo"],
-    "Torino": ["torino", "turin"],
-}
+# Le citta' target NON si elencano qui: si prendono da scraper, che e' l'unico
+# posto dove si decide dove Giovanni cerca lavoro. Prima questa era una lista a
+# se', e il 06/10/2026 e' costata un difetto reale: Torino e' stata spenta in
+# scraper.py e questo modulo ha continuato ad accettarla, consegnando un "Sales
+# Manager" torinese nella coda della mail. Due liste da allineare a mano sono una
+# lista di troppo.
+#
+# Alle varianti di scraper si aggiungono i comuni dell'area milanese: gli ATS
+# aziendali scrivono la sede legale ("Assago", "San Donato Milanese") dove un
+# portale scriverebbe "Milano". E' l'unica differenza vera fra i due contesti,
+# quindi e' l'unica cosa che resta scritta qui.
+COMUNI_AREA_MILANO = ["assago", "sesto san giovanni", "segrate", "rho",
+                      "san donato milanese", "cologno monzese", "peschiera borromeo"]
+
+_CITTA_CACHE = None
+
+
+def citta_target():
+    """Le citta' target, lette da scraper. L'import e' pigro di proposito:
+    scraper importa questo modulo dentro una funzione, e leggere la lista al
+    momento dell'import creerebbe una dipendenza circolare fra i due."""
+    global _CITTA_CACHE
+    if _CITTA_CACHE is None:
+        import scraper as _S
+        citta = {nome: [v.strip() for v in varianti]
+                 for nome, varianti in _S.CITTA_TARGET_PATTERN.items()}
+        for comune in COMUNI_AREA_MILANO:
+            if "Milano" in citta and comune not in citta["Milano"]:
+                citta["Milano"].append(comune)
+        _CITTA_CACHE = citta
+    return _CITTA_CACHE
 PAESE_ITALIA = re.compile(r",\s*IT\b|\bIT\s*-|ital", re.IGNORECASE)
 MAX_OFFERTE_PER_AZIENDA = 300
 
@@ -81,10 +106,10 @@ def _sessione():
 # ---------------------------------------------------------------- utilita'
 
 def citta_da_testo(luogo):
-    """"Genova"/"Milano"/"Torino" se il luogo le nomina; "Italia" se e' in
+    """Il nome della citta' target se il luogo la nomina; "Italia" se e' in
     Italia senza citta' target; None se e' chiaramente altrove."""
     l = (luogo or "").lower()
-    for citta, varianti in CITTA.items():
+    for citta, varianti in citta_target().items():
         if any(v in l for v in varianti):
             return citta
     if PAESE_ITALIA.search(l) or not l.strip():
@@ -155,7 +180,7 @@ def _workday(sessione, az):
     totale, posting = leggi("")
     if totale > 150:
         posting = []
-        for citta in CITTA:
+        for citta in citta_target():
             posting.extend(leggi(citta)[1])
             time.sleep(0.3)
 
