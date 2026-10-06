@@ -623,8 +623,17 @@ GROQ_URL = "https://api.groq.com/openai/v1/chat/completions"
 # migliore. Gli altri due servono quando il primo e' in quota.
 GROQ_MODELLI = [
     "openai/gpt-oss-120b",
-    "qwen/qwen3.8-27b",
     "openai/gpt-oss-20b",
+    # qwen/qwen3.8-27b TOLTO il 06/10/2026: non e' una questione di quota, non
+    # puo' rispondere. Il suo limite e' di 1.000 token di RISPOSTA al minuto
+    # (OTPM) e il messaggio d'errore lo dice: "Request too large ... on output
+    # tokens per minute (OTPM): Limit 1000, Requested 1426 ... reduce
+    # max_tokens". Con max_tokens a 3000 ogni richiesta e' rifiutata a priori,
+    # sempre. Abbassare il tetto non lo recupera: provato a 900 e la risposta si
+    # tronca a meta' JSON (HTTP 400, "Failed to validate JSON"), perche' spende
+    # i token in ragionamento prima di scrivere. Quella sera ci e' costato 55
+    # chiamate per zero valutazioni. Se un giorno il prompt si accorcia molto,
+    # vale la pena riprovarlo.
 ]
 GROQ_TIMEOUT_S = 45
 # Sono modelli che "ragionano" prima di rispondere, e il ragionamento consuma
