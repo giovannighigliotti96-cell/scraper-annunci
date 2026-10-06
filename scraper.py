@@ -1606,6 +1606,35 @@ _RE_BD_CON_CRESCITA = re.compile(
     re.IGNORECASE,
 )
 
+# Il criterio largo, in aggiunta alla lista di titoli esatti. Serve perche'
+# ogni azienda chiama lo stesso mestiere in modo diverso: in tre settimane
+# sono emersi a mano "crm manager", "direttore commerciale & marketing",
+# "digital performance lead", "head of BD e growth" — ogni volta scoperti
+# perche' si era persa un'offerta buona. Inseguire i nomi uno per uno e' una
+# battaglia che non si vince.
+#
+# Qui passa qualunque titolo che nomini un AMBITO suo e un LIVELLO di
+# responsabilita'. A decidere se l'offerta vale e' poi l'LLM, che legge
+# l'annuncio: e' il filtro piu' accurato che abbiamo, e il titolo torna a fare
+# quello che deve, cioe' togliere solo l'ovvio.
+#
+# Misurato su 1215 titoli veri raccolti in un giro completo (9 portali x 3
+# citta', 06/10/2026): la lista esatta ne ammetteva 91, il criterio largo ne
+# aggiunge 138. Non e' un'alluvione in email: di 91 titoli ammessi oggi solo
+# 1-2 arrivano davvero all'LLM, perche' prima passano citta', freschezza e
+# deduplica. Con 229 saranno 3-5 valutazioni al giorno invece di 1-2.
+_RE_AMBITO_TITOLO = re.compile(
+    r"digital|marketing|e-?commerce|growth|\bcrm\b|commercial|\bsales\b|vendit|"
+    r"revenue|brand|go.?to.?market|business develop|customer",
+    re.IGNORECASE,
+)
+_RE_LIVELLO_TITOLO = re.compile(
+    r"head of|\bmanager\b|director|direttore|responsabile|\blead\b|chief|"
+    r"\bvp\b|vice president",
+    re.IGNORECASE,
+)
+
+
 def is_valid_job_title(title: str) -> bool:
     """
     Restituisce True se il titolo corrisponde a uno dei ruoli target.
@@ -1647,6 +1676,12 @@ def is_valid_job_title(title: str) -> bool:
                 secondo = base[len(esatto) + len(giunzione):]
                 if _RE_SECONDO_RUOLO.search(secondo):
                     return True
+
+    # 6. Criterio largo: un ambito suo piu' un livello di responsabilita'.
+    # Si aggiunge alla lista esatta, non la sostituisce: tutto cio' che
+    # passava prima passa ancora (vedi _RE_AMBITO_TITOLO).
+    if _RE_AMBITO_TITOLO.search(t) and _RE_LIVELLO_TITOLO.search(t):
+        return True
 
     return False
 
