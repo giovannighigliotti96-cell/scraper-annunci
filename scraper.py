@@ -1209,7 +1209,14 @@ _DATE_ANNUNCIO_DA_JSONLD = {}
 # l'altra. E' una cache di processo, non uno stato persistente: vive quanto il
 # run e serve solo a far incontrare il prefetch con chi poi legge la pagina.
 _HTML_PAGINE = {}
-PREFETCH_OPERAI = 8
+# Quattro e non otto: il 06/10/2026 michaelpage.it ha risposto 503 sulle pagine
+# di ricerca dopo i download in fila di un run precedente (la home rispondeva
+# 200: era throttling sul percorso, non il sito giu'). Il prefetch colpisce un
+# solo host per volta, quindi conviene restare leggeri. Con il filtro di
+# freschezza collegato al ref i download da fare scendono da ~69 a una decina,
+# e quattro operai bastano: 7 minuti diventano circa due, invece di uno, con
+# meta' dell'impronta sul portale.
+PREFETCH_OPERAI = 4
 
 
 def prefetch_pagine(urls, operai=PREFETCH_OPERAI):
@@ -2523,13 +2530,21 @@ class MichaelPageScraper(BaseScraper):
                         if title and title != "Candidati" and link not in seen:
                             seen.add(link)
                             if is_valid_job_title(title):
-                                da_leggere.append((title, link))
+                                da_leggere.append((title, link, self._data_da_ref(link)))
 
-                    prefetch_pagine([l for _, l in da_leggere])
-                    for title, link in da_leggere:
-                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "")
+                    # Il ref nell'URL dice il mese di pubblicazione prima di aprire
+                    # la pagina, quindi gli annunci di mesi vecchi non si scaricano
+                    # nemmeno: calcola_punteggio_e_modalita li salta e
+                    # offerta_troppo_vecchia li scarta comunque poco dopo, usando la
+                    # stessa data e la stessa soglia. Verdetto identico a prima,
+                    # solo senza spendere il download. Misurato il 06/10/2026: di 12
+                    # annunci MichaelPage noti, 11 erano oltre i 7 giorni.
+                    prefetch_pagine([l for _, l, d in da_leggere
+                                     if not (d and (_eta_giorni_da_data(d) or 0) > _soglia_eta(self.portal_name))])
+                    for title, link, data_ref in da_leggere:
+                        match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "", data_annuncio=data_ref, portale=self.portal_name)
                         jobs.append(ScrapedJob(title, "", self.portal_name, link,
-                                               date=self._data_da_ref(link),
+                                               date=data_ref,
                                                match_level=match_level, match_count=match_count,
                                                city="Italia", work_mode=work_mode, fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo_completo))
                     # Nessun link nuovo su questa pagina: oltre l'ultima pagina reale
