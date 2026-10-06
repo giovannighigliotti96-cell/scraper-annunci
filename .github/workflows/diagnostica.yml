@@ -11,6 +11,10 @@ permissions:
 jobs:
   verifica:
     runs-on: ubuntu-latest
+    # Tetto di sicurezza: senza, un run bloccato arriva al limite di 6 ore
+    # di GitHub e brucia minuti per nulla (05/10/2026: la diagnostica e'
+    # rimasta ferma 6 ore su una chiamata che non rispondeva).
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 

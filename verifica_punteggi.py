@@ -17,6 +17,7 @@ Uso:
 import json
 import logging
 import sys
+import time
 
 import requests
 from bs4 import BeautifulSoup
@@ -24,6 +25,11 @@ from bs4 import BeautifulSoup
 import scraper as S
 
 FILE_CASI = "casi_calibrazione.json"
+
+# Oltre questo tempo la diagnostica si ferma e riporta cio' che ha misurato.
+# Il 05/10/2026 e' rimasta appesa sei ore su un caso e l'ha uccisa il limite
+# di GitHub, senza lasciare nulla: meglio un risultato parziale e leggibile.
+BUDGET_TOTALE_S = 20 * 60
 
 
 def testo_annuncio(link):
@@ -38,7 +44,11 @@ def main(percorso=FILE_CASI):
     casi = json.load(open(percorso, encoding="utf-8"))
     print(f"Rivaluto {len(casi)} offerte gia' scartate, con le regole di oggi.\n")
     saliti = scesi = invariati = falliti = 0
-    for c in casi:
+    scadenza = time.monotonic() + BUDGET_TOTALE_S
+    for indice, c in enumerate(casi):
+        if time.monotonic() > scadenza:
+            print(f"\nTempo esaurito: {len(casi) - indice} casi non misurati.")
+            break
         testo = ""
         try:
             testo = testo_annuncio(c["link"])
