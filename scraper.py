@@ -1283,6 +1283,18 @@ def _estrai_date_posted(html: str) -> str:
     return match.group(1) if match else ""
 
 
+def _troppo_vecchio_per_scaricare(data_annuncio, portale) -> bool:
+    """True se la data e' nota e oltre la soglia del canale, cioe' se scaricare
+    la pagina e' tempo buttato. Lo usano sia il prefetch parallelo sia
+    calcola_punteggio_e_modalita, cosi' i due non possono dare risposte diverse:
+    se il prefetch scaricasse una pagina che il filtro poi salta, il risparmio
+    del filtro andrebbe perso in silenzio."""
+    if not data_annuncio:
+        return False
+    eta = _eta_giorni_da_data(data_annuncio)
+    return eta is not None and eta > _soglia_eta(portale)
+
+
 def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
     """Scarica il testo dell'offerta (se possibile), calcola le skill e rileva la modalità di lavoro.
     Ritorna anche testo_originale (snippet + testo scaricato) come ultimo elemento,
@@ -1295,10 +1307,8 @@ def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
     per un'informazione che si butta. Misurato il 06/10/2026: con il filtro sui
     titoli allargato la fase di scraping era arrivata a 39 minuti, e piu' della
     meta' delle offerte scaricate finiva scartata subito dopo."""
-    if data_annuncio:
-        eta = _eta_giorni_da_data(data_annuncio)
-        if eta is not None and eta > _soglia_eta(portale):
-            return "Base", 0, "unverified", "saltato_troppo_vecchio", 0, "", snippet or ""
+    if _troppo_vecchio_per_scaricare(data_annuncio, portale):
+        return "Base", 0, "unverified", "saltato_troppo_vecchio", 0, "", snippet or ""
 
     # snippet può arrivare None quando un JSON-LD ha "description": null: senza
     # questa guardia .lower() più sotto solleverebbe AttributeError non catturato.
@@ -2540,7 +2550,7 @@ class MichaelPageScraper(BaseScraper):
                     # solo senza spendere il download. Misurato il 06/10/2026: di 12
                     # annunci MichaelPage noti, 11 erano oltre i 7 giorni.
                     prefetch_pagine([l for _, l, d in da_leggere
-                                     if not (d and (_eta_giorni_da_data(d) or 0) > _soglia_eta(self.portal_name))])
+                                     if not _troppo_vecchio_per_scaricare(d, self.portal_name)])
                     for title, link, data_ref in da_leggere:
                         match_level, match_count, work_mode, fetch_status, probabilita, motivazione, testo_completo = calcola_punteggio_e_modalita(link, "", data_annuncio=data_ref, portale=self.portal_name)
                         jobs.append(ScrapedJob(title, "", self.portal_name, link,
@@ -3566,12 +3576,17 @@ class LhhScraper(BaseScraper):
 
                     # Dettagli in parallelo: un annuncio alla volta costava a
                     # questo portale 7 minuti per 30 offerte (06/10/2026).
+                    # Si escludono gli annunci che il filtro di freschezza salterebbe:
+                    # calcola_punteggio_e_modalita riceve postedDate e per quelli non
+                    # scarica nulla, quindi prefetcharli sarebbe lavoro buttato — e
+                    # peggio, annullerebbe il risparmio che quel filtro gia' dava.
                     prefetch_pagine([
                         (j.get("applyUri")
                          or f"https://www.lhh.com/it-it/cerca-lavoro/job-description/?id={j.get('jobId')}")
                         for j in jobs_data
                         if is_valid_job_title(_safe_str(j, "jobTitle"))
                         and (j.get("applyUri") or j.get("jobId"))
+                        and not _troppo_vecchio_per_scaricare(j.get("postedDate", ""), self.portal_name)
                     ])
                     for job in jobs_data:
                         try:
