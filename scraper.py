@@ -915,6 +915,17 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
                         f"{MAX_VALUTAZIONI_LLM_PER_RUN}: le altre tengono il punteggio "
                         f"euristico e vengono rivalutate all'ora dell'email.")
     valutabili = {id(j) for j in da_valutare}
+    # Battito visibile. Il 06/10/2026 questa fase ha girato 81 minuti lasciando
+    # nel log di GitHub esattamente zero righe, e un run che lavora era
+    # indistinguibile da un run appeso: le righe sulla quota sono a livello INFO
+    # e in CI su stdout arrivano solo i WARNING. Si usa print e non logging
+    # perche' print finisce sempre su stdout, qualunque sia il livello
+    # configurato — la riga "Valutazione semantica di N offerte" si vedeva per
+    # questo. Una riga per offerta su quaranta non e' rumore: e' la differenza
+    # tra sapere e indovinare.
+    inizio_fase = time.monotonic()
+    quante = len(da_valutare)
+    fatte = 0
     for job in offerte:
         if id(job) not in valutabili:
             continue
@@ -929,11 +940,17 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
                 scaduto = True
             continue
         testo = job.testo_completo or f"{job.title} {job.company} {job.snippet}"
+        fatte += 1
+        t_offerta = time.monotonic()
         try:
             risultato = valuta_match_semantico(testo)
         except Exception as e:
             logging.error(f"Valutazione LLM fallita per '{job.title}': {e}")
             risultato = None
+        print(f"  [{fatte}/{quante}] {time.monotonic() - t_offerta:5.1f}s "
+              f"(fase {(time.monotonic() - inizio_fase) / 60:4.1f} min) "
+              f"{'ok' if risultato else 'nessuna risposta'} | {job.title[:50]}",
+              flush=True)
         if risultato is not None:
             probabilita, motivazione, modalita, dettaglio, ral = risultato
             job.probabilita, job.motivazione = probabilita, motivazione
