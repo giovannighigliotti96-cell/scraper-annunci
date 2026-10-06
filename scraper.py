@@ -1584,14 +1584,32 @@ def data_pubblicazione_effettiva(job) -> str:
     return data_ld or job.date
 
 
+# Sui siti careers delle aziende la data vuol dire un'altra cosa. Su un
+# portale un annuncio vecchio e' quasi sempre una ricerca gia' chiusa lasciata
+# online; sull'ATS dell'azienda l'annuncio resta finche' la posizione e'
+# aperta, e lo tolgono quando la chiudono — l'essere ancora in lista E' il
+# segnale. Con la soglia dei portali questo canale era inutilizzabile:
+# misurato il 06/10/2026, delle 14 offerte ammesse dalle aziende dirette
+# (Satispay, Leonardo, PwC, Accenture) ne sopravvivevano zero, con eta' da 11
+# a 280 giorni.
+MAX_ETA_GIORNI_SITO_AZIENDALE = 60
+PORTALI_SENZA_ROTAZIONE = {"AziendeDirette"}
+
+
+def _soglia_eta(portale) -> int:
+    return (MAX_ETA_GIORNI_SITO_AZIENDALE if portale in PORTALI_SENZA_ROTAZIONE
+            else MAX_ETA_GIORNI_ANNUNCIO)
+
+
 def offerta_troppo_vecchia(job) -> bool:
     """True se l'annuncio ha una data di pubblicazione nota e più vecchia della
-    soglia. LinkedIn è escluso perché applica già la propria soglia (3 giorni)
-    a monte, dentro lo scraper. Un annuncio senza data non viene mai scartato."""
+    soglia del suo canale. LinkedIn è escluso perché applica già la propria
+    soglia (3 giorni) a monte, dentro lo scraper. Un annuncio senza data non
+    viene mai scartato."""
     if job.portal == "LinkedIn":
         return False
     eta = _eta_giorni_da_data(data_pubblicazione_effettiva(job))
-    return eta is not None and eta > MAX_ETA_GIORNI_ANNUNCIO
+    return eta is not None and eta > _soglia_eta(job.portal)
 
 # I titoli BD per esteso stanno in EXACT_TITLES, ma l'abbreviazione no: "Head
 # of BD e Growth" (caso reale del 05/10/2026, arrivato fino alla lettera
@@ -4126,7 +4144,7 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
                 job.date = data_reale
 
         if offerta_troppo_vecchia(job):
-            logging.info(f"Offerta scartata (pubblicata da oltre {MAX_ETA_GIORNI_ANNUNCIO} giorni, "
+            logging.info(f"Offerta scartata (pubblicata da oltre {_soglia_eta(job.portal)} giorni, "
                          f"data={job.date}): {job.title} — {job.link}")
             continue
 
