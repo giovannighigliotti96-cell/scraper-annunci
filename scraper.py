@@ -697,18 +697,21 @@ def valuta_match_gemini(job_text: str) -> tuple:
                 return None
             logging.info(f"{modello} in quota, provo il modello successivo.")
 
-    # Tutti i modelli sono in quota: si aspetta il tempo indicato dall'ultimo
-    # errore e si riprova una volta sola con il modello migliore. Oltre questo
-    # punto conviene arrendersi e tenere il punteggio euristico, invece di
-    # allungare il run per un'offerta.
-    attesa = _secondi_di_attesa(ultimo_errore)
-    logging.info(f"Tutti i modelli Gemini in quota, attendo {attesa:.0f}s e riprovo una volta.")
-    time.sleep(attesa)
-    try:
-        return _chiama_gemini(client, istruzioni, job_text, GEMINI_MODELLI[0])
-    except Exception as e:
-        logging.warning(f"Match Gemini: quota esaurita su tutti i modelli. Ultimo errore: {type(e).__name__}")
-        return None
+    # Tutti i modelli sono in quota. Qui prima si dormiva fino a 60 secondi e si
+    # riprovava Gemini un'ultima volta: aveva senso quando Gemini era l'unica
+    # strada, perche' aspettare batteva arrendersi. Da quando c'e' Groq quella
+    # attesa e' solo danno — misurato il 06/10/2026, la valutazione di 40 offerte
+    # e' andata a 56 minuti, circa 84 secondi l'una, quasi tutti passati a
+    # dormire davanti a una porta chiusa mentre una porta aperta era accanto.
+    # Ora si cede subito alla riserva: e' quello che serve, ed e' quello che
+    # Giovanni aveva chiesto ("groq subentra immediatamente appena gemini
+    # esaurisce").
+    global _GEMINI_IN_QUOTA_FINO_A
+    pausa = _secondi_di_attesa(ultimo_errore)
+    _GEMINI_IN_QUOTA_FINO_A = time.monotonic() + pausa
+    logging.warning(f"Tutti i modelli Gemini in quota: passo a Groq e non richiamo "
+                    f"Gemini per {pausa:.0f}s.")
+    return None
 
 
 def _e_errore_di_quota(errore) -> bool:
@@ -721,6 +724,15 @@ def _e_errore_di_quota(errore) -> bool:
 # dell'email e' rimasto bloccato quasi due ore perche' Gemini, a quota
 # giornaliera esaurita, aveva risposto con un ritardo di ritentativo lunghissimo.
 ATTESA_MASSIMA_QUOTA_S = 60
+
+# Fino a quando NON richiamare Gemini, perche' si e' appena visto che e' in
+# quota su tutti i modelli. Senza questa memoria ogni offerta successiva
+# ripeteva quattro chiamate destinate al 429 prima di arrivare a Groq: con 40
+# offerte sono 160 round trip buttati. Non e' un interruttore permanente ma una
+# scadenza, perche' i limiti di Gemini sono al minuto e possono liberarsi
+# durante il run: passato il tempo che il 429 stesso indica, Gemini torna in
+# prima scelta da solo. Vive quanto il processo, come le altre cache di run.
+_GEMINI_IN_QUOTA_FINO_A = 0.0
 
 
 def _secondi_di_attesa(errore) -> float:
@@ -835,9 +847,10 @@ def valuta_match_semantico(job_text: str) -> tuple:
     Claude e' uscito dalla cascata lo stesso giorno: il credito e' finito da un
     mese e ogni offerta spendeva una chiamata per ricevere un 400. Resta usato
     dalla personalizzazione del CV, che ha una sua gestione."""
-    risultato = valuta_match_gemini(job_text)
-    if risultato is not None:
-        return risultato
+    if time.monotonic() >= _GEMINI_IN_QUOTA_FINO_A:
+        risultato = valuta_match_gemini(job_text)
+        if risultato is not None:
+            return risultato
     return valuta_match_groq(job_text)
 
 def valuta_match_candidato(job_text: str) -> tuple:
