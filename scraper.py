@@ -1795,6 +1795,19 @@ def clear_giornaliere():
 RUN_A_ZERO_PER_ALLARME = 12
 
 
+# Quanti run tenere nella serie dei conteggi per portale. Con 4-5 run al
+# giorno, 40 coprono una settimana abbondante: abbastanza per avere un livello
+# normale di riferimento senza che una giornata storta lo sposti.
+RUN_NELLO_STORICO = 40
+# Quanti run recenti formano la "finestra di adesso" nel confronto.
+RUN_FINESTRA_RECENTE = 6
+# Sotto questa frazione del livello normale si parla di crollo.
+FRAZIONE_DI_CROLLO = 0.35
+# Un portale che normalmente porta pochissimo non puo' "crollare": le sue
+# oscillazioni sono rumore, non un guasto.
+MINIMO_PER_PARLARE_DI_CROLLO = 4
+
+
 def aggiorna_stato_portali(conteggi_grezzi, errori=None):
     """Aggiorna il contatore di run consecutivi a zero per ogni portale.
     `conteggi_grezzi` è {nome_portale: n_offerte_grezze} sommato su tutte le città
@@ -1816,6 +1829,14 @@ def aggiorna_stato_portali(conteggi_grezzi, errori=None):
         voce["run_a_zero"] = 0 if n > 0 else int(voce.get("run_a_zero", 0)) + 1
         voce["ultimo_run"] = datetime.now().isoformat(timespec="seconds")
         voce["ultimo_errore"] = errori.get(portale, "")
+        # Serie dei conteggi, la piu' recente in testa. Serve al canarino sui
+        # crolli: lo zero assoluto si vede gia' con run_a_zero, ma una fonte
+        # che passa da 18 offerte a 2 resta invisibile — ed e' lo scenario che
+        # conta, perche' LinkedIn da solo fa l'85% di quello che arriva.
+        serie = voce.get("storico_conteggi") or []
+        if not isinstance(serie, list):
+            serie = []
+        voce["storico_conteggi"] = ([int(n)] + [int(x) for x in serie if isinstance(x, int)])[:RUN_NELLO_STORICO]
         stato[portale] = voce
 
     try:
@@ -1945,7 +1966,47 @@ def portali_sospetti():
             errore = voce.get("ultimo_errore") or ""
             righe.append(f"{portale}: 0 offerte da {zeri} run consecutivi"
                          + (f" (ultimo errore: {errore[:80]})" if errore else ""))
+            continue
+        crollo = _crollo_di_resa(voce)
+        if crollo:
+            righe.append(f"{portale}: {crollo}")
     return righe
+
+
+def _mediana(valori):
+    if not valori:
+        return 0.0
+    ordinati = sorted(valori)
+    meta = len(ordinati) // 2
+    if len(ordinati) % 2:
+        return float(ordinati[meta])
+    return (ordinati[meta - 1] + ordinati[meta]) / 2.0
+
+
+def _crollo_di_resa(voce):
+    """Descrive il crollo di un portale che porta ancora qualcosa, o None.
+
+    Lo zero assoluto lo vede gia' run_a_zero. Questo guarda il caso piu'
+    insidioso: una fonte viva che rende molto meno di prima. E' lo scenario
+    che conta davvero, perche' LinkedIn da solo fa l'85% delle offerte
+    recapitate: se dimezza, il flusso si dimezza e nessuno avvisa.
+
+    Si confronta la mediana dei run recenti con quella dei run precedenti —
+    la mediana e non la media, cosi' una singola giornata eccezionale non
+    sposta il riferimento."""
+    serie = voce.get("storico_conteggi") or []
+    if not isinstance(serie, list) or len(serie) < RUN_FINESTRA_RECENTE * 2:
+        return None
+    recenti = [int(x) for x in serie[:RUN_FINESTRA_RECENTE]]
+    prima = [int(x) for x in serie[RUN_FINESTRA_RECENTE:]]
+    normale = _mediana(prima)
+    adesso = _mediana(recenti)
+    if normale < MINIMO_PER_PARLARE_DI_CROLLO:
+        return None
+    if adesso >= normale * FRAZIONE_DI_CROLLO:
+        return None
+    return (f"resa crollata, {adesso:.0f} offerte per run contro le {normale:.0f} "
+            f"abituali (ultimi {RUN_FINESTRA_RECENTE} run)")
 
 # ==========================================
 # CLASSI SCRAPERS PER SINGOLI PORTALI
@@ -4300,20 +4361,21 @@ def esegui_scraping_job(orario_label):
     scrapers = [
         LinkedInScraper(),
         MichaelPageScraper(),
-        PagePersonnelScraper(),
         WyserScraper(),
         LhhScraper(),
         GiGroupScraper(),
-        ManpowerScraper(),
         IQMSelezioneScraper(),
         PraxiScraper(),
-        AntalScraper(),
         HaysScraper(),
         ReverseGroupScraper(),
-        AdamiScraper(),
         # Siti careers delle grandi aziende, letti alla fonte (ATS): un
         # "portale" solo per la pipeline, molte aziende dentro.
         AziendeDiretteScraper(),
+    # Spenti il 06/10/2026 dopo 122 run consecutivi a zero offerte grezze:
+    # PagePersonnel (reindirizza a MichaelPage, e' un doppione), Manpower
+    # (offerte di tutt'altro mercato), Antal (API 401 senza token pubblico),
+    # Adami (boutique troppo piccola). In un mese non hanno consegnato una
+    # sola offerta, e ogni run spendeva tempo su di loro.
     ]
 
     tutte_le_offerte = []

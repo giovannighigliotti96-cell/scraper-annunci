@@ -31,20 +31,21 @@ if __name__ == "__main__":
     scrapers = [
         LinkedInScraper(),
         MichaelPageScraper(),
-        PagePersonnelScraper(),
         WyserScraper(),
         LhhScraper(),
         GiGroupScraper(),
-        ManpowerScraper(),
         IQMSelezioneScraper(),
         PraxiScraper(),
-        AntalScraper(),
         HaysScraper(),
         ReverseGroupScraper(),
-        AdamiScraper(),
         # Siti careers delle grandi aziende, letti alla fonte (ATS): un
         # "portale" solo per la pipeline, molte aziende dentro.
         AziendeDiretteScraper(),
+    # Spenti il 06/10/2026 dopo 122 run consecutivi a zero offerte grezze:
+    # PagePersonnel (reindirizza a MichaelPage, e' un doppione), Manpower
+    # (offerte di tutt'altro mercato), Antal (API 401 senza token pubblico),
+    # Adami (boutique troppo piccola). In un mese non hanno consegnato una
+    # sola offerta, e ogni run spendeva tempo su di loro.
     ]
 
     print(f"Avvio scraping con {len(scrapers)} portali...")
