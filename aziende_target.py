@@ -25,6 +25,7 @@ from datetime import datetime, timedelta
 
 import requests
 from bs4 import BeautifulSoup
+from concurrent.futures import ThreadPoolExecutor
 
 import state_io
 
@@ -329,6 +330,73 @@ def _gia_arrivata_dai_portali(titolo, nome_azienda):
     return False
 
 
+# Quante aziende interrogare insieme. Il 06/10/2026 questa fase ha preso 20
+# minuti su 50 aziende: ognuna prova fino a 12 indirizzi candidati con timeout
+# 12s, e il caso peggiore e' l'azienda SENZA pagina careers, che li sbaglia
+# tutti e dodici prima di arrendersi. Fanno fino a 600 richieste in fila. Le
+# aziende sono indipendenti fra loro, quindi la fila non serviva a nulla.
+# Otto e non piu': sono 50 domini diversi, quindi non si insiste su un host solo
+# — il rischio di farsi bloccare che consigliava prudenza sui portali qui non
+# c'e'.
+CAREERS_OPERAI = 8
+
+# Dopo quanti giorni riprovare un'azienda che non ha una pagina careers.
+# Il flag "senza_careers" veniva scritto dal 2026 e mai letto da nessuno: quelle
+# aziende rifacevano tutti e dodici i tentativi a ogni passaggio nella
+# rotazione, ed e' il caso piu' costoso che esista — dodici richieste che
+# finiscono tutte in niente. Non si smette per sempre perche' un'azienda puo'
+# aprire una pagina "lavora con noi" in qualunque momento: un mese e' un
+# compromesso fra non insistere e non perdere una novita'.
+GIORNI_RIPROVA_SENZA_CAREERS = 30
+
+
+def _senza_careers_di_recente(voce, oggi) -> bool:
+    """True se si e' gia' verificato di recente che questa azienda non ha una
+    pagina careers. Il valore True secco e' il vecchio formato, scritto quando
+    il flag non si leggeva: si tratta come "da ricontrollare", cosi' al primo
+    passaggio prende una data e da li' in poi funziona."""
+    segnato = voce.get("senza_careers")
+    if not segnato or segnato is True:
+        return False
+    try:
+        quando = datetime.strptime(str(segnato), "%Y-%m-%d")
+    except ValueError:
+        return False
+    return (oggi - quando).days < GIORNI_RIPROVA_SENZA_CAREERS
+
+
+def _cerca_careers_in_parallelo(da_controllare, stato):
+    """Scarica in parallelo la pagina careers di ogni azienda.
+
+    Ritorna {nome azienda: (url, html)}. Solo rete e parsing: lo stato NON si
+    tocca qui, perche' aggiornarlo da piu' thread sarebbe il modo piu' facile di
+    corrompere stato_aziende.json. Le decisioni restano nel ciclo sequenziale che
+    legge questo dizionario, esattamente come prima."""
+    def cerca(azienda):
+        nome = azienda.get("nome", "").strip()
+        sito = azienda.get("sito", "").strip()
+        if not nome or not sito:
+            return nome, (None, None)
+        # Se un indirizzo careers e' gia' noto si prova quello, che e' una sola
+        # richiesta invece di dodici.
+        noto = (stato.get(nome, {}) or {}).get("url_careers")
+        if noto:
+            try:
+                r = requests.get(noto, headers=_headers(), timeout=12)
+                if r.status_code == 200:
+                    return nome, (noto, r.text)
+            except Exception:
+                pass
+        try:
+            return nome, trova_pagina_careers(sito)
+        except Exception as e:
+            logging.error(f"Ricerca careers di {nome} fallita: {e}")
+            return nome, (None, None)
+
+    with ThreadPoolExecutor(max_workers=CAREERS_OPERAI) as pool:
+        return dict(pool.map(cerca, da_controllare))
+
+
 def controlla_aziende_target(massimo=AZIENDE_PER_RUN):
     """Controlla una fetta della lista, a rotazione, e ritorna cosa segnalare.
 
@@ -350,7 +418,19 @@ def controlla_aziende_target(massimo=AZIENDE_PER_RUN):
     def _ultimo(azienda):
         return (stato.get(azienda.get("nome", ""), {}) or {}).get("ultimo_controllo", "")
 
-    da_controllare = sorted(aziende, key=_ultimo)[:massimo]
+    oggi_dt = datetime.now()
+    # Fuori dalla rotazione chi si sa non avere una pagina careers: i posti di
+    # questo giro vanno ad aziende su cui c'e' qualcosa da trovare.
+    candidate = [a for a in aziende
+                 if not _senza_careers_di_recente(stato.get(a.get("nome", ""), {}) or {}, oggi_dt)]
+    escluse = len(aziende) - len(candidate)
+    da_controllare = sorted(candidate, key=_ultimo)[:massimo]
+    print(f"  {len(da_controllare)} aziende target: cerco le pagine careers in parallelo"
+          f"{f' ({escluse} senza careers, saltate)' if escluse else ''}...",
+          flush=True)
+    pagine = _cerca_careers_in_parallelo(da_controllare, stato)
+    trovate_quante = sum(1 for u, _ in pagine.values() if u)
+    print(f"  pagine careers raggiunte: {trovate_quante}/{len(da_controllare)}", flush=True)
     offerte, autocandidature = [], []
 
     for azienda in da_controllare:
@@ -361,23 +441,17 @@ def controlla_aziende_target(massimo=AZIENDE_PER_RUN):
         voce = stato.setdefault(nome, {})
         voce["ultimo_controllo"] = oggi
 
-        url_careers = voce.get("url_careers")
-        html = None
-        if url_careers:
-            try:
-                r = requests.get(url_careers, headers=_headers(), timeout=12)
-                html = r.text if r.status_code == 200 else None
-            except Exception:
-                html = None
+        # La pagina l'ha gia' cercata _cerca_careers_in_parallelo: qui si legge
+        # solo il risultato, e tutte le decisioni sullo stato restano in questo
+        # ciclo, che e' a thread singolo.
+        url_careers, html = pagine.get(nome, (None, None))
         if html is None:
-            url_careers, html = trova_pagina_careers(sito)
-            if url_careers:
-                voce["url_careers"] = url_careers
-            else:
-                # Nessuna pagina raggiungibile: si annota, senza insistere ogni
-                # giorno su un sito che non ne ha una.
-                voce["senza_careers"] = True
-                continue
+            # Nessuna pagina raggiungibile: si annota CON LA DATA, cosi' il
+            # controllo qui sopra puo' saltarla per un mese invece di rifare
+            # dodici tentativi a vuoto a ogni giro.
+            voce["senza_careers"] = oggi
+            continue
+        voce["url_careers"] = url_careers
         voce.pop("senza_careers", None)
 
         try:
