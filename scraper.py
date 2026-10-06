@@ -631,6 +631,15 @@ GROQ_ATTESA_MASSIMA_S = 60
 # Idea di Giovanni, che ha chiesto di rispettare il limite invece di forzarlo.
 _GROQ_LIBERO_DA = {}
 
+# Token al minuto effettivi di ogni modello, letti dall'header
+# x-ratelimit-limit-tokens della sua risposta. Presumere 8000 per tutti era
+# sbagliato: nel ripasso del 06/10/2026 su 56 offerte, tutti e 20 i 429 sono
+# arrivati da un solo modello (qwen/qwen3.8-27b) mentre gli altri due non ne
+# hanno preso nessuno. Il limite vero Groq lo dichiara a ogni risposta, quindi
+# non c'e' ragione di indovinarlo: si impara dal primo giro e da li' in poi il
+# ritmo e' giusto per ciascuno.
+_GROQ_LIMITE_MODELLO = {}
+
 
 def _modello_groq_disponibile():
     """Il modello libero adesso, o None se bisogna aspettare.
@@ -652,10 +661,29 @@ def _attesa_prossimo_modello_groq() -> float:
 
 def _segna_consumo_groq(modello, token_usati):
     """Rimanda il modello in avanti del tempo necessario a ricaricare i token
-    appena spesi. Con 4746 token su 8000 al minuto sono circa 36 secondi."""
+    appena spesi. Con 4746 token su 8000 al minuto sono circa 36 secondi; se il
+    modello ha un limite piu' stretto la pausa cresce in proporzione."""
     if not token_usati:
         token_usati = 4746  # il consumo misurato, se la risposta non lo dice
-    _GROQ_LIBERO_DA[modello] = time.monotonic() + 60.0 * token_usati / GROQ_TOKEN_AL_MINUTO
+    limite = _GROQ_LIMITE_MODELLO.get(modello, GROQ_TOKEN_AL_MINUTO) or GROQ_TOKEN_AL_MINUTO
+    _GROQ_LIBERO_DA[modello] = time.monotonic() + 60.0 * token_usati / limite
+
+
+def _impara_limite_groq(modello, risposta):
+    """Memorizza il limite di token al minuto che Groq dichiara per questo
+    modello. Si legge una volta e vale per tutto il run."""
+    if modello in _GROQ_LIMITE_MODELLO:
+        return
+    grezzo = risposta.headers.get("x-ratelimit-limit-tokens", "")
+    try:
+        valore = int(float(str(grezzo).strip()))
+    except (TypeError, ValueError):
+        return
+    if valore > 0:
+        _GROQ_LIMITE_MODELLO[modello] = valore
+        if valore != GROQ_TOKEN_AL_MINUTO:
+            logging.info(f"{modello}: limite reale {valore} token/min "
+                         f"(il valore atteso era {GROQ_TOKEN_AL_MINUTO}).")
 
 try:
     from google import genai as google_genai
@@ -907,6 +935,7 @@ def valuta_match_groq(job_text: str) -> tuple:
             # warning e non info: nei log di GitHub il livello info non compare,
             # e il 06/10/2026 trenta minuti di cascata sono passati invisibili.
             logging.warning(f"{modello} in quota su Groq nonostante il ritmo, lo metto in pausa.")
+            _impara_limite_groq(modello, r)
             _GROQ_LIBERO_DA[modello] = time.monotonic() + _attesa_da_header(r)
             continue
         if r.status_code != 200:
@@ -914,6 +943,7 @@ def valuta_match_groq(job_text: str) -> tuple:
             _segna_consumo_groq(modello, 0)
             continue
         try:
+            _impara_limite_groq(modello, r)
             dati = r.json()
             _segna_consumo_groq(modello, (dati.get("usage") or {}).get("total_tokens", 0))
             contenuto = dati["choices"][0]["message"]["content"]
