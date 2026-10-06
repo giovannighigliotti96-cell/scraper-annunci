@@ -2729,6 +2729,21 @@ class GiGroupScraper(BaseScraper):
         return jobs
 
 
+def _get_con_un_riprova(url, headers, timeout, riprova, etichetta):
+    """GET che su timeout riprova una volta sola, se il chiamante lo chiede.
+    Serve ai portali lenti dove un timeout sulla prima pagina fa perdere tutto
+    il raccolto. Se anche il riprova va in timeout l'eccezione risale: il
+    chiamante la gestisce come ha sempre fatto."""
+    try:
+        return requests.get(url, headers=headers, timeout=timeout)
+    except requests.exceptions.Timeout:
+        if not riprova:
+            raise
+        logging.info(f"{etichetta}: timeout, riprovo una volta ({url})")
+        time.sleep(2)
+        return requests.get(url, headers=headers, timeout=timeout)
+
+
 class WyserScraper(BaseScraper):
     """
     Wyser — WordPress SSR. Ogni card è article.card-job con:
@@ -2764,7 +2779,15 @@ class WyserScraper(BaseScraper):
         for page in range(1, MAX_PAGES + 1):
             url = base_url if page == 1 else f"{base_url}?pages={page}"
             try:
-                response = requests.get(url, headers=headers, timeout=25)
+                # Un solo riprova sulla prima pagina. Questo portale e' lento ma
+                # vivo: misurato il 06/10/2026, la pagina nazionale risponde in 2
+                # secondi e quella Liguria in 10, con punte oltre i 25 del tetto.
+                # Un timeout su pagina 1 spegneva l'intero portale, perche' l'uscita
+                # dal ciclo e' un break: per questo Wyser consegnava zero in due run
+                # di fila. Solo la prima pagina, e una volta sola: se cade una
+                # pagina interna le offerte raccolte fin li' restano comunque.
+                response = _get_con_un_riprova(url, headers, timeout=25,
+                                               riprova=(page == 1), etichetta=self.portal_name)
                 logging.info(f"{self.portal_name} (pagina {page}): HTTP {response.status_code}")
                 if response.status_code != 200:
                     break
