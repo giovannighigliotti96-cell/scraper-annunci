@@ -72,6 +72,17 @@ CV_PERSONALIZZAZIONE_BUDGET_SECONDI = 480  # tempo massimo totale dedicato alla 
 # comunque: il 02/10/2026 l'invio e' rimasto appeso per ore a un modello in
 # quota, e il riepilogo non e' mai arrivato.
 BUDGET_VALUTAZIONE_EMAIL_S = 300
+
+# Lo stesso tetto serve anche dentro il run di scraping, dove finora non c'era.
+# Il 06/10/2026 quella fase ha girato oltre un'ora su 40 offerte — un provider a
+# quota con un'attesa per offerta — e ha rischiato di far scadere il workflow:
+# lo stato si salva solo all'ultimo step, quindi una fase senza tetto non
+# rallenta il run, se lo porta via tutto. Venti minuti sono larghi per il caso
+# sano (con Groq come riserva immediata sono circa nove) e stretti abbastanza da
+# lasciare al run il tempo di salvare. Chi resta fuori dal tetto non si perde:
+# tiene il punteggio euristico, arriva comunque in email e viene rivalutato la
+# sera dalla seconda passata, che esiste proprio per questo.
+BUDGET_VALUTAZIONE_SCRAPING_S = 20 * 60
 # Quante offerte valutare con l'LLM in un singolo run di scraping. Serve per i
 # picchi: allargando il filtro sui titoli (06/10/2026) le offerte che superano
 # citta', modalita' e freschezza sono passate da una manciata a 65, e i titoli
@@ -4768,7 +4779,8 @@ def esegui_scraping_job(orario_label):
     # arricchisci_offerte_con_llm ora RITORNA la lista filtrata (scarta le offerte
     # sotto la soglia di punteggio), quindi il valore di ritorno va usato.
     cronometro.segna("dedup")
-    nuove_offerte = arricchisci_offerte_con_llm(nuove_offerte)
+    nuove_offerte = arricchisci_offerte_con_llm(
+        nuove_offerte, scadenza=time.monotonic() + BUDGET_VALUTAZIONE_SCRAPING_S)
     cronometro.segna("valutazione LLM")
     invia_alert_immediato(nuove_offerte)
     cronometro.segna("alert immediato")
