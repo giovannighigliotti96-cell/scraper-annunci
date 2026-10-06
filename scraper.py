@@ -610,6 +610,53 @@ GROQ_TIMEOUT_S = 45
 GROQ_MAX_TOKEN_RISPOSTA = 3000
 GROQ_SFORZO_RAGIONAMENTO = "low"
 
+# Token al minuto che Groq concede per ogni modello. Non e' una stima: l'header
+# x-ratelimit-limit-tokens della risposta dice 8000, e una nostra chiamata ne usa
+# 4746 misurati il 06/10/2026 (4383 di prompt — 1691 di istruzioni e 1421 di CV,
+# identici ogni volta — piu' 363 di risposta). Fanno 1,68 chiamate al minuto per
+# modello: il limite che morde e' questo, non le 1000 richieste al giorno.
+GROQ_TOKEN_AL_MINUTO = 8000
+
+# Oltre questa attesa non si resta in fila su Groq: si passa alla riserva. Un
+# minuto e' il tempo in cui i token di un modello si ricaricano per intero.
+GROQ_ATTESA_MASSIMA_S = 60
+
+# Quando ogni modello torna disponibile, per nome. Prima si mandava e si
+# aspettava il 429: funzionava, ma scoprire un limite sbattendoci contro vuol
+# dire che a volte si passa oltre senza risposta — il 06/10/2026 dieci chiamate
+# ravvicinate ne hanno lasciate cinque senza valutazione. Qui invece si calcola
+# quanto tempo serve per "riguadagnare" i token appena spesi e si usa intanto un
+# altro modello: i tre hanno 8000 token al minuto CIASCUNO, quindi a turno fanno
+# circa cinque valutazioni al minuto senza prendere un solo 429.
+# Idea di Giovanni, che ha chiesto di rispettare il limite invece di forzarlo.
+_GROQ_LIBERO_DA = {}
+
+
+def _modello_groq_disponibile():
+    """Il modello libero adesso, o None se bisogna aspettare.
+
+    Si preferisce l'ordine di GROQ_MODELLI, cioe' il piu' capace per primo."""
+    adesso = time.monotonic()
+    for modello in GROQ_MODELLI:
+        if _GROQ_LIBERO_DA.get(modello, 0.0) <= adesso:
+            return modello
+    return None
+
+
+def _attesa_prossimo_modello_groq() -> float:
+    """Secondi da aspettare perche' almeno un modello torni libero."""
+    if not _GROQ_LIBERO_DA:
+        return 0.0
+    return max(0.0, min(_GROQ_LIBERO_DA.values()) - time.monotonic())
+
+
+def _segna_consumo_groq(modello, token_usati):
+    """Rimanda il modello in avanti del tempo necessario a ricaricare i token
+    appena spesi. Con 4746 token su 8000 al minuto sono circa 36 secondi."""
+    if not token_usati:
+        token_usati = 4746  # il consumo misurato, se la risposta non lo dice
+    _GROQ_LIBERO_DA[modello] = time.monotonic() + 60.0 * token_usati / GROQ_TOKEN_AL_MINUTO
+
 try:
     from google import genai as google_genai
     GEMINI_SDK_AVAILABLE = True
@@ -783,6 +830,21 @@ def _chiama_gemini(client, istruzioni, job_text, modello):
     return _leggi_valutazione(json.loads(risposta.output_text))
 
 
+def _attesa_da_header(risposta) -> float:
+    """Secondi di pausa indicati da Groq nella risposta 429. Si guarda prima
+    retry-after, poi il reset dei token; in mancanza di entrambi si usa un
+    minuto, il tempo di ricarica completo di un modello."""
+    for chiave in ("retry-after", "x-ratelimit-reset-tokens"):
+        grezzo = risposta.headers.get(chiave, "")
+        numero = re.match(r"([\d.]+)", str(grezzo).strip())
+        if numero:
+            try:
+                return min(float(numero.group(1)), GROQ_ATTESA_MASSIMA_S)
+            except ValueError:
+                pass
+    return GROQ_ATTESA_MASSIMA_S
+
+
 def valuta_match_groq(job_text: str) -> tuple:
     """Stessa valutazione di valuta_match_gemini, via Groq. Ritorna
     (probabilita, motivazione, modalita, dettaglio, ral) oppure None.
@@ -815,7 +877,20 @@ def valuta_match_groq(job_text: str) -> tuple:
         "max_tokens": GROQ_MAX_TOKEN_RISPOSTA,
         "reasoning_effort": GROQ_SFORZO_RAGIONAMENTO,
     }
-    for modello in GROQ_MODELLI:
+    tentativi = 0
+    while tentativi < len(GROQ_MODELLI):
+        modello = _modello_groq_disponibile()
+        if modello is None:
+            attesa = _attesa_prossimo_modello_groq()
+            # Si aspetta solo se l'attesa e' breve: oltre, conviene lasciare la
+            # parola alla riserva o all'euristica invece di allungare il run.
+            if attesa > GROQ_ATTESA_MASSIMA_S:
+                logging.warning(f"Tutti i modelli Groq occupati per altri {attesa:.0f}s: "
+                                f"lascio la parola alla riserva.")
+                return None
+            time.sleep(attesa)
+            continue
+        tentativi += 1
         try:
             r = requests.post(
                 GROQ_URL, json=dict(corpo_base, model=modello),
@@ -824,20 +899,28 @@ def valuta_match_groq(job_text: str) -> tuple:
                 timeout=GROQ_TIMEOUT_S)
         except Exception as e:
             logging.warning(f"Match Groq fallito su {modello}: {type(e).__name__}: {e}")
+            _segna_consumo_groq(modello, 0)
             continue
         if r.status_code == 429:
+            # Non dovrebbe piu' accadere, visto che il ritmo rispetta il limite:
+            # se accade, il modello va messo in pausa per il tempo che indica.
             # warning e non info: nei log di GitHub il livello info non compare,
             # e il 06/10/2026 trenta minuti di cascata sono passati invisibili.
-            logging.warning(f"{modello} in quota su Groq, provo il modello successivo.")
+            logging.warning(f"{modello} in quota su Groq nonostante il ritmo, lo metto in pausa.")
+            _GROQ_LIBERO_DA[modello] = time.monotonic() + _attesa_da_header(r)
             continue
         if r.status_code != 200:
             logging.warning(f"Match Groq su {modello}: HTTP {r.status_code} {r.text[:120]}")
+            _segna_consumo_groq(modello, 0)
             continue
         try:
-            contenuto = r.json()["choices"][0]["message"]["content"]
+            dati = r.json()
+            _segna_consumo_groq(modello, (dati.get("usage") or {}).get("total_tokens", 0))
+            contenuto = dati["choices"][0]["message"]["content"]
             return _leggi_valutazione(json.loads(contenuto))
         except Exception as e:
             logging.warning(f"Risposta Groq non leggibile ({modello}): {type(e).__name__}: {e}")
+            _segna_consumo_groq(modello, 0)
     return None
 
 
