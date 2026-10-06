@@ -88,22 +88,12 @@ CITIES = {
         "linkedin_location": "Milan, Italy",
         "lhh_location": "Milano%2C+MI%2C+Italia",
         "glassdoor_url": "https://www.glassdoor.it/Lavoro/milano-marketing-manager-lavori-SRCH_IL.0,6_IC2802090_KO7,24.htm"
-    },
-    "Torino": {
-        "lat": 45.070312,
-        "lon": 7.686856,
-        "filter_hybrid_only": True,
-        # Nessuno slug città Wyser: verificato dal vivo che "torino-to" non esiste
-        # nel menu reale del sito (Torino non è tra le città disponibili) — un
-        # slug non riconosciuto fa fallback silenzioso mostrando TUTTI gli annunci
-        # nazionali senza errore, causando offerte di altre città etichettate
-        # "Torino". WyserScraper gestisce wyser_slug assente scaricando la
-        # pagina nazionale e filtrando per "torino" nel campo città di ogni card.
-        "linkedin_location": "Turin, Italy",
-        "lhh_location": "Torino%2C+TO%2C+Italia",
-        "glassdoor_url": "https://www.glassdoor.it/Lavoro/torino-marketing-manager-lavori-SRCH_IL.0,6_IC2810526_KO7,24.htm"
     }
 }
+# Torino e' stata spenta il 06/10/2026 su richiesta di Giovanni. Toglierla da
+# qui non basta: va anche fuori da CITTA_TARGET_PATTERN e dentro
+# ALTRE_CITTA_ITALIANE, altrimenti un annuncio torinese letto da un portale
+# nazionale resterebbe senza sede riconosciuta e passerebbe come "Italia".
 
 LOG_FILE = "scraping_log.txt"
 VISTE_FILE = "offerte_viste.json"
@@ -384,7 +374,7 @@ VINCOLI DEL CANDIDATO (non deducibili in modo affidabile dal solo CV, tienili se
 - Lingue: italiano madrelingua e inglese C1. NESSUN'ALTRA LINGUA. Se l'annuncio ne richiede una terza (tedesco, francese, spagnolo, cinese...) è un requisito bloccante non soddisfatto, anche quando è presentato come "gradito".
 - Seniority: manager con circa 6-8 anni complessivi, con riporto diretto al board. Non è un profilo junior, e non è un direttore generale o un VP di multinazionale.
 - Contesti in cui ha davvero lavorato: PMI e scale-up italiane, più un'azienda tech fondata e ceduta. NON ha esperienza dentro multinazionali strutturate, né nei settori farmaceutico, bancario o assicurativo.
-- Sede: cerca solo a Genova, Milano e Torino, e non è disponibile al full remote né al trasferimento.
+- Sede: cerca solo a Genova e Milano, e non è disponibile al trasferimento (il full remote dichiarato va invece bene).
 
 COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un colloquio):
 - 85-100 → soddisfa i requisiti principali e il ruolo è centrato sulle sue aree forti; nessun requisito bloccante mancante.
@@ -3067,7 +3057,6 @@ class AntalScraper(BaseScraper):
     _ALIAS_CITTA = {
         "genova": "Genova", "genoa": "Genova",
         "milano": "Milano", "milan": "Milano",
-        "torino": "Torino", "turin": "Torino",
     }
 
     def __init__(self):
@@ -3450,7 +3439,7 @@ class LhhScraper(BaseScraper):
     Genova, come MichaelPage/GiGroup/IQMSelezione) invece che 3 volte con lo
     stesso identico pool nazionale, e la città di ogni offerta si determina dal
     campo cityName della risposta invece che dal parametro di ricerca: se
-    corrisponde a Genova/Milano/Torino viene etichettata di conseguenza,
+    corrisponde a Genova/Milano viene etichettata di conseguenza,
     altrimenti "Italia" (stessa convenzione già usata per le altre offerte
     nazionali di questo file, filtrate con la policy lenient di Genova).
     Paginazione: la risposta espone pagination.total (risultati reali per la
@@ -3596,9 +3585,9 @@ def _prob_ordinabile(job):
 def avviso_presenza(job):
     """Avviso per le posizioni che l'LLM conferma tutti i giorni in sede fuori
     da Genova. Non si scartano piu' (l'etichetta dei portali sbaglia spesso,
-    vedi filtra_offerte_per_citta), ma vanno segnalate: su Milano e Torino una
+    vedi filtra_offerte_per_citta), ma vanno segnalate: su Milano una
     presenza quotidiana e' un pendolarismo vero, e la decisione spetta a lui."""
-    if job.work_mode != "in sede" or job.city not in ("Milano", "Torino"):
+    if job.work_mode != "in sede" or job.city != "Milano":
         return ""
     return f"presenza quotidiana a {job.city}, valuta il pendolarismo"
 
@@ -4231,7 +4220,6 @@ def invia_email(nuove_offerte):
 CITTA_TARGET_PATTERN = {
     "Genova": ["genova", "genoa"],
     "Milano": ["milano", "milan ", "milan,", "milan)", "assago", "sesto san giovanni", "rho ", "segrate"],
-    "Torino": ["torino", "turin"],
 }
 
 # Luoghi italiani NON target: se l'annuncio nazionale nomina solo uno di questi
@@ -4257,6 +4245,10 @@ ALTRE_CITTA_ITALIANE = [
     # insidioso, perche' un annuncio a La Spezia o a Savona "sembra" Genova.
     # La Spezia mancava, ed e' costata un falso positivo reale il 09/09/2026:
     # un "Responsabile vendite" di La Spezia recapitato come offerta di Genova.
+    # Torino era target fino al 06/10/2026: spenta su richiesta di Giovanni.
+    # Entra qui perche' altrimenti un annuncio torinese letto da un portale
+    # nazionale non troverebbe nessuna citta' e resterebbe "sede non accertata".
+    "torino", "turin",
     "la spezia", "savona", "imperia", "alessandria", "asti", "cuneo",
     "pavia", "cremona", "piacenza", "biella", "vercelli", "aosta",
     # regioni e macro-aree
@@ -4348,7 +4340,7 @@ def e_full_remote(job) -> bool:
 def filtra_offerte_per_citta(offerte_scraper, city_config):
     """Filtra le offerte in base alla configurazione della città.
     Genova (filter_hybrid_only=False): accetta in sede e ibrido, esclude da remoto.
-    Milano/Torino (filter_hybrid_only=True): accetta solo ibrido (non da remoto, non in sede).
+    Milano (filter_hybrid_only=True): preferisce l'ibrido, ma l'in sede non si scarta piu'.
     In entrambi i casi include unverified se INCLUDE_UNVERIFIED=True.
     """
     offerte_filtrate = []
