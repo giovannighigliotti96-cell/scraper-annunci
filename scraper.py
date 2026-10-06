@@ -1292,13 +1292,21 @@ EXACT_TITLES = [
     "chief commercial officer",
 
     # --- Commerciale ---
-    # Il business development è stato ESCLUSO su indicazione esplicita
-    # dell'utente (09/09/2026): non è un lavoro che vuole fare, e nella prima
-    # email post-fix ne era pieno. Restano i ruoli commerciali di direzione,
-    # che il CV giustifica con l'ownership su revenue/P&L e il riporto al board.
-    # Le esclusioni per "business develop*" sono in TITLE_EXCLUSIONS, così un
-    # titolo misto tipo "Sales & Business Development Manager" non rientra
-    # dalla finestra tramite un'altra voce della lista.
+    # Il business development era stato ESCLUSO il 09/09/2026 perché la prima
+    # email post-fix ne era piena. Riammesso il 06/10/2026 su richiesta di
+    # Giovanni ("lascia che l'intelligenza artificiale decida"), e la misura
+    # gli dà ragione: rivalutando le offerte BD già ricevute, un "BD Manager &
+    # Tender Manager" oggi prende 35 e sparisce da solo, mentre un "Business
+    # Developer Italy" — lanciare in Italia un software B2B da zero, con tutto
+    # il go-to-market — prende 82, ed è davvero il suo mestiere. Il filtro sul
+    # titolo nascondeva il secondo per salvarsi dal primo; la soglia a 50 e la
+    # regola sulla coerenza di percorso fanno lo stesso lavoro meglio, perché
+    # leggono l'annuncio invece del titolo.
+    "business development manager",
+    "business development director",
+    "business developer",
+    "head of business development",
+    "responsabile sviluppo commerciale",
     # "sales director", "direttore vendite", "responsabile vendite" e
     # "direttore commerciale" RIMOSSI il 09/09/2026 sulla base delle offerte
     # realmente recapitate: portavano vendita tradizionale senza componente
@@ -1505,8 +1513,6 @@ TITLE_EXCLUSIONS = [
     # passerebbero grazie all'altra meta' del titolo (es. "Sales & Business
     # Development Manager" contiene "sales & marketing manager"? no, ma
     # "Head of Sales & Business Development" contiene "head of sales").
-    "business development", "business developer", "business develop",
-    "sviluppo commerciale", "bizdev", "biz dev",
     "private banker", "credit manager", "financial controller", "risk manager",
 ]
 
@@ -1587,12 +1593,11 @@ def offerta_troppo_vecchia(job) -> bool:
     eta = _eta_giorni_da_data(data_pubblicazione_effettiva(job))
     return eta is not None and eta > MAX_ETA_GIORNI_ANNUNCIO
 
-# "Business development" da solo e' vendita pura, ed e' escluso dal 09/09/2026.
-# Ma a livello di guida e unito a growth, digitale o marketing e' un mestiere
-# diverso — ed e' il suo. Il 05/10/2026 Giovanni era arrivato alla lettera
-# motivazionale per un "Head of BD e Growth" che il filtro avrebbe scartato.
-# Servono tutt'e tre le cose: il livello, il BD e la leva di crescita; in
-# qualunque ordine, perche' i titoli li scrivono come capita.
+# I titoli BD per esteso stanno in EXACT_TITLES, ma l'abbreviazione no: "Head
+# of BD e Growth" (caso reale del 05/10/2026, arrivato fino alla lettera
+# motivazionale) non combacia con "business development". Questa regola copre
+# l'abbreviazione quando il titolo porta anche il livello e una leva di
+# crescita, in qualunque ordine: i titoli li scrivono come capita.
 _LIVELLO = r"head of|director|direttore|chief|vp\b|vice president|responsabile"
 _BD = r"business develop\w*|\bbd\b|sviluppo commerciale"
 _CRESCITA = r"growth|digital|marketing|e-?commerce"
@@ -1600,11 +1605,6 @@ _RE_BD_CON_CRESCITA = re.compile(
     rf"(?:{_LIVELLO}).*(?:(?:{_BD}).*(?:{_CRESCITA})|(?:{_CRESCITA}).*(?:{_BD}))",
     re.IGNORECASE,
 )
-# Le sole esclusioni che la regola qui sopra puo' scavalcare: tutte le altre
-# (lingue, settori, seniority) restano valide comunque.
-_ESCLUSIONI_SCAVALCABILI = {"business development", "business developer",
-                            "business develop", "sviluppo commerciale", "bizdev"}
-
 
 def is_valid_job_title(title: str) -> bool:
     """
@@ -1617,16 +1617,13 @@ def is_valid_job_title(title: str) -> bool:
     t = re.sub(r"\s+", " ", title.lower()).strip()
 
     # 1. Controlla esclusioni prima di tutto
-    bd_con_crescita = _RE_BD_CON_CRESCITA.search(t) is not None
     for excl in TITLE_EXCLUSIONS:
         if excl in t:
-            if bd_con_crescita and excl in _ESCLUSIONI_SCAVALCABILI:
-                continue
             return False
 
-    # 2. Business development a livello di guida, insieme a growth/digitale/
-    # marketing: vedi _RE_BD_CON_CRESCITA.
-    if bd_con_crescita:
+    # 2. "Head of BD e Growth" e simili: l'abbreviazione BD non compare in
+    # EXACT_TITLES, quindi serve una regola a parte (vedi _RE_BD_CON_CRESCITA).
+    if _RE_BD_CON_CRESCITA.search(t):
         return True
     
     # 3. Match sui titoli target (sottostringa)
