@@ -1,4 +1,11 @@
 {
-  "offerte": [],
+  "offerte": [
+    {
+      "titolo": "Manager, Marketing, Italy",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5425758008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    }
+  ],
   "autocandidature": []
 }
