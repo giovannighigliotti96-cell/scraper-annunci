@@ -90,7 +90,16 @@
     "persone": [],
     "email": []
   },
-  "_consulenti": {},
+  "_consulenti": {
+    "Giulia Frontini": {
+      "proposto_il": "2026-10-07",
+      "portale": "ReverseGroup"
+    },
+    "Francesca Calvi": {
+      "proposto_il": "2026-10-07",
+      "portale": "Hays"
+    }
+  },
   "Manydesigns Srl": {
     "proposta_il": "2026-09-16",
     "citta": "Genova",
@@ -1183,5 +1192,43 @@
       ]
     ],
     "email": []
+  },
+  "Selesta Ingegneria Spa": {
+    "proposta_il": "2026-10-07",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Einhell Italia Srl": {
+    "proposta_il": "2026-10-07",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Andreas Kroiss",
+        "CEO"
+      ],
+      [
+        "Toto Wolff",
+        "CEO"
+      ],
+      [
+        "Esplora Einhell",
+        "CEO"
+      ],
+      [
+        "Josef Thannhuber",
+        "Fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Deref Spa": {
+    "proposta_il": "2026-10-07",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@deref.com",
+      "info@pec.deref.com"
+    ]
   }
 }
