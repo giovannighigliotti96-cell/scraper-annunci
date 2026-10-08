@@ -1230,5 +1230,30 @@
       "info@deref.com",
       "info@pec.deref.com"
     ]
+  },
+  "Soteco International Srl": {
+    "proposta_il": "2026-10-08",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "academy@sotecointernational.com",
+      "commercialeu@sotecointernational.com",
+      "commercialsgp@sotecointernational.com",
+      "compliance.info@sotecointernational.com"
+    ]
+  },
+  "Laura Food Srl": {
+    "proposta_il": "2026-10-08",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@laurafood.it"
+    ]
+  },
+  "Ultraflex Spa": {
+    "proposta_il": "2026-10-08",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
