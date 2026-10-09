@@ -1,10 +1,11 @@
 {
   "LinkedIn": {
-    "ultime_offerte": 109,
+    "ultime_offerte": 119,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      119,
       109,
       104,
       98,
@@ -24,9 +25,10 @@
   "MichaelPage": {
     "ultime_offerte": 66,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      66,
       66,
       66,
       66,
@@ -50,11 +52,12 @@
     "ultimo_errore": ""
   },
   "Wyser": {
-    "ultime_offerte": 7,
+    "ultime_offerte": 3,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      3,
       7,
       3,
       8,
@@ -72,11 +75,12 @@
     ]
   },
   "LHH": {
-    "ultime_offerte": 31,
+    "ultime_offerte": 30,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      30,
       31,
       30,
       30,
@@ -108,9 +112,10 @@
   "IQMSelezione": {
     "ultime_offerte": 3,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      3,
       3,
       3,
       3,
@@ -130,9 +135,10 @@
   "PRAXI": {
     "ultime_offerte": 8,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      8,
       8,
       8,
       8,
@@ -158,9 +164,10 @@
   "Hays": {
     "ultime_offerte": 9,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      9,
       9,
       9,
       9,
@@ -180,9 +187,10 @@
   "ReverseGroup": {
     "ultime_offerte": 5,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      5,
       5,
       5,
       5,
@@ -208,9 +216,10 @@
   "AziendeDirette": {
     "ultime_offerte": 13,
     "run_a_zero": 0,
-    "ultimo_run": "2026-10-09T13:38:53",
+    "ultimo_run": "2026-10-09T15:52:05",
     "ultimo_errore": "",
     "storico_conteggi": [
+      13,
       13,
       13,
       13,
