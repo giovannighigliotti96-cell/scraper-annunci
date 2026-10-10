@@ -98,6 +98,10 @@
     "Francesca Calvi": {
       "proposto_il": "2026-10-07",
       "portale": "Hays"
+    },
+    "Riccardo Mele": {
+      "proposto_il": "2026-10-10",
+      "portale": "Hays"
     }
   },
   "Manydesigns Srl": {
@@ -1255,5 +1259,54 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Ruths Società Per Azioni": {
+    "proposta_il": "2026-10-10",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "ruths@ruths.it"
+    ]
+  },
+  "Cadence Design Systems Srl": {
+    "proposta_il": "2026-10-10",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Senior Vice President",
+        "General Manager"
+      ],
+      [
+        "Paul Cunningham",
+        "General Manager"
+      ],
+      [
+        "Corporate Vice President",
+        "General Manager"
+      ],
+      [
+        "Michael Jackson",
+        "General Manager"
+      ]
+    ],
+    "email": [
+      "china_crc@cadence.com",
+      "crc_japan@cadence.com",
+      "esupport@cadence.com",
+      "germany_crc@cadence.com"
+    ]
+  },
+  "Nts Srl": {
+    "proposta_il": "2026-10-10",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Consenso Scelta",
+        "Titolare"
+      ]
+    ],
+    "email": [
+      "info@ntsystem.it"
+    ]
   }
 }
