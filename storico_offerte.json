@@ -1,5 +1,115 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-marketing-e-monetizzazione-at-lhh-4478025497",
+    "data_invio": "2026-10-10",
+    "titolo": "Responsabile Marketing e Monetizzazione",
+    "azienda": "LHH",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-e-monetizzazione-at-lhh-4478025497",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-crm-customer-strategy-at-calzaturificio-stephen-s-r-l-4477221048",
+    "data_invio": "2026-10-10",
+    "titolo": "Head of CRM & Customer Strategy",
+    "azienda": "CALZATURIFICIO STEPHEN S.R.L.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/head-of-crm-customer-strategy-at-calzaturificio-stephen-s-r-l-4477221048",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-sales-manager-italy-northwest-all-genders-at-holidu-4477885337",
+    "data_invio": "2026-10-10",
+    "titolo": "Senior Sales Manager Italy Northwest (all genders)",
+    "azienda": "Holidu",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/senior-sales-manager-italy-northwest-all-genders-at-holidu-4477885337",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/direttore-commerciale-at-sharp-consulting-srls-4475602886",
+    "data_invio": "2026-10-10",
+    "titolo": "Direttore Commerciale",
+    "azienda": "SHARP CONSULTING SRLS",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/direttore-commerciale-at-sharp-consulting-srls-4475602886",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-ramo-farmacie-at-govisit-4475617228",
+    "data_invio": "2026-10-10",
+    "titolo": "Sales manager - Ramo Farmacie",
+    "azienda": "GoVisit",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 60,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-ramo-farmacie-at-govisit-4475617228",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/european-marketing-manager-breast-at-bd-4477878916",
+    "data_invio": "2026-10-10",
+    "titolo": "European Marketing Manager Breast",
+    "azienda": "BD",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/european-marketing-manager-breast-at-bd-4477878916",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-flooring-coatings-north-of-italy-at-sherwin-williams-4469199051",
+    "data_invio": "2026-10-10",
+    "titolo": "Area Sales Manager- Flooring Coatings - North of Italy",
+    "azienda": "Sherwin-Williams",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-flooring-coatings-north-of-italy-at-sherwin-williams-4469199051",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-protective-coatings-north-of-italy-at-sherwin-williams-4432296670",
+    "data_invio": "2026-10-10",
+    "titolo": "Area Sales Manager - Protective Coatings - North of Italy",
+    "azienda": "Sherwin-Williams",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-protective-coatings-north-of-italy-at-sherwin-williams-4432296670",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-partner-4475622066",
+    "data_invio": "2026-10-10",
+    "titolo": "Brand Manager",
+    "azienda": "Yibi Hantang | China Lifestyle Extension Partner",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-partner-4475622066",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/digital-applications-product-manager-at-prada-group-4449751849",
+    "data_invio": "2026-10-10",
+    "titolo": "Digital Applications Product Manager",
+    "azienda": "Prada Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/digital-applications-product-manager-at-prada-group-4449751849",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/growth-performance-lead-at-sole-24-ore-business-school-4477637804",
     "data_invio": "2026-10-09",
     "titolo": "Growth & Performance Lead",
