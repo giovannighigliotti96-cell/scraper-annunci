@@ -1308,5 +1308,25 @@
     "email": [
       "info@ntsystem.it"
     ]
+  },
+  "Itacat Srl": {
+    "proposta_il": "2026-10-10",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@itacat.eu"
+    ]
+  },
+  "Latterie Ragusane Spa": {
+    "proposta_il": "2026-10-10",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Elar Società Per Azioni": {
+    "proposta_il": "2026-10-10",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
