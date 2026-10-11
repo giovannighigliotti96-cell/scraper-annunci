@@ -1328,5 +1328,27 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Spes Medica Spa": {
+    "proposta_il": "2026-10-11",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Urai Spa": {
+    "proposta_il": "2026-10-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "urai@urai.it"
+    ]
+  },
+  "Spa Stampaggio Plastica Affini": {
+    "proposta_il": "2026-10-11",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@spaplastica.it"
+    ]
   }
 }
