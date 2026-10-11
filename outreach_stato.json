@@ -1350,5 +1350,31 @@
     "email": [
       "info@spaplastica.it"
     ]
+  },
+  "Seacsub Spa": {
+    "proposta_il": "2026-10-11",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "seacsub@seacsub.com"
+    ]
+  },
+  "Qores Srl": {
+    "proposta_il": "2026-10-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "careers@qores.it",
+      "info@qores.it"
+    ]
+  },
+  "Sipag Bisalta Spa": {
+    "proposta_il": "2026-10-11",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@sipagbisalta.it",
+      "organismo.vigilanza231@sipagbisalta.it"
+    ]
   }
 }
