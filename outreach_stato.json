@@ -1401,5 +1401,30 @@
     "email": [
       "info@entebacinigenova.it"
     ]
+  },
+  "Gennaro Srl": {
+    "proposta_il": "2026-10-12",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "'Isoil Industria Spa'": {
+    "proposta_il": "2026-10-12",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Bergen Engines (Italia) Srl": {
+    "proposta_il": "2026-10-12",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Anthony Langley",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "supplychain@bergenengines.com"
+    ]
   }
 }
