@@ -1376,5 +1376,30 @@
       "info@sipagbisalta.it",
       "organismo.vigilanza231@sipagbisalta.it"
     ]
+  },
+  "Six Italia Società Per Azioni": {
+    "proposta_il": "2026-10-12",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "guida@sixitalia.com",
+      "raffaghello@sixitalia.com",
+      "sales@sixitalia.com",
+      "sixitalia@sixitalia.com"
+    ]
+  },
+  "Acal Bfi Italy Srl": {
+    "proposta_il": "2026-10-12",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Ente Bacini Srl": {
+    "proposta_il": "2026-10-12",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@entebacinigenova.it"
+    ]
   }
 }
