@@ -1426,5 +1426,25 @@
     "email": [
       "supplychain@bergenengines.com"
     ]
+  },
+  "Helan Cosmesi Di Laboratorio Srl": {
+    "proposta_il": "2026-10-13",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Esperia Distribuzione Srl": {
+    "proposta_il": "2026-10-13",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "North Sails Srl": {
+    "proposta_il": "2026-10-13",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "press@northsails.com"
+    ]
   }
 }
