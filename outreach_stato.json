@@ -1446,5 +1446,39 @@
     "email": [
       "press@northsails.com"
     ]
+  },
+  "Frigomar Srl": {
+    "proposta_il": "2026-10-14",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "frigomar@frigomar.com",
+      "service@frigomar.com",
+      "tecnico@frigomar.com",
+      "vendita@frigomar.com"
+    ]
+  },
+  "Sifem International Srl": {
+    "proposta_il": "2026-10-14",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Dear Tatiana",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "info@sifem.it",
+      "middleeast@sifem.it"
+    ]
+  },
+  "Elettracqua Srl": {
+    "proposta_il": "2026-10-14",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "genova@elettracqua.com",
+      "milano@elettracqua.com"
+    ]
   }
 }
