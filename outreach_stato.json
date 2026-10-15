@@ -1480,5 +1480,45 @@
       "genova@elettracqua.com",
       "milano@elettracqua.com"
     ]
+  },
+  "Eurocontrol Spa": {
+    "proposta_il": "2026-10-15",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Spina Group Srl": {
+    "proposta_il": "2026-10-15",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Marina Reufels",
+        "Managing Director"
+      ],
+      [
+        "Marco Spina Spina",
+        "Managing Director"
+      ],
+      [
+        "Franco Spina",
+        "Founder"
+      ],
+      [
+        "Digitalization Marina",
+        "Managing Director"
+      ]
+    ],
+    "email": [
+      "customerservice@spinagroup.com",
+      "egypt@spinagroup.com",
+      "mexico@spinagroup.com",
+      "mozambique@spinagroup.com"
+    ]
+  },
+  "Cartindustria Ligure Srl": {
+    "proposta_il": "2026-10-15",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
