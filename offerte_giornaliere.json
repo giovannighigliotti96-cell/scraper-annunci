@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "title": "ALLIEVO / A MANAGER VENDITA - LOMBARDIA",
+    "company": "Norauto Italia",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/allievo-a-manager-vendita-lombardia-at-norauto-italia-4478102770",
+    "date": "2026-10-13",
+    "snippet": "",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio è estremamente scarno e non fornisce informazioni su requisiti, competenze, settore, budget o modalità di lavoro, rendendo impossibile valutare la corrispondenza con il candidato.",
+    "testo_completo": "ALLIEVO / A MANAGER VENDITA - LOMBARDIA",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-20b"
+  }
+]
