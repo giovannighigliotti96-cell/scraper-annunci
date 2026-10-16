@@ -1520,5 +1520,43 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Comer Spa": {
+    "proposta_il": "2026-10-16",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Stefano Compagnoni",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "info@comeritaly.com",
+      "marketing@comeritaly.com"
+    ]
+  },
+  "Doka Italia Spa": {
+    "proposta_il": "2026-10-16",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Executive Board Robert",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "anna.hoegn-reichartzeder@doka.com",
+      "fanni.lehoczki@doka.com",
+      "julia.weber@doka.com",
+      "usa@doka.com"
+    ]
+  },
+  "Seristudio Spa": {
+    "proposta_il": "2026-10-16",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@seristudio.com"
+    ]
   }
 }
