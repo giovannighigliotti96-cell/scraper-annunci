@@ -1558,5 +1558,44 @@
     "email": [
       "info@seristudio.com"
     ]
+  },
+  "Uflex Srl": {
+    "proposta_il": "2026-10-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Sauter Italia Spa": {
+    "proposta_il": "2026-10-17",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Marc Jaquet Vicepresidente",
+        "Presidente"
+      ],
+      [
+        "Andreas Schierenbeck Gestione",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Fichtner Italia Srl": {
+    "proposta_il": "2026-10-17",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Viviana Rosa",
+        "CEO"
+      ],
+      [
+        "Stefano Bianchi",
+        "Presidente"
+      ]
+    ],
+    "email": [
+      "info@fmc.fichtner.it",
+      "mariagrazia.fiore@fmc.fichtner.it"
+    ]
   }
 }
