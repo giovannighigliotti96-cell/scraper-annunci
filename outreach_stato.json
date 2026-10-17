@@ -1597,5 +1597,27 @@
       "info@fmc.fichtner.it",
       "mariagrazia.fiore@fmc.fichtner.it"
     ]
+  },
+  "Centro Per Gli Studi Di Tecnica Navale Cetena Spa": {
+    "proposta_il": "2026-10-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@cetena.it"
+    ]
+  },
+  "Zini Prodotti Alimentari Spa": {
+    "proposta_il": "2026-10-17",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Invat Srl": {
+    "proposta_il": "2026-10-17",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@invat.com"
+    ]
   }
 }
