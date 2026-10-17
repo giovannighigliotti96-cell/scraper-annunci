@@ -250,5 +250,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-20b"
+  },
+  {
+    "title": "Head of Sales",
+    "company": "Twenty Formula",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/head-of-sales-at-twenty-formula-4480538217",
+    "date": "2026-10-17",
+    "snippet": "",
+    "match_level": "Medio",
+    "match_count": 1,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L’annuncio è estremamente scarno: non fornisce requisiti, competenze, settore, sede o modalità di lavoro. Per questo candidato, che ha esperienza manageriale in PMI/scale‑up italiane e ricerca posizioni a Genova o Milano con possibilità di full remote, non possiamo verificare se il ruolo soddisfa i requisiti formali né i biografici. La mancanza di informazioni rende la valutazione incerta, quindi assegnamo una probabilità media.",
+    "testo_completo": "Head of Sales",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-20b"
   }
 ]
