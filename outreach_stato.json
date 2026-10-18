@@ -1654,5 +1654,47 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Lavorazioni Industriali Spa": {
+    "proposta_il": "2026-10-18",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Baralan International Società Per Azioni": {
+    "proposta_il": "2026-10-18",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "mail@baralan.com"
+    ]
+  },
+  "Azienda Chimica Genovese Srl": {
+    "proposta_il": "2026-10-18",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Alessandro Doldi",
+        "fondatore"
+      ],
+      [
+        "Tommaso Doldi",
+        "OWNER"
+      ],
+      [
+        "Federico Doldi",
+        "GENERAL MANAGER"
+      ],
+      [
+        "Cecilia Datti",
+        "OWNER"
+      ]
+    ],
+    "email": [
+      "info@acgmarine.com",
+      "logsheet@acgmarine.com",
+      "service@acgmarine.com",
+      "tech@acgmarine.com"
+    ]
   }
 }
