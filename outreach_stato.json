@@ -1619,5 +1619,40 @@
     "email": [
       "info@invat.com"
     ]
+  },
+  "Poseico Spa": {
+    "proposta_il": "2026-10-18",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@poseico.com"
+    ]
+  },
+  "Panificio San Francesco Spa": {
+    "proposta_il": "2026-10-18",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Sottile Senior Advisor",
+        "Managing Director"
+      ],
+      [
+        "Francesco Garbin",
+        "Managing Director"
+      ],
+      [
+        "Claudio Calvani",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "info@vitale-co.com"
+    ]
+  },
+  "Zincaf Srl": {
+    "proposta_il": "2026-10-18",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
