@@ -1696,5 +1696,37 @@
       "service@acgmarine.com",
       "tech@acgmarine.com"
     ]
+  },
+  "Tecnidro Srl": {
+    "proposta_il": "2026-10-19",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@tecnidro.com"
+    ]
+  },
+  "Donati Spa": {
+    "proposta_il": "2026-10-19",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "amministrazione@donati.it",
+      "benedicte.boutin@donati.it",
+      "compta.fr@donati.it",
+      "filialefirenze@donati.it"
+    ]
+  },
+  "Wingeco Srl": {
+    "proposta_il": "2026-10-19",
+    "citta": "Genova",
+    "persone": [
+      [
+        "General Contractor",
+        "Owner"
+      ]
+    ],
+    "email": [
+      "info@wingeco.it"
+    ]
   }
 }
