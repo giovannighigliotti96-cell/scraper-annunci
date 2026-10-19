@@ -102,6 +102,10 @@
     "Riccardo Mele": {
       "proposto_il": "2026-10-10",
       "portale": "Hays"
+    },
+    "Vendita Flotte": {
+      "proposto_il": "2026-10-19",
+      "portale": "LinkedIn"
     }
   },
   "Manydesigns Srl": {
@@ -1727,6 +1731,51 @@
     ],
     "email": [
       "info@wingeco.it"
+    ]
+  },
+  "Ama Group Srl": {
+    "proposta_il": "2026-10-19",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Trend Micro Italy Srl": {
+    "proposta_il": "2026-10-19",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Executives Eva Chen",
+        "Co-Founder"
+      ],
+      [
+        "Global Alliances",
+        "CMO"
+      ],
+      [
+        "Max Cheng",
+        "CEO"
+      ],
+      [
+        "Rachel Jin",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "consumer@trendmicro.com",
+      "enterprise_marketing_sg@trendmicro.com",
+      "helpdesk.th@trendmicro.com",
+      "hksales@trendmicro.com"
+    ]
+  },
+  "Motomar Srl": {
+    "proposta_il": "2026-10-19",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "elettrico@motomar.com",
+      "info@motomar.com",
+      "service@motomar.com",
+      "tecnico@motomar.com"
     ]
   }
 }
