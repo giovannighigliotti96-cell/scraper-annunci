@@ -1,5 +1,137 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-eglue-4469846891",
+    "data_invio": "2026-10-19",
+    "titolo": "Business Development Manager",
+    "azienda": "eglue",
+    "citta": "Remoto",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-eglue-4469846891",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/direttore-dell-e-commerce-at-almo-nature-benefit-s-p-a-4480967154",
+    "data_invio": "2026-10-19",
+    "titolo": "Direttore dell'e-commerce",
+    "azienda": "Almo Nature Benefit S.p.A.",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/direttore-dell-e-commerce-at-almo-nature-benefit-s-p-a-4480967154",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/b2b-investment-promotion-manager-business-development-manager-%E6%8B%9B%E5%95%86%E7%BB%8F%E7%90%86-at-siyou-technology-4426489271",
+    "data_invio": "2026-10-19",
+    "titolo": "B2B Investment Promotion Manager / Business Development Manager (招商经理)",
+    "azienda": "SIYOU TECHNOLOGY",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/b2b-investment-promotion-manager-business-development-manager-%E6%8B%9B%E5%95%86%E7%BB%8F%E7%90%86-at-siyou-technology-4426489271",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/community-marketing-lead-italy-spain-milan-or-madrid-based-at-lululemon-4478239370",
+    "data_invio": "2026-10-19",
+    "titolo": "Community Marketing Lead, Italy & Spain (Milan or Madrid Based)",
+    "azienda": "lululemon",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/community-marketing-lead-italy-spain-milan-or-madrid-based-at-lululemon-4478239370",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-italy-north-west-gn-location-milan-italy-at-dkv-mobility-4470150160",
+    "data_invio": "2026-10-19",
+    "titolo": "Sales Manager Italy North-West (gn) - Location: Milan (Italy)",
+    "azienda": "DKV Mobility",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-italy-north-west-gn-location-milan-italy-at-dkv-mobility-4470150160",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-cytokinetics-4478255830",
+    "data_invio": "2026-10-19",
+    "titolo": "Brand manager",
+    "azienda": "Cytokinetics",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-cytokinetics-4478255830",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-lead-at-cytokinetics-4478259546",
+    "data_invio": "2026-10-19",
+    "titolo": "MARKETING LEAD",
+    "azienda": "Cytokinetics",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 68,
+    "link": "https://it.linkedin.com/jobs/view/marketing-lead-at-cytokinetics-4478259546",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/international-business-developer-middle-east-europe-at-circle-group-4471386861",
+    "data_invio": "2026-10-19",
+    "titolo": "International Business Developer Middle East Europe",
+    "azienda": "Circle Group",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 58,
+    "link": "https://it.linkedin.com/jobs/view/international-business-developer-middle-east-europe-at-circle-group-4471386861",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-fitness-business-expansion-at-michael-page-4478602299",
+    "data_invio": "2026-10-19",
+    "titolo": "Marketing Manager - Fitness & Business Expansion",
+    "azienda": "Michael Page",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-fitness-business-expansion-at-michael-page-4478602299",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendita-concessionario-at-kngloo-italy-4480951879",
+    "data_invio": "2026-10-19",
+    "titolo": "Responsabile Vendita Concessionario",
+    "azienda": "Kngloo Italy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-vendita-concessionario-at-kngloo-italy-4480951879",
+    "recruiter": "Vendita Flotte"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/temporary-head-of-sales-robotica-at-jefferson-wells-italia-4480941677",
+    "data_invio": "2026-10-19",
+    "titolo": "Temporary Head of Sales ROBOTICA",
+    "azienda": "Jefferson Wells Italia",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/temporary-head-of-sales-robotica-at-jefferson-wells-italia-4480941677",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/trussardi-digital-manager-at-trussardi-4478274496",
+    "data_invio": "2026-10-19",
+    "titolo": "Trussardi Digital Manager",
+    "azienda": "TRUSSARDI",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/trussardi-digital-manager-at-trussardi-4478274496",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/customer-media-manager-at-ovs-s-p-a-4470581047",
     "data_invio": "2026-10-18",
     "titolo": "Customer Media Manager",
