@@ -1777,5 +1777,25 @@
       "service@motomar.com",
       "tecnico@motomar.com"
     ]
+  },
+  "Stam Srl": {
+    "proposta_il": "2026-10-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "recruitment@stamtech.com"
+    ]
+  },
+  "Comprital Spa": {
+    "proposta_il": "2026-10-20",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Fluid Power Technology Srl": {
+    "proposta_il": "2026-10-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
