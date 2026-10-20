@@ -1797,5 +1797,30 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Hippocrates Research Srl": {
+    "proposta_il": "2026-10-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@hippocrates-research.it"
+    ]
+  },
+  "Bigmat Italia S.C.P.A.": {
+    "proposta_il": "2026-10-20",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Iis Cert Srl": {
+    "proposta_il": "2026-10-20",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "iis@iis.it",
+      "iisemi@iis.it",
+      "iislaz@iis.it",
+      "iislom@iis.it"
+    ]
   }
 }
