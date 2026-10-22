@@ -1,5 +1,225 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/commercial-director-systems-at-mercuri-urval-italy-4481317181",
+    "data_invio": "2026-10-22",
+    "titolo": "Commercial Director Systems",
+    "azienda": "Mercuri Urval Italy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/commercial-director-systems-at-mercuri-urval-italy-4481317181",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-and-communications-manager-motion-drive-products-location-europe-or-us-at-abb-4481141210",
+    "data_invio": "2026-10-22",
+    "titolo": "Marketing and Communications Manager, Motion Drive Products (location: Europe or US)",
+    "azienda": "ABB",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/marketing-and-communications-manager-motion-drive-products-location-europe-or-us-at-abb-4481141210",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-opentable-4481371066",
+    "data_invio": "2026-10-22",
+    "titolo": "Marketing Manager - Italy",
+    "azienda": "OpenTable",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-opentable-4481371066",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/local-marketing-manager-at-sgb-humangest-holding-4480040923",
+    "data_invio": "2026-10-22",
+    "titolo": "Local Marketing Manager",
+    "azienda": "SGB HUMANGEST HOLDING",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/local-marketing-manager-at-sgb-humangest-holding-4480040923",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4479422686",
+    "data_invio": "2026-10-22",
+    "titolo": "Senior Global Marketing Manager, Digital Solutions",
+    "azienda": "LivaNova",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4479422686",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/partner-sales-director-italy-at-snowflake-4482137658",
+    "data_invio": "2026-10-22",
+    "titolo": "Partner Sales Director - Italy",
+    "azienda": "Snowflake",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/partner-sales-director-italy-at-snowflake-4482137658",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-%E2%80%93-digital-content-channels-europe-at-haier-europe-4482155145",
+    "data_invio": "2026-10-22",
+    "titolo": "Brand Manager – Digital Content & Channels (Europe)",
+    "azienda": "Haier Europe",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-%E2%80%93-digital-content-channels-europe-at-haier-europe-4482155145",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4479491408",
+    "data_invio": "2026-10-22",
+    "titolo": "Senior Global Marketing Manager, Digital Solutions",
+    "azienda": "LivaNova",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4479491408",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/msp-partner-sales-business-development-manager-at-cisco-4455262448",
+    "data_invio": "2026-10-22",
+    "titolo": "MSP Partner Sales Business Development Manager",
+    "azienda": "Cisco",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/msp-partner-sales-business-development-manager-at-cisco-4455262448",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/global-marketing-and-communications-manager-motion-drive-products-location-europe-or-us-at-abb-4481141210",
+    "data_invio": "2026-10-22",
+    "titolo": "Global Marketing and Communications Manager, Motion Drive Products (location: Europe or US)",
+    "azienda": "ABB",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/global-marketing-and-communications-manager-motion-drive-products-location-europe-or-us-at-abb-4481141210",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/influencer-marketing-creators-manager-at-vidoser-4482458773",
+    "data_invio": "2026-10-22",
+    "titolo": "Influencer Marketing & Creators Manager",
+    "azienda": "Vidoser",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/influencer-marketing-creators-manager-at-vidoser-4482458773",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-componenti-elettrici-at-hays-4480019964",
+    "data_invio": "2026-10-22",
+    "titolo": "Responsabile Commerciale - Componenti Elettrici",
+    "azienda": "Hays",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-componenti-elettrici-at-hays-4480019964",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/manager-sales-account-management-large-customer-sales-amazon-ads-at-amazon-4455788899",
+    "data_invio": "2026-10-22",
+    "titolo": "Manager, Sales Account Management , Large Customer Sales, amazon Ads",
+    "azienda": "Amazon",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/manager-sales-account-management-large-customer-sales-amazon-ads-at-amazon-4455788899",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-simca-your-beauty-partner-4480048768",
+    "data_invio": "2026-10-22",
+    "titolo": "Responsabile Commerciale",
+    "azienda": "SIMCA - Your Beauty Partner",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-simca-your-beauty-partner-4480048768",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-%E2%80%93-apac-at-la-pavoni-1905-4479422633",
+    "data_invio": "2026-10-22",
+    "titolo": "AREA SALES MANAGER – APAC",
+    "azienda": "La Pavoni 1905",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 60,
+    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-%E2%80%93-apac-at-la-pavoni-1905-4479422633",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/key-account-sales-manager-at-lombarda-gestione-appalti-4480028570",
+    "data_invio": "2026-10-22",
+    "titolo": "Key account sales manager",
+    "azienda": "LOMBARDA GESTIONE APPALTI",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/key-account-sales-manager-at-lombarda-gestione-appalti-4480028570",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/revenue-manager-windsor-hotel-milano-porta-nuova-at-hotel-windsor-milano-4478920401",
+    "data_invio": "2026-10-22",
+    "titolo": "Revenue Manager  Windsor Hotel Milano Porta nuova",
+    "azienda": "Hotel Windsor Milano",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/revenue-manager-windsor-hotel-milano-porta-nuova-at-hotel-windsor-milano-4478920401",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-healthcare-at-human-value-4480062129",
+    "data_invio": "2026-10-22",
+    "titolo": "Brand Manager Healthcare",
+    "azienda": "Human Value",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-healthcare-at-human-value-4480062129",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/italy-sales-administration-manager-at-diptyque-paris-4482120415",
+    "data_invio": "2026-10-22",
+    "titolo": "Italy Sales Administration Manager",
+    "azienda": "Diptyque Paris",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/italy-sales-administration-manager-at-diptyque-paris-4482120415",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/italy-sales-administration-manager-at-diptyque-paris-4481734587",
+    "data_invio": "2026-10-22",
+    "titolo": "Italy Sales Administration Manager",
+    "azienda": "Diptyque Paris",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/italy-sales-administration-manager-at-diptyque-paris-4481734587",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/head-of-digital-omnicahnnel-retail-at-asbc-4479431184",
     "data_invio": "2026-10-21",
     "titolo": "Head of Digital & Omnicahnnel (Retail)",
@@ -4140,205 +4360,5 @@
     "portale": "LinkedIn",
     "probabilita": 85,
     "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-at-openjobmetis-spa-4463507692"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-digital-payments-at-bper-banca-4464300197",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Digital Payments",
-    "azienda": "BPER Banca",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 84,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-digital-payments-at-bper-banca-4464300197"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/country-manager-business-account-at-satispay-4454282791",
-    "data_invio": "2026-09-08",
-    "titolo": "Country Manager - Business Account",
-    "azienda": "Satispay",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 84,
-    "link": "https://it.linkedin.com/jobs/view/country-manager-business-account-at-satispay-4454282791"
-  },
-  {
-    "job_id": "https://public.reversegroup.hr/jobs/business-developer-event-services-1260893735",
-    "data_invio": "2026-09-08",
-    "titolo": "BUSINESS DEVELOPER - EVENT SERVICES",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "ReverseGroup",
-    "probabilita": 83,
-    "link": "https://public.reversegroup.hr/jobs/business-developer-event-services-1260893735"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-hays-4462289589",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Commerciale",
-    "azienda": "Hays",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 83,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-hays-4462289589"
-  },
-  {
-    "job_id": "https://www.hays.it/lavoro-dettagli/business-development-manager--milano_953246",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Hays",
-    "probabilita": 83,
-    "link": "https://www.hays.it/lavoro-dettagli/business-development-manager--milano_953246"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-director-south-east-europe-at-akur8-4461847486",
-    "data_invio": "2026-09-08",
-    "titolo": "Sales Director South East Europe",
-    "azienda": "AKUR8",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 82,
-    "link": "https://it.linkedin.com/jobs/view/sales-director-south-east-europe-at-akur8-4461847486"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/network-business-development-manager-at-tor-recruitment-hr-consulting-4464464544",
-    "data_invio": "2026-09-08",
-    "titolo": "NETWORK & BUSINESS DEVELOPMENT MANAGER",
-    "azienda": "Tor - Recruitment & HR Consulting",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 81,
-    "link": "https://it.linkedin.com/jobs/view/network-business-development-manager-at-tor-recruitment-hr-consulting-4464464544"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-axiomtek-italia-4464629235",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager",
-    "azienda": "Axiomtek Italia",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 81,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-axiomtek-italia-4464629235"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/senior-e-commerce-manager-at-conte-diamonds-s-p-a-4464308254",
-    "data_invio": "2026-09-08",
-    "titolo": "Senior E-commerce Manager",
-    "azienda": "Conte Diamonds S.p.A.",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 80,
-    "link": "https://it.linkedin.com/jobs/view/senior-e-commerce-manager-at-conte-diamonds-s-p-a-4464308254"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-natural-gas-at-emerson-4464376098",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager - Natural Gas",
-    "azienda": "Emerson",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 80,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-natural-gas-at-emerson-4464376098"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-%E2%80%93-talent-data-solutions-%E2%80%93-italy-at-aon-4464406557",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager – Talent Data Solutions – Italy",
-    "azienda": "Aon",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 80,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-%E2%80%93-talent-data-solutions-%E2%80%93-italy-at-aon-4464406557"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/country-manager-italy-at-spiko-4462682836",
-    "data_invio": "2026-09-08",
-    "titolo": "Country Manager - Italy",
-    "azienda": "Spiko",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 78,
-    "link": "https://it.linkedin.com/jobs/view/country-manager-italy-at-spiko-4462682836"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/senior-business-development-manager-italy-at-visa-4448863111",
-    "data_invio": "2026-09-08",
-    "titolo": "Senior Business Development Manager, Italy",
-    "azienda": "Visa",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 78,
-    "link": "https://it.linkedin.com/jobs/view/senior-business-development-manager-italy-at-visa-4448863111"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-johnson-electric-4462929932",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager",
-    "azienda": "Johnson Electric",
-    "citta": "Genova",
-    "portale": "LinkedIn",
-    "probabilita": 77,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-johnson-electric-4462929932"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-sales-at-w-executive-italy-4462960610",
-    "data_invio": "2026-09-08",
-    "titolo": "Head of Sales",
-    "azienda": "W Executive Italy",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 77,
-    "link": "https://it.linkedin.com/jobs/view/head-of-sales-at-w-executive-italy-4462960610"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-emea%E2%80%93-contract-hospitality-projects-at-wehunt-4458932874",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager EMEA– Contract & Hospitality Projects",
-    "azienda": "WeHunt",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 77,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-emea%E2%80%93-contract-hospitality-projects-at-wehunt-4458932874"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-director-%E2%80%94-south-eu-at-rains-4464321965",
-    "data_invio": "2026-09-08",
-    "titolo": "Sales Director — South EU",
-    "azienda": "Rains",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 71,
-    "link": "https://it.linkedin.com/jobs/view/sales-director-%E2%80%94-south-eu-at-rains-4464321965"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-mauden-4462285337",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager",
-    "azienda": "Mauden",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 68,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-mauden-4462285337"
-  },
-  {
-    "job_id": "https://it.wyser-search.com/offerte-lavoro-dettaglio/calzatura/responsabile-commerciale-footwear-milano/1358067/",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Commerciale - Footwear",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Wyser",
-    "probabilita": 63,
-    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/calzatura/responsabile-commerciale-footwear-milano/1358067/"
-  },
-  {
-    "job_id": "https://www.michaelpage.it/job-detail/sales-technician-italy/ref/jn-092026-7094378",
-    "data_invio": "2026-09-08",
-    "titolo": "Freelance Business Developer",
-    "azienda": "Azienda non specificata",
-    "citta": "Italia",
-    "portale": "MichaelPage",
-    "probabilita": 60,
-    "link": "https://www.michaelpage.it/job-detail/sales-technician-italy/ref/jn-092026-7094378"
   }
 ]
