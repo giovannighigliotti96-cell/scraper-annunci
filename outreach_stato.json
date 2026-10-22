@@ -110,6 +110,10 @@
     "Elisabetta Colaci": {
       "proposto_il": "2026-10-21",
       "portale": "Hays"
+    },
+    "Commerciale Area": {
+      "proposto_il": "2026-10-22",
+      "portale": "LinkedIn"
     }
   },
   "Manydesigns Srl": {
@@ -1856,6 +1860,34 @@
     "persone": [],
     "email": [
       "gerolamoscorza@gerolamoscorza.it"
+    ]
+  },
+  "Ultraflex Control Systems Srl": {
+    "proposta_il": "2026-10-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Manutan Italia Spa": {
+    "proposta_il": "2026-10-22",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "acquisti@manutan.it",
+      "commerciale@manutan.it",
+      "info@manutan.it",
+      "offerte@manutan.it"
+    ]
+  },
+  "Exxro Srl": {
+    "proposta_il": "2026-10-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "acquisti-impianti@exxro.com",
+      "amministrazione@exxro.com",
+      "commerciale@exxro.com",
+      "info@exxro.com"
     ]
   }
 }
