@@ -1889,5 +1889,25 @@
       "commerciale@exxro.com",
       "info@exxro.com"
     ]
+  },
+  "Cabona Carta Srl": {
+    "proposta_il": "2026-10-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Swiss Steel Italia Srl": {
+    "proposta_il": "2026-10-22",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Mess Engineering Srl": {
+    "proposta_il": "2026-10-22",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@messeng.com"
+    ]
   }
 }
