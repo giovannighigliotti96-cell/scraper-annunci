@@ -1,5 +1,214 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-it-at-teoresi-group-4465691585",
+    "data_invio": "2026-10-23",
+    "titolo": "Business Development Manager IT",
+    "azienda": "Teoresi Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/business-development-manager-it-at-teoresi-group-4465691585",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/director-of-sales-business-growth-at-s2e-business-technology-consultants-4460318690",
+    "data_invio": "2026-10-23",
+    "titolo": "Director of Sales & Business Growth",
+    "azienda": "S2E | Business Technology Consultants",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/director-of-sales-business-growth-at-s2e-business-technology-consultants-4460318690",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-at-rdm-group-4480644374",
+    "data_invio": "2026-10-23",
+    "titolo": "Sales Manager",
+    "azienda": "RDM Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-at-rdm-group-4480644374",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/digital-crm-manager-senior-associate-automotive-at-publicis-sapient-4480665898",
+    "data_invio": "2026-10-23",
+    "titolo": "Digital CRM Manager - Senior Associate - Automotive",
+    "azienda": "Publicis Sapient",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/digital-crm-manager-senior-associate-automotive-at-publicis-sapient-4480665898",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/cro-chief-revenue-officer-at-aaron-king-international-4480674301",
+    "data_invio": "2026-10-23",
+    "titolo": "CRO (Chief Revenue Officer)",
+    "azienda": "Aaron King International",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/cro-chief-revenue-officer-at-aaron-king-international-4480674301",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-technical-materials-italia-at-wehunt-4474275040",
+    "data_invio": "2026-10-23",
+    "titolo": "Business Development Manager Technical Materials - Italia",
+    "azienda": "WeHunt",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/business-development-manager-technical-materials-italia-at-wehunt-4474275040",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-dazn-bet-at-dazn-4482865089",
+    "data_invio": "2026-10-23",
+    "titolo": "Marketing Manager - Dazn Bet",
+    "azienda": "DAZN",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-dazn-bet-at-dazn-4482865089",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/strategy-business-development-lead-at-gruppo-proper-transearch-4481691955",
+    "data_invio": "2026-10-23",
+    "titolo": "Strategy & Business Development Lead",
+    "azienda": "Gruppo Proper Transearch",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/strategy-business-development-lead-at-gruppo-proper-transearch-4481691955",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-lead-italy-at-easyjet-4482761890",
+    "data_invio": "2026-10-23",
+    "titolo": "Marketing Lead, Italy",
+    "azienda": "easyJet",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/marketing-lead-italy-at-easyjet-4482761890",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-partnerships-business-development-manager-at-scialla-studio-4480648123",
+    "data_invio": "2026-10-23",
+    "titolo": "Brand Partnerships & Business Development Manager",
+    "azienda": "SCIALLA STUDIO",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/brand-partnerships-business-development-manager-at-scialla-studio-4480648123",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/experienced-business-development-manager-telco-media-at-alten-4480054542",
+    "data_invio": "2026-10-23",
+    "titolo": "Experienced Business Development Manager - Telco&Media",
+    "azienda": "ALTEN",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/experienced-business-development-manager-telco-media-at-alten-4480054542",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/retail-media-sales-business-development-manager-at-douglas-italia-4480670270",
+    "data_invio": "2026-10-23",
+    "titolo": "Retail Media Sales & Business Development Manager",
+    "azienda": "DOUGLAS ITALIA",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/retail-media-sales-business-development-manager-at-douglas-italia-4480670270",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-campaign-lead-crop-protection-at-adama-ltd-4457341725",
+    "data_invio": "2026-10-23",
+    "titolo": "Marketing Campaign Lead - Crop Protection",
+    "azienda": "ADAMA Ltd.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 60,
+    "link": "https://it.linkedin.com/jobs/view/marketing-campaign-lead-crop-protection-at-adama-ltd-4457341725",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-hospitality-tech-m-f-nb-milan-at-d-edge-hospitality-solutions-4481395569",
+    "data_invio": "2026-10-23",
+    "titolo": "Sales Manager, Hospitality Tech (M/F/NB) - Milan",
+    "azienda": "D-EDGE Hospitality Solutions",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-hospitality-tech-m-f-nb-milan-at-d-edge-hospitality-solutions-4481395569",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-and-communication-manager-at-generazione-vincente-4480661393",
+    "data_invio": "2026-10-23",
+    "titolo": "Brand and Communication Manager",
+    "azienda": "Generazione Vincente S.p.A.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/brand-and-communication-manager-at-generazione-vincente-4480661393",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-sefin-s-p-a-4480672178",
+    "data_invio": "2026-10-23",
+    "titolo": "Business Development Manager",
+    "azienda": "Sefin S.p.A.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-sefin-s-p-a-4480672178",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-marketing-at-miscusi-4482728805",
+    "data_invio": "2026-10-23",
+    "titolo": "Head of Marketing",
+    "azienda": "miscusi",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/head-of-marketing-at-miscusi-4482728805",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-at-allianz-italia-4482478398",
+    "data_invio": "2026-10-23",
+    "titolo": "Sales Manager",
+    "azienda": "Allianz Italia",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-at-allianz-italia-4482478398",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/cordant-digital-sales-manager-%E2%80%93-software-sales-m-f-d-at-baker-hughes-4482889742",
+    "data_invio": "2026-10-23",
+    "titolo": "Cordant Digital Sales Manager – Software Sales (M/F/D)",
+    "azienda": "Baker Hughes",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/cordant-digital-sales-manager-%E2%80%93-software-sales-m-f-d-at-baker-hughes-4482889742",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/commercial-director-systems-at-mercuri-urval-italy-4481317181",
     "data_invio": "2026-10-22",
     "titolo": "Commercial Director Systems",
@@ -4170,195 +4379,5 @@
     "portale": "ReverseGroup",
     "probabilita": 95,
     "link": "https://public.reversegroup.hr/jobs/business-developer-italy-6218239961"
-  },
-  {
-    "job_id": "https://public.reversegroup.hr/jobs/business-development-manager-tender-manager-7047761062",
-    "data_invio": "2026-09-08",
-    "titolo": "BUSINESS DEVELOPMENT MANAGER & TENDER MANAGER",
-    "azienda": "Azienda non specificata",
-    "citta": "Torino",
-    "portale": "ReverseGroup",
-    "probabilita": 95,
-    "link": "https://public.reversegroup.hr/jobs/business-development-manager-tender-manager-7047761062"
-  },
-  {
-    "job_id": "https://it.wyser-search.com/offerte-lavoro-dettaglio/prodotti-metallurgici-e-di-acciaio/responsabile-commerciale-inglese-tedesco-o-francese-inglese-milano/1353547/",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Commerciale - INGLESE/TEDESCO o FRANCESE/INGLESE",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Wyser",
-    "probabilita": 95,
-    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/prodotti-metallurgici-e-di-acciaio/responsabile-commerciale-inglese-tedesco-o-francese-inglese-milano/1353547/"
-  },
-  {
-    "job_id": "https://www.hays.it/lavoro-dettagli/business-developer-milano_953904",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Developer",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Hays",
-    "probabilita": 95,
-    "link": "https://www.hays.it/lavoro-dettagli/business-developer-milano_953904"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/international-performance-marketing-manager-milan-at-sportatlas-4463782298",
-    "data_invio": "2026-09-08",
-    "titolo": "International Performance Marketing Manager (Milan)",
-    "azienda": "SportAtlas",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 93,
-    "link": "https://it.linkedin.com/jobs/view/international-performance-marketing-manager-milan-at-sportatlas-4463782298"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-milan-chinese-speaking-at-fresha-4436707976",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager Milan (Chinese Speaking)",
-    "azienda": "Fresha",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 93,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-milan-chinese-speaking-at-fresha-4436707976"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-hudson-talent-solutions-4464353440",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager",
-    "azienda": "Hudson Talent Solutions",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 92,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-hudson-talent-solutions-4464353440"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/own-brand-business-developer-italy-at-rexel-italia-4464379517",
-    "data_invio": "2026-09-08",
-    "titolo": "OWN BRAND BUSINESS DEVELOPER ITALY",
-    "azienda": "Rexel Italia",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 91,
-    "link": "https://it.linkedin.com/jobs/view/own-brand-business-developer-italy-at-rexel-italia-4464379517"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-digital-manager-at-rubix-italy-4439098248",
-    "data_invio": "2026-09-08",
-    "titolo": "Sales Digital manager",
-    "azienda": "Rubix Italy",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 91,
-    "link": "https://it.linkedin.com/jobs/view/sales-digital-manager-at-rubix-italy-4439098248"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-metadig-performance-digitali-4462221809",
-    "data_invio": "2026-09-08",
-    "titolo": "Marketing Manager",
-    "azienda": "MetaDig - Performance digitali",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 89,
-    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-metadig-performance-digitali-4462221809"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/executive-head-of-revenue-operations-growth-europe-at-ntt-data-inc-4462269871",
-    "data_invio": "2026-09-08",
-    "titolo": "Executive Head of Revenue Operations & Growth, Europe",
-    "azienda": "NTT DATA, Inc.",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 89,
-    "link": "https://it.linkedin.com/jobs/view/executive-head-of-revenue-operations-growth-europe-at-ntt-data-inc-4462269871"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/global-head-of-business-development-medical-devices-business-assurance-at-sgs-4459941210",
-    "data_invio": "2026-09-08",
-    "titolo": "Global Head of Business Development, Medical Devices - Business Assurance",
-    "azienda": "SGS",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 89,
-    "link": "https://it.linkedin.com/jobs/view/global-head-of-business-development-medical-devices-business-assurance-at-sgs-4459941210"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-turin-at-fresha-4436709820",
-    "data_invio": "2026-09-08",
-    "titolo": "Business Development Manager (Turin)",
-    "azienda": "Fresha",
-    "citta": "Torino",
-    "portale": "LinkedIn",
-    "probabilita": 89,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-turin-at-fresha-4436709820"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-call2net-s-p-a-4464324550",
-    "data_invio": "2026-09-08",
-    "titolo": "Marketing Manager",
-    "azienda": "TWY",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 88,
-    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-call2net-s-p-a-4464324550"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-marketing-at-guild-living-4463388372",
-    "data_invio": "2026-09-08",
-    "titolo": "Head of Marketing",
-    "azienda": "Guild Living",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 88,
-    "link": "https://it.linkedin.com/jobs/view/head-of-marketing-at-guild-living-4463388372"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-e-commerce-rif-99708-at-wehunt-4462948177",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile e-commerce - RIF 99708",
-    "azienda": "WeHunt",
-    "citta": "Torino",
-    "portale": "LinkedIn",
-    "probabilita": 88,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-e-commerce-rif-99708-at-wehunt-4462948177"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/country-manager-italy-at-page-executive-4455531568",
-    "data_invio": "2026-09-08",
-    "titolo": "Country Manager Italy",
-    "azienda": "Page Executive",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 87,
-    "link": "https://it.linkedin.com/jobs/view/country-manager-italy-at-page-executive-4455531568"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-dikton-4462443065",
-    "data_invio": "2026-09-08",
-    "titolo": "Marketing Manager",
-    "azienda": "DIKTON",
-    "citta": "Torino",
-    "portale": "LinkedIn",
-    "probabilita": 86,
-    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-dikton-4462443065"
-  },
-  {
-    "job_id": "https://www.hays.it/lavoro-dettagli/head-of-digital-marketing-fmcg-%25E2%2580%2593-martech---fmcg-milano_954434",
-    "data_invio": "2026-09-08",
-    "titolo": "Head of Digital Marketing FMCG – MarTech - FMCG",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Hays",
-    "probabilita": 85,
-    "link": "https://www.hays.it/lavoro-dettagli/head-of-digital-marketing-fmcg-%25E2%2580%2593-martech---fmcg-milano_954434"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-marketing-at-openjobmetis-spa-4463507692",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Marketing",
-    "azienda": "Openjobmetis SpA",
-    "citta": "Torino",
-    "portale": "LinkedIn",
-    "probabilita": 85,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-at-openjobmetis-spa-4463507692"
   }
 ]
