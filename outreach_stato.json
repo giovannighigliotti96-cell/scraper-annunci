@@ -1941,5 +1941,38 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Enrico Polipodio Srl": {
+    "proposta_il": "2026-10-23",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Seven Corporate",
+        "Founder"
+      ]
+    ],
+    "email": [
+      "ambiente@polipodio.com",
+      "commerciale@polipodio.com",
+      "info@polipodio.com",
+      "sales@polipodio.com"
+    ]
+  },
+  "Rognoni Umberto Srl": {
+    "proposta_il": "2026-10-23",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Afry Italy Srl": {
+    "proposta_il": "2026-10-23",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Lender's Engineer",
+        "Owner"
+      ]
+    ],
+    "email": []
   }
 }
