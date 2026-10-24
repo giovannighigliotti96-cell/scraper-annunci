@@ -2003,5 +2003,34 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Italgi Srl": {
+    "proposta_il": "2026-10-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "assistenza@italgi.it",
+      "italgi@italgi.it",
+      "support@italgi.it"
+    ]
+  },
+  "Teknomega Srl": {
+    "proposta_il": "2026-10-24",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Message Checkboxes",
+        "OWNER"
+      ]
+    ],
+    "email": []
+  },
+  "T. Mariotti Società Per Azioni": {
+    "proposta_il": "2026-10-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@mariottiyard.it"
+    ]
   }
 }
