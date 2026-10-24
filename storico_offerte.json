@@ -1,5 +1,104 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473136592",
+    "data_invio": "2026-10-24",
+    "titolo": "Food & Beverage Sales Area Manager – Supply Chain Assurance services",
+    "azienda": "DNV",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 72,
+    "link": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473136592",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-area-sales-manager-packaging-cosmetico-at-michael-page-4480679447",
+    "data_invio": "2026-10-24",
+    "titolo": "Senior Area Sales Manager - Packaging cosmetico",
+    "azienda": "Michael Page",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/senior-area-sales-manager-packaging-cosmetico-at-michael-page-4480679447",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-sportswear-at-randstad-professional-italia-4480676568",
+    "data_invio": "2026-10-24",
+    "titolo": "Marketing Manager - Sportswear",
+    "azienda": "Randstad Professional Italia",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-sportswear-at-randstad-professional-italia-4480676568",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-consumer-at-galderma-4483136063",
+    "data_invio": "2026-10-24",
+    "titolo": "Brand Manager  - Consumer",
+    "azienda": "Galderma",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-consumer-at-galderma-4483136063",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-area-sales-manager-at-adhr-group-4479413962",
+    "data_invio": "2026-10-24",
+    "titolo": "Senior Area Sales Manager",
+    "azienda": "ADHR GROUP",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/senior-area-sales-manager-at-adhr-group-4479413962",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-sales-manager-ict-at-cloud9-4482483523",
+    "data_invio": "2026-10-24",
+    "titolo": "Senior Sales Manager - ICT",
+    "azienda": "Cloud9",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/senior-sales-manager-ict-at-cloud9-4482483523",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-at-erhardt%2Bleimer-italy-4483108395",
+    "data_invio": "2026-10-24",
+    "titolo": "Area Sales Manager",
+    "azienda": "Erhardt+Leimer Italy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-at-erhardt%2Bleimer-italy-4483108395",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473144248",
+    "data_invio": "2026-10-24",
+    "titolo": "Food & Beverage Sales Area Manager – Supply Chain Assurance services",
+    "azienda": "DNV",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473144248",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/export-sales-manager-macchinari-%E2%80%93-north-africa-west-africa-at-mynameis-4482848592",
+    "data_invio": "2026-10-24",
+    "titolo": "Export Sales Manager Macchinari – North Africa & West Africa",
+    "azienda": "Mynameis",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/export-sales-manager-macchinari-%E2%80%93-north-africa-west-africa-at-mynameis-4482848592",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-it-at-teoresi-group-4465691585",
     "data_invio": "2026-10-23",
     "titolo": "Business Development Manager IT",
@@ -4289,95 +4388,5 @@
     "portale": "LinkedIn",
     "probabilita": 30,
     "link": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/away-from-home-b2b-sales-director-at-euren-intersearch-4463008172",
-    "data_invio": "2026-09-09",
-    "titolo": "AWAY FROM HOME & B2B SALES DIRECTOR",
-    "azienda": "Euren InterSearch",
-    "citta": "Torino",
-    "portale": "LinkedIn",
-    "probabilita": 25,
-    "link": "https://it.linkedin.com/jobs/view/away-from-home-b2b-sales-director-at-euren-intersearch-4463008172"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-account-responsabile-commerciale-b2b-%E2%80%93-settore-promozionale-nord-italia-at-promo-team-4465050245",
-    "data_invio": "2026-09-09",
-    "titolo": "Sales Account / Responsabile Commerciale B2B – Settore Promozionale (Nord Italia)",
-    "azienda": "PROMO TEAM",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 25,
-    "link": "https://it.linkedin.com/jobs/view/sales-account-responsabile-commerciale-b2b-%E2%80%93-settore-promozionale-nord-italia-at-promo-team-4465050245"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/rappresentante-technical-sales-futuro-sales-director-at-w-talent-switzerland-4453075145",
-    "data_invio": "2026-09-09",
-    "titolo": "Rappresentante technical sales - Futuro Sales Director",
-    "azienda": "W Talent Switzerland",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 25,
-    "link": "https://it.linkedin.com/jobs/view/rappresentante-technical-sales-futuro-sales-director-at-w-talent-switzerland-4453075145"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/gp-and-itero-marketing-manager-at-align-technology-4463872603",
-    "data_invio": "2026-09-09",
-    "titolo": "GP and iTero Marketing Manager",
-    "azienda": "Align Technology",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 20,
-    "link": "https://it.linkedin.com/jobs/view/gp-and-itero-marketing-manager-at-align-technology-4463872603"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendite-at-eurointerim-s-p-a-4464607603",
-    "data_invio": "2026-09-09",
-    "titolo": "Responsabile vendite",
-    "azienda": "Eurointerim S.p.A.",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 15,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-vendite-at-eurointerim-s-p-a-4464607603"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendite-servizi-gestione-economica-domestica-at-team-opportunity-4463855592",
-    "data_invio": "2026-09-09",
-    "titolo": "Responsabile vendite servizi gestione economica domestica",
-    "azienda": "Team opportunity",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 10,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-vendite-servizi-gestione-economica-domestica-at-team-opportunity-4463855592"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-director-emea-industrial-new-defense-m-f-at-hexcel-corporation-4463832310",
-    "data_invio": "2026-09-09",
-    "titolo": "Sales Director EMEA - Industrial & New Defense M/F",
-    "azienda": "Hexcel Corporation",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 8,
-    "link": "https://it.linkedin.com/jobs/view/sales-director-emea-industrial-new-defense-m-f-at-hexcel-corporation-4463832310"
-  },
-  {
-    "job_id": "https://www.hays.it/lavoro-dettagli/responsabile-commerciale-genova_953893",
-    "data_invio": "2026-09-08",
-    "titolo": "Responsabile Commerciale",
-    "azienda": "Azienda non specificata",
-    "citta": "Genova",
-    "portale": "Hays",
-    "probabilita": 95,
-    "link": "https://www.hays.it/lavoro-dettagli/responsabile-commerciale-genova_953893"
-  },
-  {
-    "job_id": "https://public.reversegroup.hr/jobs/business-developer-italy-6218239961",
-    "data_invio": "2026-09-08",
-    "titolo": "BUSINESS DEVELOPER ITALY",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "ReverseGroup",
-    "probabilita": 95,
-    "link": "https://public.reversegroup.hr/jobs/business-developer-italy-6218239961"
   }
 ]
