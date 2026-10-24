@@ -145,5 +145,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-120b"
+  },
+  {
+    "title": "Food & Beverage Sales Area Manager – Supply Chain Assurance services",
+    "company": "DNV",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473144248",
+    "date": "2026-10-24",
+    "snippet": "",
+    "match_level": "Medio",
+    "match_count": 1,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L’offerta è descritta solo dal titolo “Food & Beverage Sales Area Manager – Supply Chain Assurance services”, senza dettagli su requisiti linguistici, seniority, sede, budget o strumenti richiesti. Per questo motivo non è possibile verificare se il candidato soddisfa i requisiti formali (es. lingua tedesca, sede diversa da Genova/Milano, esperienza in multinazionale, ecc.) né valutare la corrispondenza con le sue competenze specifiche. La mancanza di informazioni rende la valutazione incerta, quindi assegniamo una probabilità media.",
+    "testo_completo": "Food & Beverage Sales Area Manager – Supply Chain Assurance services",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-20b"
   }
 ]
