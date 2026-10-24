@@ -1974,5 +1974,34 @@
       ]
     ],
     "email": []
+  },
+  "Simco Srl": {
+    "proposta_il": "2026-10-24",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Lodovico Vecchi",
+        "fondatore"
+      ],
+      [
+        "Anna Maria",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "info@simcoitaly.com"
+    ]
+  },
+  "Harting Srl": {
+    "proposta_il": "2026-10-24",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "E.P.P. Euro Press Pack Spa": {
+    "proposta_il": "2026-10-24",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
