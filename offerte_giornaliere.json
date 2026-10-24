@@ -166,5 +166,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-20b"
+  },
+  {
+    "title": "Export Sales Manager Macchinari – North Africa & West Africa",
+    "company": "Mynameis",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/export-sales-manager-macchinari-%E2%80%93-north-africa-west-africa-at-mynameis-4482848592",
+    "date": "2026-10-23",
+    "snippet": "",
+    "match_level": "Medio",
+    "match_count": 1,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L’annuncio richiede competenze di Export Sales Manager in Nord e Ovest Africa, probabilmente con conoscenza di almeno una lingua locale (es. francese, arabo). Il candidato parla solo italiano e inglese, quindi manca un requisito formale chiave. Inoltre non è chiaro se la sede sia in Italia o in Africa, ma la posizione sembra non essere full‑remote e potrebbe richiedere trasferimento, che è incompatibile con la sua preferenza per Genova/Milano.",
+    "testo_completo": "Export Sales Manager Macchinari – North Africa & West Africa",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-20b"
   }
 ]
