@@ -2032,5 +2032,28 @@
     "email": [
       "info@mariottiyard.it"
     ]
+  },
+  "Salvi Mar Srl": {
+    "proposta_il": "2026-10-25",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "itservice@salvimar.com",
+      "service@salvimar.com"
+    ]
+  },
+  "Exeltis Italia Srl": {
+    "proposta_il": "2026-10-25",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Aventa Italia Srl": {
+    "proposta_il": "2026-10-25",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "aventa.it@gmail.com"
+    ]
   }
 }
