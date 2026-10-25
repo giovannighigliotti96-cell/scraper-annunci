@@ -1,5 +1,49 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-business-development-manager-%E2%80%93-e-commerce-fulfillment-italy-%F0%9F%87%AE%F0%9F%87%B9-at-mailship-4483379362",
+    "data_invio": "2026-10-25",
+    "titolo": "Senior Business Development Manager – E-commerce & Fulfillment | Italy 🇮🇹",
+    "azienda": "Mailship",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 90,
+    "link": "https://it.linkedin.com/jobs/view/senior-business-development-manager-%E2%80%93-e-commerce-fulfillment-italy-%F0%9F%87%AE%F0%9F%87%B9-at-mailship-4483379362",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/regional-sales-manager-northern-italy-at-sobi-swedish-orphan-biovitrum-ab-publ-4446892978",
+    "data_invio": "2026-10-25",
+    "titolo": "Regional Sales Manager - Northern Italy",
+    "azienda": "Sobi - Swedish Orphan Biovitrum AB (publ)",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/regional-sales-manager-northern-italy-at-sobi-swedish-orphan-biovitrum-ab-publ-4446892978",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-gas-power-canale-condomini-at-illimity-consulting-sagl-4481082551",
+    "data_invio": "2026-10-25",
+    "titolo": "Responsabile Commerciale Gas & Power- Canale Condomini",
+    "azienda": "Illimity Consulting Sagl",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-gas-power-canale-condomini-at-illimity-consulting-sagl-4481082551",
+    "recruiter": "Energia Business"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-vendite-grossisti-materiale-elettrico-at-studio-pavan-srl-4482689117",
+    "data_invio": "2026-10-25",
+    "titolo": "Responsabile Vendite Grossisti materiale elettrico",
+    "azienda": "Studio Pavan Srl",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-vendite-grossisti-materiale-elettrico-at-studio-pavan-srl-4482689117",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/food-beverage-sales-area-manager-%E2%80%93-supply-chain-assurance-services-at-dnv-4473136592",
     "data_invio": "2026-10-24",
     "titolo": "Food & Beverage Sales Area Manager – Supply Chain Assurance services",
@@ -4348,45 +4392,5 @@
     "portale": "LinkedIn",
     "probabilita": 55,
     "link": "https://it.linkedin.com/jobs/view/customer-marketing-manager-at-costa-crociere-s-p-a-4447153307"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/creator-growth-manager-at-metapic-4464507031",
-    "data_invio": "2026-09-10",
-    "titolo": "Creator Growth Manager",
-    "azienda": "Metapic",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/creator-growth-manager-at-metapic-4464507031"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sports-marketing-manager-at-havas-media-network-italy-4463445252",
-    "data_invio": "2026-09-10",
-    "titolo": "Sports Marketing Manager",
-    "azienda": "Havas Media Network Italy",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 70,
-    "link": "https://it.linkedin.com/jobs/view/sports-marketing-manager-at-havas-media-network-italy-4463445252"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/therapy-development-marketing-manager-at-edwards-lifesciences-4463050491",
-    "data_invio": "2026-09-10",
-    "titolo": "Therapy Development Marketing Manager",
-    "azienda": "Edwards Lifesciences",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 12,
-    "link": "https://it.linkedin.com/jobs/view/therapy-development-marketing-manager-at-edwards-lifesciences-4463050491"
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586",
-    "data_invio": "2026-09-09",
-    "titolo": "Direttore Commerciale Servizi Controllo Consumi",
-    "azienda": "Team opportunity",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 30,
-    "link": "https://it.linkedin.com/jobs/view/direttore-commerciale-servizi-controllo-consumi-at-team-opportunity-4463854586"
   }
 ]
