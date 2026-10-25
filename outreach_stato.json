@@ -2055,5 +2055,45 @@
     "email": [
       "aventa.it@gmail.com"
     ]
+  },
+  "Vevy Europe Spa": {
+    "proposta_il": "2026-10-25",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Mindray Medical Italy Srl": {
+    "proposta_il": "2026-10-25",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Posidonia Srl": {
+    "proposta_il": "2026-10-25",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Yilmaz Sokak",
+        "Managing Director"
+      ],
+      [
+        "Giacomo Ardito",
+        "Sales Director"
+      ],
+      [
+        "Serena Ardito",
+        "Managing Director"
+      ],
+      [
+        "Armand Diets",
+        "General manager"
+      ]
+    ],
+    "email": [
+      "alberto.perrotta@posidonia.com",
+      "alex.bonanno@posidonia.com",
+      "boris.sobolev@posidonia.com",
+      "certification@posidonia.com"
+    ]
   }
 }
