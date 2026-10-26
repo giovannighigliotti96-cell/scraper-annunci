@@ -2119,5 +2119,33 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Indemar Industriale Spa": {
+    "proposta_il": "2026-10-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@indemar-industriale.com"
+    ]
+  },
+  "Pall Italia Srl": {
+    "proposta_il": "2026-10-26",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "order_jp@pall.com",
+      "pi_customer_service_aus@pall.com",
+      "pi_customer_service_in@pall.com",
+      "pi_customer_service_kr@pall.com"
+    ]
+  },
+  "Esiwelma Srl": {
+    "proposta_il": "2026-10-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "commerciale@esiwelma.it",
+      "info@esiwelma.it"
+    ]
   }
 }
