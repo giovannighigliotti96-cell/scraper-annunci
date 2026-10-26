@@ -114,6 +114,10 @@
     "Commerciale Area": {
       "proposto_il": "2026-10-22",
       "portale": "LinkedIn"
+    },
+    "Energia Business": {
+      "proposto_il": "2026-10-26",
+      "portale": "LinkedIn"
     }
   },
   "Manydesigns Srl": {
@@ -2095,5 +2099,25 @@
       "boris.sobolev@posidonia.com",
       "certification@posidonia.com"
     ]
+  },
+  "Aifar Spa": {
+    "proposta_il": "2026-10-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "posta@aifar.it"
+    ]
+  },
+  "Versalis Oilfield Solutions Srl": {
+    "proposta_il": "2026-10-26",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Tecnodidattica Società Per Azioni": {
+    "proposta_il": "2026-10-26",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
