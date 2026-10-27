@@ -2167,5 +2167,55 @@
     "email": [
       "info@prometes.it"
     ]
+  },
+  "Tecno Clinic Srl": {
+    "proposta_il": "2026-10-27",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Massimo Barosso",
+        "CEO"
+      ],
+      [
+        "Matteo Barosso",
+        "CEO"
+      ],
+      [
+        "Rocco Barosso",
+        "Titolare"
+      ],
+      [
+        "Angela Fontana Barosso",
+        "CEO"
+      ]
+    ],
+    "email": []
+  },
+  "Tierre Group Spa": {
+    "proposta_il": "2026-10-27",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Sanguineti Srl": {
+    "proposta_il": "2026-10-27",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Sanguineti Virginio",
+        "fondatore"
+      ],
+      [
+        "Regno Unito",
+        "fondatore"
+      ],
+      [
+        "Michele Marzucco",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "info@sanguineti.com"
+    ]
   }
 }
