@@ -2217,5 +2217,42 @@
     "email": [
       "info@sanguineti.com"
     ]
+  },
+  "Isolanplast Moulding Srl Unipersonale": {
+    "proposta_il": "2026-10-28",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Cocino Luigi",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "alice.gambino@isolanplast.com",
+      "cristina.ercolani@isolanplast.com",
+      "daniela.viali@isolanplast.com",
+      "graziano.vernetti@isolanplast.com"
+    ]
+  },
+  "Longino & Cardenal Spa": {
+    "proposta_il": "2026-10-28",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Riccardo Uleri",
+        "AMMINISTRATORE DELEGATO"
+      ],
+      [
+        "Economia Azie",
+        "MANAGING DIRECTOR"
+      ]
+    ],
+    "email": []
+  },
+  "Gestart Srl": {
+    "proposta_il": "2026-10-28",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
