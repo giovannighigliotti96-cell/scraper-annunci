@@ -166,5 +166,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-120b"
+  },
+  {
+    "title": "Responsabile Commerciale B2B",
+    "company": "Melt Group",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-b2b-at-melt-group-4484976767",
+    "date": "2026-10-29",
+    "snippet": "",
+    "match_level": "Medio",
+    "match_count": 1,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio è estremamente scarno; il ruolo di Responsabile Commerciale B2B richiede tipicamente esperienza nella gestione di team di vendita e nella definizione di strategie commerciali, ambiti in cui il candidato ha esperienza manageriale, ma mancano dettagli su requisiti specifici (budget, settore, lingua aggiuntiva, sede). Senza informazioni aggiuntive, la corrispondenza è valutata come media.",
+    "testo_completo": "Responsabile Commerciale B2B",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
   }
 ]
