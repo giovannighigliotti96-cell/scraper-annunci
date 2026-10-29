@@ -2254,5 +2254,44 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Servizi Industriali Genova Sige Srl": {
+    "proposta_il": "2026-10-29",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Stefano Frassetto",
+        "Amministratore Delegato"
+      ],
+      [
+        "Altavilla Vicentina",
+        "Amministratore Delegato"
+      ],
+      [
+        "Serena Romei",
+        "Responsabile Marketing"
+      ],
+      [
+        "Gianfranco Schirinzi Vice",
+        "Presidente"
+      ]
+    ],
+    "email": []
+  },
+  "Gecal Spa": {
+    "proposta_il": "2026-10-29",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@gecalspa.it"
+    ]
+  },
+  "Espa Srl": {
+    "proposta_il": "2026-10-29",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "sales@espa.it"
+    ]
   }
 }
