@@ -1,5 +1,71 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-facility-management-nord-ovest-italia-at-service-key-group-4484499958",
+    "data_invio": "2026-10-29",
+    "titolo": "Sales Manager | Facility Management | Nord Ovest Italia",
+    "azienda": "Service Key Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-facility-management-nord-ovest-italia-at-service-key-group-4484499958",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-aperol-at-campari-group-4484716235",
+    "data_invio": "2026-10-29",
+    "titolo": "Brand Manager - Aperol",
+    "azienda": "Campari Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 62,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-aperol-at-campari-group-4484716235",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://www.michaelpage.it/job-detail/international-sales-manager-multibrand-milano/ref/jn-102026-7134226",
+    "data_invio": "2026-10-29",
+    "titolo": "International Sales Manager - Multibrand - Milano",
+    "azienda": "Azienda non specificata",
+    "citta": "Milano",
+    "portale": "MichaelPage",
+    "probabilita": 55,
+    "link": "https://www.michaelpage.it/job-detail/international-sales-manager-multibrand-milano/ref/jn-102026-7134226",
+    "recruiter": "Matteo Fattori"
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/wholesale-distribution-business-development-director-at-w-executive-4483875129",
+    "data_invio": "2026-10-29",
+    "titolo": "Wholesale Distribution & Business Development Director",
+    "azienda": "W EXECUTIVE",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/wholesale-distribution-business-development-director-at-w-executive-4483875129",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/cocoa-sales-manager-at-ember-grey-4484712095",
+    "data_invio": "2026-10-29",
+    "titolo": "Cocoa Sales Manager",
+    "azienda": "Ember Grey",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/cocoa-sales-manager-at-ember-grey-4484712095",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-b2b-at-melt-group-4484976767",
+    "data_invio": "2026-10-29",
+    "titolo": "Responsabile Commerciale B2B",
+    "azienda": "Melt Group",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-b2b-at-melt-group-4484976767",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/sales-manager-at-dgs-4484257033",
     "data_invio": "2026-10-28",
     "titolo": "Sales Manager",
@@ -4331,72 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 78,
     "link": "https://it.linkedin.com/jobs/view/key-account-sales-manager-at-randstad-professional-italia-4462504323",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/network-business-development-manager-at-tor-recruitment-hr-consulting-4475565926",
-    "data_invio": "2026-10-06",
-    "titolo": "NETWORK & BUSINESS DEVELOPMENT MANAGER",
-    "azienda": "Tor - Recruitment & HR Consulting",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/network-business-development-manager-at-tor-recruitment-hr-consulting-4475565926",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/director-global-marketing-immuno-at-diasorin-4449017636",
-    "data_invio": "2026-10-06",
-    "titolo": "Director, Global Marketing Immuno",
-    "azienda": "Diasorin",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/director-global-marketing-immuno-at-diasorin-4449017636",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-account-director-italy-at-autel-energy-europe-4463515564",
-    "data_invio": "2026-10-06",
-    "titolo": "Sales & Account Director - Italy",
-    "azienda": "AUTEL Energy - Europe",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/sales-account-director-italy-at-autel-energy-europe-4463515564",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/agile-program-manager-digital-and-crm-business-enablement-at-publicis-sapient-4465228470",
-    "data_invio": "2026-10-06",
-    "titolo": "Agile Program Manager - Digital and CRM Business Enablement",
-    "azienda": "Publicis Sapient",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/agile-program-manager-digital-and-crm-business-enablement-at-publicis-sapient-4465228470",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-bdr-at-jet-hr-4475509433",
-    "data_invio": "2026-10-06",
-    "titolo": "Sales Manager BDR",
-    "azienda": "Jet HR",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 75,
-    "link": "https://it.linkedin.com/jobs/view/sales-manager-bdr-at-jet-hr-4475509433",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/d2c-e-commerce-marketing-manager-at-sifar-nutra-4473669217",
-    "data_invio": "2026-10-06",
-    "titolo": "D2C & E-commerce Marketing Manager",
-    "azienda": "Sifar Nutra",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 70,
-    "link": "https://it.linkedin.com/jobs/view/d2c-e-commerce-marketing-manager-at-sifar-nutra-4473669217",
     "recruiter": ""
   }
 ]
