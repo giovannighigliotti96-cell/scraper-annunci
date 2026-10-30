@@ -2334,5 +2334,32 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Veleria San Giorgio Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@veleriasangiorgio.com"
+    ]
+  },
+  "Vega Italia Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Isabel Grieshaber",
+        "Managing Director"
+      ]
+    ],
+    "email": [
+      "info.de@vega.com"
+    ]
+  },
+  "Svig Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
