@@ -118,6 +118,10 @@
     "Energia Business": {
       "proposto_il": "2026-10-26",
       "portale": "LinkedIn"
+    },
+    "Matteo Fattori": {
+      "proposto_il": "2026-10-30",
+      "portale": "MichaelPage"
     }
   },
   "Manydesigns Srl": {
@@ -2293,5 +2297,42 @@
     "email": [
       "sales@espa.it"
     ]
+  },
+  "Tecnoriva Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Victori Porter",
+        "CEO"
+      ],
+      [
+        "Maria Flynn",
+        "CEO"
+      ],
+      [
+        "Mahfuz Riad",
+        "CEO"
+      ],
+      [
+        "Know More About",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "info@tecnoriva.com"
+    ]
+  },
+  "Malfatti & Tacchini Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Telco Srl": {
+    "proposta_il": "2026-10-30",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
