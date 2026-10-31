@@ -122,6 +122,14 @@
     "Matteo Fattori": {
       "proposto_il": "2026-10-30",
       "portale": "MichaelPage"
+    },
+    "Commerciale Consulente": {
+      "proposto_il": "2026-10-31",
+      "portale": "LinkedIn"
+    },
+    "Giulia Castoldi": {
+      "proposto_il": "2026-10-31",
+      "portale": "Hays"
     }
   },
   "Manydesigns Srl": {
@@ -2361,5 +2369,41 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Speich Srl": {
+    "proposta_il": "2026-10-31",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
+  },
+  "Elvinox Srl": {
+    "proposta_il": "2026-10-31",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@elvinox.it"
+    ]
+  },
+  "La Meccanica Turbo Diesel Spa": {
+    "proposta_il": "2026-10-31",
+    "citta": "Genova",
+    "persone": [
+      [
+        "Anna Amato",
+        "Amministratore delegato"
+      ],
+      [
+        "Alessio Cardaci",
+        "Direttore generale"
+      ],
+      [
+        "Luigi Cardaci",
+        "founder"
+      ]
+    ],
+    "email": [
+      "irene@mtd.it",
+      "mtd@mtd.it"
+    ]
   }
 }
