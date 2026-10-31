@@ -1,5 +1,49 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-growth-at-tutorly-it-at-tutorly-it-4483484364",
+    "data_invio": "2026-10-31",
+    "titolo": "Head of Growth at Tutorly.it",
+    "azienda": "Tutorly.it",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/head-of-growth-at-tutorly-it-at-tutorly-it-4483484364",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/head-of-strategic-business-development-at-edge-a-division-of-eurosearch-consultants-4483480773",
+    "data_invio": "2026-10-31",
+    "titolo": "Head of Strategic Business Development",
+    "azienda": "EDGE - A Division of EuroSearch Consultants",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 75,
+    "link": "https://it.linkedin.com/jobs/view/head-of-strategic-business-development-at-edge-a-division-of-eurosearch-consultants-4483480773",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/b2b-wholesale-sales-manager-luxury-at-mynameis-4485386037",
+    "data_invio": "2026-10-31",
+    "titolo": "B2B Wholesale Sales Manager | Luxury",
+    "azienda": "Mynameis",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/b2b-wholesale-sales-manager-luxury-at-mynameis-4485386037",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/commercial-contract-manager-at-capgemini-engineering-4485399497",
+    "data_invio": "2026-10-31",
+    "titolo": "Commercial & Contract Manager",
+    "azienda": "Capgemini Engineering",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/commercial-contract-manager-at-capgemini-engineering-4485399497",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/cybersecurity-sales-manager-italy-mfd-at-vesterling-ag-4475804509",
     "data_invio": "2026-10-30",
     "titolo": "Cybersecurity Sales Manager Italy (mfd)",
@@ -4353,50 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 55,
     "link": "https://it.linkedin.com/jobs/view/digital-technical-product-manager-italy-at-evolus-4467798973",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/field-sales-manager-at-bic-4476757263",
-    "data_invio": "2026-10-07",
-    "titolo": "Field Sales Manager",
-    "azienda": "BIC",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/field-sales-manager-at-bic-4476757263",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-selectiva-s-p-a-4474695259",
-    "data_invio": "2026-10-07",
-    "titolo": "Brand manager",
-    "azienda": "Selectiva S.p.A.",
-    "citta": "Genova",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-selectiva-s-p-a-4474695259",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-global-sales-at-w-executive-italy-4474694851",
-    "data_invio": "2026-10-07",
-    "titolo": "Head of Global Sales",
-    "azienda": "W Executive Italy",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/head-of-global-sales-at-w-executive-italy-4474694851",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/global-product-manager-for-digital-portfolio-motion-service-location-europe-at-abb-4471926399",
-    "data_invio": "2026-10-07",
-    "titolo": "Global Product Manager for Digital Portfolio, Motion Service (location: Europe)",
-    "azienda": "ABB",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/global-product-manager-for-digital-portfolio-motion-service-location-europe-at-abb-4471926399",
     "recruiter": ""
   }
 ]
