@@ -2405,5 +2405,27 @@
       "irene@mtd.it",
       "mtd@mtd.it"
     ]
+  },
+  "Ortec Santamaria Srl": {
+    "proposta_il": "2026-10-31",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@ortecsantamaria.com"
+    ]
+  },
+  "Socrate Spa": {
+    "proposta_il": "2026-10-31",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "sales-italy@socrate.it"
+    ]
+  },
+  "Cosmet Srl": {
+    "proposta_il": "2026-10-31",
+    "citta": "Genova",
+    "persone": [],
+    "email": []
   }
 }
