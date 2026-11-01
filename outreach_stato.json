@@ -2449,5 +2449,25 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Caseificio Salernitano Spa": {
+    "proposta_il": "2026-11-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Ferlegno Srl": {
+    "proposta_il": "2026-11-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@ferlegno.it"
+    ]
+  },
+  "Ortopiazzolla Srl": {
+    "proposta_il": "2026-11-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
