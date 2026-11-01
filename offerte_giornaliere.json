@@ -1,1 +1,23 @@
-[]
+[
+  {
+    "title": "Area Sales Manager – Mercato Italia",
+    "company": "MAW",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-%E2%80%93-mercato-italia-at-maw-4483063096",
+    "date": "2026-10-29",
+    "snippet": "",
+    "match_level": "Medio",
+    "match_count": 1,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio fornisce solo il titolo \"Area Sales Manager – Mercato Italia\" senza dettagli su requisiti, seniority, settore o modalità di lavoro; quindi non è possibile valutare con precisione la corrispondenza. Il profilo del candidato è manager con esperienza digitale e sales, ma mancano informazioni chiave (budget, team size, lingua aggiuntiva, settore) per stabilire un match solido.",
+    "testo_completo": "Area Sales Manager – Mercato Italia",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
+  }
+]
