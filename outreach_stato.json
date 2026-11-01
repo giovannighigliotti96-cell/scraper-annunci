@@ -2427,5 +2427,27 @@
     "citta": "Genova",
     "persone": [],
     "email": []
+  },
+  "Due Pi Automation Service Srl": {
+    "proposta_il": "2026-11-01",
+    "citta": "Genova",
+    "persone": [],
+    "email": [
+      "info@duepiautomationservice.com"
+    ]
+  },
+  "Zeelandia Spa": {
+    "proposta_il": "2026-11-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@zeelandia.it"
+    ]
+  },
+  "Idrostile Gdo Service Srl": {
+    "proposta_il": "2026-11-01",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
