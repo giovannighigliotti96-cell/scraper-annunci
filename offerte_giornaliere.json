@@ -40,5 +40,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-20b"
+  },
+  {
+    "title": "Responsabile Commerciale Italia  Gas & Power",
+    "company": "Illimity Consulting Sagl",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-italia-gas-power-at-illimity-consulting-sagl-4483972858",
+    "date": "2026-11-01",
+    "snippet": "",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio è estremamente scarno: indica solo il ruolo di Responsabile Commerciale Italia per il settore Gas & Power senza specificare requisiti di seniority, esperienza settoriale, budget o lingua aggiuntiva. Il candidato ha esperienza manageriale in digital sales & marketing, ma non ha esperienza specifica nel settore energetico né nella gestione di reti commerciali tradizionali tipiche di Gas & Power, perciò il profilo è solo parzialmente allineato.",
+    "testo_completo": "Responsabile Commerciale Italia  Gas & Power",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
   }
 ]
