@@ -2492,5 +2492,25 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Sirti Società Per Azioni": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Plastiblow Srl": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "plastiblow@plastiblow.it"
+    ]
+  },
+  "Homberger Spa": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
