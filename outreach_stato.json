@@ -2469,5 +2469,28 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Fuse' Carlo Spa": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Carlo Fusè",
+        "fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Mericco Spa": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Otolift Montascale Srl": {
+    "proposta_il": "2026-11-02",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
