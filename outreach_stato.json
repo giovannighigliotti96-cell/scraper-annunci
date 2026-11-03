@@ -2512,5 +2512,34 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Conceria Gaiera Giovanni Srl": {
+    "proposta_il": "2026-11-03",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Andrea Bagnoli",
+        "Direttore Generale"
+      ],
+      [
+        "Alberto Alessandro",
+        "Direttore Generale"
+      ]
+    ],
+    "email": [
+      "gaiera@gaiera.it"
+    ]
+  },
+  "Haas Factory Outlet Operated By Celada Srl": {
+    "proposta_il": "2026-11-03",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Sunclear Srl": {
+    "proposta_il": "2026-11-03",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
