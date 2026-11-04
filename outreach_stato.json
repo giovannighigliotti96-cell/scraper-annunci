@@ -2541,5 +2541,43 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Rinaldo Franco Spa": {
+    "proposta_il": "2026-11-04",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Rinaldo Franco",
+        "fondatore"
+      ],
+      [
+        "Claudio Franco",
+        "fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Farmo Spa": {
+    "proposta_il": "2026-11-04",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Governance Remo Giai",
+        "Presidente"
+      ],
+      [
+        "Andrea Giai",
+        "Amministratore delegato"
+      ]
+    ],
+    "email": [
+      "hello@farmo.com"
+    ]
+  },
+  "Mane Italia Srl": {
+    "proposta_il": "2026-11-04",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
