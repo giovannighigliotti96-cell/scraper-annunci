@@ -453,7 +453,7 @@ Se l'annuncio indica una retribuzione, riportala come la scrive lui (es. "66.000
 
 REGOLE:
 - Non gonfiare il punteggio per compiacere: un punteggio basso ben motivato vale più di uno alto e vago.
-- Se l'annuncio è troppo scarno per valutarlo davvero, dillo esplicitamente nella motivazione e usa un punteggio intorno a 50.
+- Se l'annuncio è troppo scarno per valutarlo davvero, dillo esplicitamente nella motivazione e usa esattamente un punteggio di 50.
 - Non riassumere l'annuncio: spiega cosa significa per QUESTO candidato.
 - Valuta anche i requisiti impliciti e culturali (es. "spirito imprenditoriale" è soddisfatto da chi ha fondato un'azienda, anche se quella parola nel CV non compare).
 
@@ -4435,6 +4435,12 @@ def registra_invio_email():
 # media da 73 a 83, senza sacrificarne nessuna valida — tra 40 e 50 non ce n'è
 # nessuna, la fascia e' vuota.
 SOGLIA_MINIMA_PUNTEGGIO = 50
+# Il prompt (_MATCH_LLM_SYSTEM_TEMPLATE) chiede al modello, per un annuncio troppo
+# scarno per essere giudicato, un punteggio di ESATTAMENTE 50: la soglia scarta solo
+# cio' che sta sotto, quindi 50 passa. Fino al 05/11/2026 la frase era "intorno a
+# 50" e il modello rispondeva 45: 9 offerte in 4 settimane sono sparite proprio a
+# 45, fra cui una a Genova. Se si cambia uno dei due numeri va cambiato anche
+# l'altro: test_regressioni_motore.py lo verifica.
 
 
 def offerta_sotto_soglia(job) -> bool:
@@ -4914,7 +4920,16 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
             # l'LLM potesse leggerlo. Ora passa: l'LLM corregge la modalita'
             # leggendo l'annuncio e l'email segnala quelle davvero in presenza,
             # cosi' la decisione resta a Giovanni invece che a un'etichetta.
-            if job.work_mode in ("ibrido", "in sede"):
+            # "da remoto" passa come "in sede" e "ibrido": l'etichetta (che
+            # arriva da LinkedIn o dal flag isRemote di LHH) non e' affidabile e
+            # decide l'LLM leggendo l'annuncio. Fino al 05/11/2026 queste offerte
+            # venivano scartate qui, in silenzio e senza nessun log, PRIMA che un
+            # modello le leggesse: rigiocando i filtri su 251 offerte vere erano
+            # 5 in una cattura, fra cui un Sales Manager Hays a Milano con
+            # 55-80k, auto e "la presenza in sede NON e' obbligatoria". Il full
+            # remote dichiarato esplicitamente e' gia' gestito sopra
+            # (e_full_remote); questo copre il remoto dichiarato solo dall'etichetta.
+            if job.work_mode in ("in sede", "ibrido", "da remoto"):
                 offerte_filtrate.append(job)
             elif job.work_mode == "unverified" and INCLUDE_UNVERIFIED:
                 offerte_filtrate.append(job)
@@ -4922,7 +4937,10 @@ def filtra_offerte_per_citta(offerte_scraper, city_config):
             # Genova: in sede o ibrido, mai da remoto (unverified solo se INCLUDE_UNVERIFIED,
             # come per Milano/Torino — la vecchia condizione "!= da remoto" includeva
             # unverified incondizionatamente, ignorando il flag)
-            if job.work_mode in ("in sede", "ibrido"):
+            # Stessa ragione di Milano: "da remoto" arriva all'LLM invece di
+            # sparire. La geografia resta un filtro a parte e piu' sopra: una
+            # "da remoto" che l'annuncio colloca a Bergamo viene comunque scartata.
+            if job.work_mode in ("in sede", "ibrido", "da remoto"):
                 offerte_filtrate.append(job)
             elif job.work_mode == "unverified" and INCLUDE_UNVERIFIED:
                 offerte_filtrate.append(job)
