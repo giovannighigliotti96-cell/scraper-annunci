@@ -130,6 +130,14 @@
     "Giulia Castoldi": {
       "proposto_il": "2026-10-31",
       "portale": "Hays"
+    },
+    "Lucrezia Olivieri": {
+      "proposto_il": "2026-11-05",
+      "portale": "Hays"
+    },
+    "Lavinia Corsi": {
+      "proposto_il": "2026-11-05",
+      "portale": "Hays"
     }
   },
   "Manydesigns Srl": {
@@ -2576,6 +2584,26 @@
   },
   "Mane Italia Srl": {
     "proposta_il": "2026-11-04",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Elcart Distribution Spa": {
+    "proposta_il": "2026-11-05",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Asco Pompe Srl": {
+    "proposta_il": "2026-11-05",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@ascopompe.com"
+    ]
+  },
+  "Checkpoint Systems Italia Spa": {
+    "proposta_il": "2026-11-05",
     "citta": "Milano",
     "persone": [],
     "email": []
