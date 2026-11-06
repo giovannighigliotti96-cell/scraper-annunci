@@ -138,6 +138,10 @@
     "Lavinia Corsi": {
       "proposto_il": "2026-11-05",
       "portale": "Hays"
+    },
+    "Letizia Marchesin": {
+      "proposto_il": "2026-11-06",
+      "portale": "Hays"
     }
   },
   "Manydesigns Srl": {
@@ -2606,6 +2610,35 @@
     "proposta_il": "2026-11-05",
     "citta": "Milano",
     "persone": [],
+    "email": []
+  },
+  "Biotest Italia Srl": {
+    "proposta_il": "2026-11-06",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Mtrading Srl": {
+    "proposta_il": "2026-11-06",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "mtrading@m-trading.it"
+    ]
+  },
+  "Colorificio Sapienza Srl": {
+    "proposta_il": "2026-11-06",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Domenico Sapienza",
+        "CEO"
+      ],
+      [
+        "Silvio Sapienza",
+        "CEO"
+      ]
+    ],
     "email": []
   }
 }
