@@ -1,4 +1,20 @@
 {
   "offerte": [],
-  "autocandidature": []
+  "autocandidature": [
+    {
+      "azienda": "Isma Controlli Spa",
+      "citta": "Genova",
+      "link": "https://about.ismacontrolli.com/it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Zini Prodotti Alimentari Spa",
+      "citta": "Milano",
+      "link": "https://www.pastazini.it/lavora-con-noi/"
+    },
+    {
+      "azienda": "Asco Pompe Srl",
+      "citta": "Milano",
+      "link": "https://www.ascopompe.com/lavora-con-noi/"
+    }
+  ]
 }
