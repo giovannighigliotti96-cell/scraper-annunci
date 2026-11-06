@@ -1,5 +1,148 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-director-affitti-milano-at-lionard-luxury-real-estate-s-p-a-4486240419",
+    "data_invio": "2026-11-06",
+    "titolo": "Sales Director - Affitti - Milano",
+    "azienda": "LIONARD Luxury Real Estate S.p.A.",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 78,
+    "link": "https://it.linkedin.com/jobs/view/sales-director-affitti-milano-at-lionard-luxury-real-estate-s-p-a-4486240419",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/country-sales-manager-aortic-italy-at-medtronic-4487780651",
+    "data_invio": "2026-11-06",
+    "titolo": "Country Sales Manager Aortic Italy",
+    "azienda": "Medtronic",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/country-sales-manager-aortic-italy-at-medtronic-4487780651",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-paint-coating-adhesives-sealants-elastomers-at-oqema-italy-4485855104",
+    "data_invio": "2026-11-06",
+    "titolo": "SALES MANAGER Paint, Coating, Adhesives, Sealants, Elastomers",
+    "azienda": "OQEMA Italy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-paint-coating-adhesives-sealants-elastomers-at-oqema-italy-4485855104",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/deputy-sales-manager-at-lga-human-resources-s-r-l-4486211798",
+    "data_invio": "2026-11-06",
+    "titolo": "DEPUTY SALES MANAGER",
+    "azienda": "LGA Human Resources S.r.l.",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/deputy-sales-manager-at-lga-human-resources-s-r-l-4486211798",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/commercial-director-at-catenon-4488131333",
+    "data_invio": "2026-11-06",
+    "titolo": "Commercial Director",
+    "azienda": "Catenon",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/commercial-director-at-catenon-4488131333",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/consumer-growth-strategy-manager-at-deliveroo-4479170776",
+    "data_invio": "2026-11-06",
+    "titolo": "Consumer Growth, Strategy Manager",
+    "azienda": "Deliveroo",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/consumer-growth-strategy-manager-at-deliveroo-4479170776",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/experienced-business-development-manager-aerospace-at-alten-4463005982",
+    "data_invio": "2026-11-06",
+    "titolo": "Experienced Business Development Manager - Aerospace",
+    "azienda": "ALTEN",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 70,
+    "link": "https://it.linkedin.com/jobs/view/experienced-business-development-manager-aerospace-at-alten-4463005982",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://myportal.lhh.com/it/it/application/job-description/JN%20-112026-1198160",
+    "data_invio": "2026-11-06",
+    "titolo": "Sales Manager – Digital Advertising",
+    "azienda": "BADENOCH + CLARK",
+    "citta": "Milano",
+    "portale": "LHH",
+    "probabilita": 50,
+    "link": "https://myportal.lhh.com/it/it/application/job-description/JN%20-112026-1198160?queryState=eyJ0ZW5hbnRJZCI6IjIyMyIsInVzZXJGbG93Ijoiam9iQXBwbHlfcG9ydGFsIn0=&utm_source=websites&source=websites",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://myportal.lhh.com/it/it/application/job-description/JN%20-072026-1141645",
+    "data_invio": "2026-11-06",
+    "titolo": "Business Developer Manager - Chirurgia Robotica",
+    "azienda": "SPRING PROFESSIONAL",
+    "citta": "Milano",
+    "portale": "LHH",
+    "probabilita": 50,
+    "link": "https://myportal.lhh.com/it/it/application/job-description/JN%20-072026-1141645?queryState=eyJ0ZW5hbnRJZCI6IjIyMyIsInVzZXJGbG93Ijoiam9iQXBwbHlfcG9ydGFsIn0=&utm_source=websites&source=websites",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://myportal.lhh.com/it/it/application/job-description/JN%20-102026-1193428",
+    "data_invio": "2026-11-06",
+    "titolo": "Head of Commercial Partnership and Ecosystem",
+    "azienda": "SPRING PROFESSIONAL",
+    "citta": "Milano",
+    "portale": "LHH",
+    "probabilita": 50,
+    "link": "https://myportal.lhh.com/it/it/application/job-description/JN%20-102026-1193428?queryState=eyJ0ZW5hbnRJZCI6IjIyMyIsInVzZXJGbG93Ijoiam9iQXBwbHlfcG9ydGFsIn0=&utm_source=websites&source=websites",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/global-segment-marketing-lead-m-f-d-at-hitachi-energy-4488006729",
+    "data_invio": "2026-11-06",
+    "titolo": "Global Segment Marketing Lead (m/f/d)",
+    "azienda": "Hitachi Energy",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/global-segment-marketing-lead-m-f-d-at-hitachi-energy-4488006729",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-genova-12-months-at-deliveroo-4479184075",
+    "data_invio": "2026-11-06",
+    "titolo": "Business Development Manager - Genova (12 months)",
+    "azienda": "Deliveroo",
+    "citta": "Genova",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/business-development-manager-genova-12-months-at-deliveroo-4479184075",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-gruppo-proper-transearch-4486989582",
+    "data_invio": "2026-11-06",
+    "titolo": "Responsabile Commerciale",
+    "azienda": "Gruppo Proper Transearch",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/responsabile-commerciale-at-gruppo-proper-transearch-4486989582",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/head-of-marketing-communication-at-zeta-service-i-head-hunting-4487727288",
     "data_invio": "2026-11-05",
     "titolo": "Head of Marketing & Communication",
@@ -4254,149 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 55,
     "link": "https://it.linkedin.com/jobs/view/commercial-excellence-senior-manager-%E2%80%93-consumer-goods-services-at-accenture-italia-4477281807",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-licensing-partner-4475622066",
-    "data_invio": "2026-10-12",
-    "titolo": "Brand Manager",
-    "azienda": "Yibi Hantang | China Lifestyle Extension Licensing Partner",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-licensing-partner-4475622066",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/key-account-sales-manager-servizi-it-at-chaberton-professionals-4476016295",
-    "data_invio": "2026-10-12",
-    "titolo": "Key account sales manager - Servizi IT",
-    "azienda": "Chaberton Professionals",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/key-account-sales-manager-servizi-it-at-chaberton-professionals-4476016295",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.wyser-search.com/offerte-lavoro-dettaglio/altro/sales-proposal-e-solution-manager-cubesat-satellite-connectivity-e-wholesale-milano/1383059/",
-    "data_invio": "2026-10-12",
-    "titolo": "Sales Proposal & Solution Manager CubeSAT - Satellite Connectivity & Wholesale",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Wyser",
-    "probabilita": 50,
-    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/altro/sales-proposal-e-solution-manager-cubesat-satellite-connectivity-e-wholesale-milano/1383059/",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/responsabile-marketing-e-monetizzazione-at-lhh-4478025497",
-    "data_invio": "2026-10-10",
-    "titolo": "Responsabile Marketing e Monetizzazione",
-    "azienda": "LHH",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 90,
-    "link": "https://it.linkedin.com/jobs/view/responsabile-marketing-e-monetizzazione-at-lhh-4478025497",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-crm-customer-strategy-at-calzaturificio-stephen-s-r-l-4477221048",
-    "data_invio": "2026-10-10",
-    "titolo": "Head of CRM & Customer Strategy",
-    "azienda": "CALZATURIFICIO STEPHEN S.R.L.",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 90,
-    "link": "https://it.linkedin.com/jobs/view/head-of-crm-customer-strategy-at-calzaturificio-stephen-s-r-l-4477221048",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/senior-sales-manager-italy-northwest-all-genders-at-holidu-4477885337",
-    "data_invio": "2026-10-10",
-    "titolo": "Senior Sales Manager Italy Northwest (all genders)",
-    "azienda": "Holidu",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 78,
-    "link": "https://it.linkedin.com/jobs/view/senior-sales-manager-italy-northwest-all-genders-at-holidu-4477885337",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/direttore-commerciale-at-sharp-consulting-srls-4475602886",
-    "data_invio": "2026-10-10",
-    "titolo": "Direttore Commerciale",
-    "azienda": "SHARP CONSULTING SRLS",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 78,
-    "link": "https://it.linkedin.com/jobs/view/direttore-commerciale-at-sharp-consulting-srls-4475602886",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-ramo-farmacie-at-govisit-4475617228",
-    "data_invio": "2026-10-10",
-    "titolo": "Sales manager - Ramo Farmacie",
-    "azienda": "GoVisit",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 60,
-    "link": "https://it.linkedin.com/jobs/view/sales-manager-ramo-farmacie-at-govisit-4475617228",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/european-marketing-manager-breast-at-bd-4477878916",
-    "data_invio": "2026-10-10",
-    "titolo": "European Marketing Manager Breast",
-    "azienda": "BD",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/european-marketing-manager-breast-at-bd-4477878916",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-flooring-coatings-north-of-italy-at-sherwin-williams-4469199051",
-    "data_invio": "2026-10-10",
-    "titolo": "Area Sales Manager- Flooring Coatings - North of Italy",
-    "azienda": "Sherwin-Williams",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-flooring-coatings-north-of-italy-at-sherwin-williams-4469199051",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/area-sales-manager-protective-coatings-north-of-italy-at-sherwin-williams-4432296670",
-    "data_invio": "2026-10-10",
-    "titolo": "Area Sales Manager - Protective Coatings - North of Italy",
-    "azienda": "Sherwin-Williams",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/area-sales-manager-protective-coatings-north-of-italy-at-sherwin-williams-4432296670",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-partner-4475622066",
-    "data_invio": "2026-10-10",
-    "titolo": "Brand Manager",
-    "azienda": "Yibi Hantang | China Lifestyle Extension Partner",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-yibi-hantang-china-lifestyle-extension-partner-4475622066",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/digital-applications-product-manager-at-prada-group-4449751849",
-    "data_invio": "2026-10-10",
-    "titolo": "Digital Applications Product Manager",
-    "azienda": "Prada Group",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/digital-applications-product-manager-at-prada-group-4449751849",
     "recruiter": ""
   }
 ]
