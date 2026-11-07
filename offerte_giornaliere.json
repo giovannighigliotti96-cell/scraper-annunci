@@ -166,5 +166,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-120b"
+  },
+  {
+    "title": "Commercial Excellence Lead - Crop Protection",
+    "company": "ADAMA Ltd.",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/commercial-excellence-lead-crop-protection-at-adama-ltd-4457331679",
+    "date": "2026-11-06",
+    "snippet": "",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio fornisce solo il titolo \"Commercial Excellence Lead - Crop Protection\" senza dettagli su requisiti, seniority, settore, lingua o modalità di lavoro; pertanto non è possibile valutare la corrispondenza del candidato. Con le informazioni disponibili, si assegna un punteggio neutro.",
+    "testo_completo": "Commercial Excellence Lead - Crop Protection",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
   }
 ]
