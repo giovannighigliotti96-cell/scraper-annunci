@@ -2668,5 +2668,40 @@
     "email": [
       "info@giussaniabrasivi.it"
     ]
+  },
+  "Canon Solutions Italia Srl": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Forbo Siegling Italia Spa": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Txt E Solutions Spa": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Careers Let's",
+        "talent"
+      ],
+      [
+        "Since June",
+        "CEO"
+      ],
+      [
+        "Daniele Misani",
+        "Managing Director"
+      ],
+      [
+        "Executive Committee",
+        "CEO"
+      ]
+    ],
+    "email": []
   }
 }
