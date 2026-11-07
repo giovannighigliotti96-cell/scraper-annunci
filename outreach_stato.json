@@ -2640,5 +2640,33 @@
       ]
     ],
     "email": []
+  },
+  "Antalis Packaging Italia Srl": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Bernareggi Srl": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Nuovo Index",
+        "Direttore Generale"
+      ]
+    ],
+    "email": [
+      "bronzo@bernareggi.it",
+      "ghisa@bernareggi.it"
+    ]
+  },
+  "Giussani Abrasivi Srl": {
+    "proposta_il": "2026-11-07",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@giussaniabrasivi.it"
+    ]
   }
 }
