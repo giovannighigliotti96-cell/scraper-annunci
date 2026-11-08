@@ -2744,5 +2744,45 @@
     "email": [
       "info@emmelibri.it"
     ]
+  },
+  "Else Solutions Srl": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Aerzen Italia Srl": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Gerben Keurentjes Telepho",
+        "General Manager"
+      ],
+      [
+        "Michel Dufour Telephone",
+        "Sales Director"
+      ],
+      [
+        "Sander Liebrand Telephone",
+        "HR Manager"
+      ],
+      [
+        "Steve Handy Telephone",
+        "General Manager"
+      ]
+    ],
+    "email": [
+      "adria@aerzen.com",
+      "aftersales-me@aerzen.com",
+      "asia@aerzen.com",
+      "austria@aerzen.com"
+    ]
+  },
+  "Orvital Spa": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
   }
 }
