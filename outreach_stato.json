@@ -142,6 +142,10 @@
     "Letizia Marchesin": {
       "proposto_il": "2026-11-06",
       "portale": "Hays"
+    },
+    "Laura Quarzago": {
+      "proposto_il": "2026-11-08",
+      "portale": "ReverseGroup"
     }
   },
   "Manydesigns Srl": {
@@ -2703,5 +2707,42 @@
       ]
     ],
     "email": []
+  },
+  "Fujifilm Healthcare Italia Spa": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Boma Srl": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Emmelibri Srl": {
+    "proposta_il": "2026-11-08",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Alberto Ottieri",
+        "Presidente"
+      ],
+      [
+        "Emmelibri Sosteniamo",
+        "Amministratore Delegato"
+      ],
+      [
+        "Amministrazione Alberto Ottieri",
+        "Presidente"
+      ],
+      [
+        "Renato Salvetti Consigliere",
+        "Amministratore Delegato"
+      ]
+    ],
+    "email": [
+      "info@emmelibri.it"
+    ]
   }
 }
