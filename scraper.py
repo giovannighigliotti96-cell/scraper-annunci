@@ -465,22 +465,12 @@ CV DEL CANDIDATO:
 _MODALITA_AMMESSE = {"ibrido", "in sede", "da remoto"}
 
 
-def _estratto_annuncio(testo: str, limite: int) -> str:
-    """L'annuncio ridotto al limite, prendendo testa E coda.
-
-    Tagliare solo dall'inizio perde proprio cio' che serve: retribuzione,
-    modalita' di lavoro e sede stanno quasi sempre in fondo. Nell'annuncio
-    Peoitaly del 06/10/2026 "Working model: 100% remote" e "RAL 40.000-70.000"
-    erano nell'ultimo terzo, dopo seimila caratteri di descrizione del ruolo.
-    Si tiene il 60% dalla testa, dove stanno responsabilita' e requisiti, e il
-    resto dalla coda."""
-    testo = testo or ""
-    if len(testo) <= limite:
-        return testo
-    separatore = "\n[...]\n"
-    testa = int(limite * 0.6)
-    coda = limite - testa - len(separatore)
-    return testo[:testa] + separatore + testo[-coda:]
+# NESSUN LIMITE DI CARATTERI sul testo mandato al modello (08/11/2026, richiesta di Giovanni):
+# l'annuncio e il CV arrivano per intero a Claude, Groq e Gemini. Niente estratti "testa e coda"
+# (c'erano `_estratto_annuncio(testo, 4000)` per Groq e `(testo, 8000)` per Gemini, e `[:8000]`
+# per Claude): se un annuncio e' troppo lungo per un fornitore e' il fornitore a rifiutarlo
+# (Groq risponde con un errore, si passa al modello dopo e poi a Gemini), mai noi ad accorciarlo.
+# Test: test_nessun_limite_testo.py.
 
 
 def _leggi_valutazione(dati: dict) -> tuple:
@@ -526,7 +516,7 @@ def valuta_match_llm(job_text: str) -> tuple:
             _anthropic_warning_shown = True
         return None
 
-    system_prompt = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
+    system_prompt = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH)
 
     try:
         response = client.messages.create(
@@ -543,7 +533,7 @@ def valuta_match_llm(job_text: str) -> tuple:
             }],
             messages=[{
                 "role": "user",
-                "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text[:8000]}",
+                "content": f"TESTO INTEGRALE DELL'OFFERTA DI LAVORO:\n{job_text}",
             }],
             output_config={
                 "effort": "medium",
@@ -833,7 +823,7 @@ def valuta_match_gemini(job_text: str) -> tuple:
             _gemini_warning_shown = True
         return None
 
-    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
+    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH)
     ultimo_errore = None
     for indice, modello in enumerate(GEMINI_MODELLI):
         _attendi_slot_gemini()
@@ -906,7 +896,7 @@ def _chiama_gemini(client, istruzioni, job_text, modello):
     risposta = client.interactions.create(
         model=modello,
         input=(f"{istruzioni}\n\n"
-               f"TESTO DELL'OFFERTA DI LAVORO:\n{_estratto_annuncio(job_text, 8000)}"),
+               f"TESTO DELL'OFFERTA DI LAVORO:\n{job_text}"),
         response_format={
             "type": "text",
             "mime_type": "application/json",
@@ -950,7 +940,7 @@ def valuta_match_groq(job_text: str) -> tuple:
     in meno che si rompe su GitHub Actions."""
     if not GROQ_API_KEY or not CV_TESTO_COMPLETO:
         return None
-    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH[:6000])
+    istruzioni = _MATCH_LLM_SYSTEM_TEMPLATE.format(cv_testo=CV_TESTO_PER_MATCH)
     corpo_base = {
         "messages": [
             {"role": "system", "content": istruzioni},
@@ -964,7 +954,7 @@ def valuta_match_groq(job_text: str) -> tuple:
                          "probabilita (intero 0-100), motivazione (stringa), "
                          "modalita (stringa), dettaglio_modalita (stringa), "
                          "ral (stringa).\n\n"
-                         f"TESTO DELL'OFFERTA DI LAVORO:\n{_estratto_annuncio(job_text, 4000)}")},
+                         f"TESTO DELL'OFFERTA DI LAVORO:\n{job_text}")},
         ],
         # json_object invece di uno schema: e' il formato che tutti i modelli
         # Groq supportano, e lo schema vero lo descrive gia' il prompt.
