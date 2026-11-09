@@ -82,5 +82,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-120b"
+  },
+  {
+    "title": "Senior Global Marketing Manager",
+    "company": "ALINE - Bond talent to business",
+    "portal": "LinkedIn",
+    "link": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-at-aline-bond-talent-to-business-4488864779",
+    "date": "2026-11-09",
+    "snippet": "",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "http_error",
+    "probabilita": 50,
+    "motivazione": "L'annuncio fornisce solo il titolo \"Senior Global Marketing Manager\" senza dettagli su requisiti, settore, lingua o sede; quindi non è possibile valutare la corrispondenza. Con le informazioni disponibili, si assegna un punteggio neutro.",
+    "testo_completo": "Senior Global Marketing Manager",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
   }
 ]
