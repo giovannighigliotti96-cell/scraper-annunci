@@ -2784,5 +2784,32 @@
     "citta": "Milano",
     "persone": [],
     "email": []
+  },
+  "Oropress Spa": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Sopran Srl": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Decox Spa": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Giorgio Fugiglando Ing",
+        "Fondatore"
+      ],
+      [
+        "Giorgio Fugiglando",
+        "Fondatore"
+      ]
+    ],
+    "email": []
   }
 }
