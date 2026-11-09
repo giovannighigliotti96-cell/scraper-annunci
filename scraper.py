@@ -5076,6 +5076,28 @@ def firma_forte(titolo, azienda, citta=""):
     return (t, a, _pulisci_per_segnatura(citta))
 
 
+ATS_STATO_FILE = "ats_stato.json"      # {"giornata", "stato": "atteso" | "consegnato"}: lo scrive pubblica_offerte_ats.py (giro ATS diretti, in locale)
+ATS_ATTESA_FINO_ORA = 23.5             # ora di Roma oltre la quale la mail parte comunque (rete di sicurezza: un giro ATS morto non deve tenere ferma la mail per sempre)
+
+
+def ats_in_attesa(momento=None) -> bool:
+    """True se il giro degli ATS diretti ha dichiarato di essere in corso per questa giornata e non ha ancora consegnato le sue offerte.
+
+    La mail Job Alert aspetta: le offerte degli ATS devono arrivare nella STESSA mail, anche se per questo parte la sera tardi.
+    Non blocca mai se la dichiarazione manca, e' illeggibile o e' di un altro giorno (computer spento, giro mai partito): meglio una
+    mail senza ATS che nessuna mail. Dopo ATS_ATTESA_FINO_ORA (e fino alle 06:00, stessa giornata) la mail parte comunque."""
+    adesso = momento or datetime.now(ZoneInfo("Europe/Rome"))
+    try:
+        dati = state_io.load_json_or_raise(ATS_STATO_FILE, {})
+    except Exception as e:
+        logging.warning(f"Errore lettura {ATS_STATO_FILE}: {e}")
+        return False
+    if not isinstance(dati, dict) or dati.get("giornata") != giornata_riepilogo(adesso) or dati.get("stato") != "atteso":
+        return False
+    ora = adesso.hour + adesso.minute / 60
+    return 6 <= ora < ATS_ATTESA_FINO_ORA
+
+
 def togli_copie_portale_di_ats(offerte):
     """Se la stessa offerta (titolo+azienda+citta') e' arrivata sia dai portali sia dagli ATS diretti, resta quella ATS.
 

@@ -131,5 +131,92 @@ class TestTogliCopiePortale(unittest.TestCase):
         self.assertEqual(S.togli_copie_portale_di_ats(batch), batch)
 
 
+class TestAttesaAts(unittest.TestCase):
+    """La mail aspetta gli ATS se il giro li ha dichiarati attesi e non sono ancora consegnati; altrimenti parte come sempre."""
+
+    def setUp(self):
+        import json, tempfile
+        self.json = json
+        self.cwd = os.getcwd()
+        self.d = tempfile.mkdtemp()
+        os.chdir(self.d)
+
+    def tearDown(self):
+        os.chdir(self.cwd)
+
+    def stato(self, giornata, stato):
+        self.json.dump({"giornata": giornata, "stato": stato}, open("ats_stato.json", "w", encoding="utf-8"))
+
+    def alle(self, giorno, ora, minuto=0):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        return datetime(2026, 11, giorno, ora, minuto, tzinfo=ZoneInfo("Europe/Rome"))
+
+    def test_attesi_e_non_consegnati_la_mail_aspetta_anche_alle_otto_di_sera(self):
+        self.stato("2026-11-09", "atteso")
+        self.assertTrue(S.ats_in_attesa(self.alle(9, 18, 5)))
+        self.assertTrue(S.ats_in_attesa(self.alle(9, 20, 0)))
+
+    def test_consegnati_la_mail_parte(self):
+        self.stato("2026-11-09", "consegnato")
+        self.assertFalse(S.ats_in_attesa(self.alle(9, 18, 5)))
+
+    def test_dichiarazione_di_un_altro_giorno_non_blocca(self):
+        self.stato("2026-11-08", "atteso")
+        self.assertFalse(S.ats_in_attesa(self.alle(9, 18, 5)))
+
+    def test_file_assente_o_rotto_non_blocca_mai(self):
+        self.assertFalse(S.ats_in_attesa(self.alle(9, 18, 5)))
+        open("ats_stato.json", "w").write("{non json")
+        self.assertFalse(S.ats_in_attesa(self.alle(9, 18, 5)))
+
+    def test_oltre_le_23_30_la_mail_parte_comunque_e_dopo_mezzanotte_pure(self):
+        self.stato("2026-11-09", "atteso")
+        self.assertTrue(S.ats_in_attesa(self.alle(9, 23, 29)))
+        self.assertFalse(S.ats_in_attesa(self.alle(9, 23, 30)))
+        self.assertFalse(S.ats_in_attesa(self.alle(10, 1, 0)))        # dopo mezzanotte la giornata e' ancora quella del 9, ma il limite e' passato
+
+    def test_run_email_job_esce_senza_inviare_se_gli_ats_sono_attesi(self):
+        import subprocess
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        adesso = datetime.now(ZoneInfo("Europe/Rome"))
+        if adesso.hour + adesso.minute / 60 >= 23.5 or adesso.hour < 6:
+            self.skipTest("fuori dalla finestra di attesa")
+        self.stato(S.giornata_riepilogo(adesso), "atteso")
+        r = subprocess.run([sys.executable, os.path.join(self.cwd, "run_email_job.py")], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+        self.assertEqual(r.returncode, 0, r.stderr[-300:])
+        self.assertIn("In attesa degli ATS", r.stdout)
+
+
+class TestAvviaMail(unittest.TestCase):
+    """Dopo la consegna ATS il workflow della mail parte subito, ma solo se la mail di oggi non e' gia' uscita."""
+
+    def setUp(self):
+        import pubblica_offerte_ats as P
+        self.P = P
+        self.chiamate = []
+        self._run = P.subprocess.run
+
+        class R:
+            returncode, stderr = 0, ""
+        P.subprocess.run = lambda cmd, **k: (self.chiamate.append(cmd), R())[1]
+
+    def tearDown(self):
+        self.P.subprocess.run = self._run
+
+    def test_parte_se_la_mail_di_oggi_non_e_uscita(self):
+        self.P.avvia_mail({"giornata": "2000-01-01"})
+        self.assertEqual(self.chiamate, [["gh", "workflow", "run", "email.yml", "-R", self.P.REPO_GITHUB]])
+
+    def test_non_parte_se_e_gia_uscita(self):
+        self.P.avvia_mail({"giornata": S.giornata_riepilogo()})
+        self.assertEqual(self.chiamate, [])
+
+    def test_parte_anche_senza_ultimo_invio(self):
+        self.P.avvia_mail({})
+        self.assertEqual(len(self.chiamate), 1)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

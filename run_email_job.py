@@ -4,13 +4,20 @@ import sys
 import os
 sys.path.insert(0, os.path.dirname(__file__))
 
-from scraper import invia_email_job, valida_credenziali_email, email_gia_inviata_oggi
+from scraper import invia_email_job, valida_credenziali_email, email_gia_inviata_oggi, ats_in_attesa
 
 # Il workflow schedula molti tentativi per aggirare il ritardo del cron di
 # GitHub Actions: qui ci si ferma se il riepilogo di oggi e' gia' partito, cosi'
 # i tentativi successivi non producono una seconda email.
 if email_gia_inviata_oggi():
     print("Riepilogo di questa giornata gia' inviato: non serve un altro invio.")
+    sys.exit(0)
+
+# Il giro degli ATS diretti (in locale) ha dichiarato che le sue offerte arriveranno in questa mail: si aspetta. Chi le consegna fa
+# ripartire questo workflow subito dopo (pubblica_offerte_ats.py); in ogni caso dopo le 23:30 la mail parte comunque.
+# Uscita senza sentinella: la coda resta intatta, come per "gia' inviata".
+if ats_in_attesa():
+    print("In attesa degli ATS diretti: non invio ora. La mail parte appena sono consegnati (al piu' tardi alle 23:30).")
     sys.exit(0)
 
 if not valida_credenziali_email():
