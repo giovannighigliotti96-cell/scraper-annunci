@@ -5053,6 +5053,41 @@ def dedup_offerte(tutte_le_offerte, viste):
     return nuove_offerte
 
 
+PORTALE_ATS = "ATS diretto"      # nome con cui le offerte lette direttamente dagli ATS delle aziende (coda_ats.py) entrano nella mail unica
+
+# Forme societarie e parole di contorno che non distinguono un'azienda da se stessa: "AXITEA SPA" e "AXITEA" sono la stessa ditta.
+# Volutamente poche: "Philips" e "Philips Healthcare" restano due nomi diversi.
+_SUFFISSI_AZIENDA = {"spa", "srl", "srls", "snc", "sas", "sapa", "ltd", "limited", "inc", "llc", "gmbh", "ag", "sa", "bv", "nv", "plc",
+                     "italia", "italy", "group", "gruppo", "holding"}
+
+
+def nome_azienda_base(azienda):
+    parole = re.findall(r"[a-z0-9]+", str(azienda or "").lower().replace(".", ""))
+    tenute = [p for p in parole if p not in _SUFFISSI_AZIENDA]
+    return "".join(tenute) or "".join(parole)
+
+
+def firma_forte(titolo, azienda, citta=""):
+    """(titolo, nome base dell'azienda, citta') o None se manca l'azienda. Piu' tollerante di _segnatura_offerta sul NOME dell'azienda."""
+    t = _pulisci_per_segnatura(titolo)
+    a = nome_azienda_base(azienda)
+    if not t or not a or a == _pulisci_per_segnatura(AZIENDA_IGNOTA):
+        return None
+    return (t, a, _pulisci_per_segnatura(citta))
+
+
+def togli_copie_portale_di_ats(offerte):
+    """Se la stessa offerta (titolo+azienda+citta') e' arrivata sia dai portali sia dagli ATS diretti, resta quella ATS.
+
+    La copia ATS ha il link dell'azienda e il testo intero valutato; quella del portale e' lo stesso annuncio rilanciato. Il caso nasce
+    quando uno scraping di portale (es. 17:30) accoda un'offerta che gli ATS avevano gia' consegnato. Senza azienda nota non si toglie
+    niente (due titoli generici di aziende diverse collasserebbero), e i doppioni tra portali non si toccano."""
+    firme_ats = {firma_forte(j.title, j.company, j.city) for j in offerte if getattr(j, "portal", "") == PORTALE_ATS} - {None}
+    if not firme_ats:
+        return list(offerte)
+    return [j for j in offerte if getattr(j, "portal", "") == PORTALE_ATS or firma_forte(j.title, j.company, j.city) not in firme_ats]
+
+
 class Cronometro:
     """Tiene i tempi delle fasi di un run e li stampa in fondo.
 
@@ -5183,6 +5218,12 @@ def invia_email_job():
             offerte_da_inviare.append(ScrapedJob.from_dict(d))
         except Exception as e:
             logging.error(f"Voce malformata in offerte_giornaliere.json scartata: {e} — dati: {d!r}")
+
+    # Una stessa offerta arrivata sia dagli ATS diretti sia da un portale (es. lo scraping delle 17:30 dopo la consegna ATS): resta quella ATS.
+    prima = len(offerte_da_inviare)
+    offerte_da_inviare = togli_copie_portale_di_ats(offerte_da_inviare)
+    if len(offerte_da_inviare) < prima:
+        print(f"Tolte {prima - len(offerte_da_inviare)} copie di portale di offerte gia' consegnate dagli ATS diretti.")
 
     # Seconda possibilita' per chi al mattino non e' stato valutato: quando
     # Gemini e' giu' (il 15/09/2026: errori 500 "high demand" su tutti i run
