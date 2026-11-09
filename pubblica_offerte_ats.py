@@ -136,10 +136,16 @@ def pubblica(applica, invia, remoto, ramo, **dati):
         shutil.rmtree(wt, ignore_errors=True)
 
 
-def avvia_mail(ultimo_invio):
+def avvia_mail(ultimo_invio, momento=None):
+    """Fa partire il workflow della mail SOLO se l'orario normale (18:05) e' gia' passato e la mail di oggi non e' uscita: prima la mail
+    parte da sola al suo orario, con anche l'ultimo scraping dei portali (17:30)."""
     import scraper as S
-    if ultimo_invio.get("giornata") == S.giornata_riepilogo():
+    adesso = momento or datetime.now(ZoneInfo("Europe/Rome"))
+    if ultimo_invio.get("giornata") == S.giornata_riepilogo(adesso):
         print("La mail di oggi e' gia' partita: non faccio partire il workflow.")
+        return
+    if 6 <= adesso.hour and (adesso.hour, adesso.minute) < (18, 5):
+        print(f"Sono le {adesso:%H:%M}: la mail partira' da sola alle 18:05 (e trovera' gli ATS gia' consegnati). Non faccio partire il workflow.")
         return
     r = subprocess.run(["gh", "workflow", "run", "email.yml", "-R", REPO_GITHUB], capture_output=True, text=True, encoding="utf-8", errors="replace")
     print("workflow email.yml avviato" if r.returncode == 0 else f"ATTENZIONE: workflow email.yml NON avviato: {r.stderr.strip()[:200]}")

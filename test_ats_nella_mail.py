@@ -190,7 +190,8 @@ class TestAttesaAts(unittest.TestCase):
 
 
 class TestAvviaMail(unittest.TestCase):
-    """Dopo la consegna ATS il workflow della mail parte subito, ma solo se la mail di oggi non e' gia' uscita."""
+    """Dopo la consegna ATS il workflow della mail parte subito SOLO se l'orario normale (18:05) e' gia' passato e la mail di oggi non e' uscita.
+    Prima delle 18:05 non serve: la mail parte da sola al suo orario, con anche l'ultimo scraping dei portali (17:30)."""
 
     def setUp(self):
         import pubblica_offerte_ats as P
@@ -205,17 +206,28 @@ class TestAvviaMail(unittest.TestCase):
     def tearDown(self):
         self.P.subprocess.run = self._run
 
-    def test_parte_se_la_mail_di_oggi_non_e_uscita(self):
-        self.P.avvia_mail({"giornata": "2000-01-01"})
+    def alle(self, ora, minuto=0, giorno=9):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+        return datetime(2026, 11, giorno, ora, minuto, tzinfo=ZoneInfo("Europe/Rome"))
+
+    def test_dopo_le_1805_parte_se_la_mail_di_oggi_non_e_uscita(self):
+        self.P.avvia_mail({"giornata": "2000-01-01"}, self.alle(18, 30))
         self.assertEqual(self.chiamate, [["gh", "workflow", "run", "email.yml", "-R", self.P.REPO_GITHUB]])
 
-    def test_non_parte_se_e_gia_uscita(self):
-        self.P.avvia_mail({"giornata": S.giornata_riepilogo()})
+    def test_prima_delle_1805_non_parte_la_mail_ha_il_suo_orario(self):
+        self.P.avvia_mail({"giornata": "2000-01-01"}, self.alle(16, 45))
+        self.P.avvia_mail({"giornata": "2000-01-01"}, self.alle(18, 4))
         self.assertEqual(self.chiamate, [])
 
-    def test_parte_anche_senza_ultimo_invio(self):
-        self.P.avvia_mail({})
-        self.assertEqual(len(self.chiamate), 1)
+    def test_non_parte_se_la_mail_di_oggi_e_gia_uscita(self):
+        self.P.avvia_mail({"giornata": S.giornata_riepilogo(self.alle(19, 0))}, self.alle(19, 0))
+        self.assertEqual(self.chiamate, [])
+
+    def test_parte_anche_senza_ultimo_invio_e_a_notte_dopo_mezzanotte(self):
+        self.P.avvia_mail({}, self.alle(20, 0))
+        self.P.avvia_mail({}, self.alle(1, 0, giorno=10))        # dopo mezzanotte e' ancora la giornata del 9
+        self.assertEqual(len(self.chiamate), 2)
 
 
 if __name__ == "__main__":
