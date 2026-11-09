@@ -184,7 +184,14 @@ class TestAttesaAts(unittest.TestCase):
         if adesso.hour + adesso.minute / 60 >= 23.5 or adesso.hour < 6:
             self.skipTest("fuori dalla finestra di attesa")
         self.stato(S.giornata_riepilogo(adesso), "atteso")
-        r = subprocess.run([sys.executable, os.path.join(self.cwd, "run_email_job.py")], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
+        # SICUREZZA: nel processo figlio smtplib e' SOSTITUITO da un blocco che fallisce. Svuotare le credenziali non basta (il .env le rimette: provato il 09/11/2026),
+        # e senza questo, se il blocco "ATS attesi" non c'e' (fase rossa del test) run_email_job.py spedisce una mail VERA: e' successo due volte, alle 14:51 e alle 18:19.
+        codice = ("import smtplib, runpy, sys\n"
+                  "class _Blocco:\n"
+                  "    def __init__(self, *a, **k): raise RuntimeError('INVIO BLOCCATO DAL TEST')\n"
+                  "smtplib.SMTP = _Blocco; smtplib.SMTP_SSL = _Blocco\n"
+                  f"runpy.run_path({os.path.join(self.cwd, 'run_email_job.py')!r}, run_name='__main__')\n")
+        r = subprocess.run([sys.executable, "-c", codice], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=120)
         self.assertEqual(r.returncode, 0, r.stderr[-300:])
         self.assertIn("In attesa degli ATS", r.stdout)
 
