@@ -196,6 +196,49 @@ class TestAttesaAts(unittest.TestCase):
         self.assertIn("In attesa degli ATS", r.stdout)
 
 
+class TestValutazioniCoda(unittest.TestCase):
+    """La mia valutazione sostituisce quella di Groq su TUTTE le voci della coda, nel formato di produzione: una sola mail, con un solo valutatore."""
+
+    def voce(self, titolo, azienda, link, prob=70, portale="LinkedIn", da="llm", modello="Groq openai/gpt-oss-120b"):
+        return {"title": titolo, "company": azienda, "portal": portale, "link": link, "date": "2026-11-09", "snippet": "", "match_level": "Alto", "match_count": 3,
+                "city": "Milano", "work_mode": "unverified", "fetch_status": "ok", "probabilita": prob, "motivazione": "motivazione Groq", "testo_completo": "t" * 400,
+                "ral": "", "dettaglio_modalita": "", "valutato_da": da, "modello": modello, "recruiter": ""}
+
+    def test_sostituisce_punteggio_motivazione_modalita_e_valutatore(self):
+        coda = [self.voce("Marketing Manager", "IED", "https://l.example/jobs/view/1")]
+        nuova, rimosse, senza = C.applica_valutazioni(coda, {S.get_job_id("https://l.example/jobs/view/1"): {"p": 68, "m": "Mia motivazione.", "mod": "in sede", "ral": "40.000-50.000 €"}})
+        v = nuova[0]
+        self.assertEqual((v["probabilita"], v["motivazione"], v["work_mode"], v["ral"], v["valutato_da"]), (68, "Mia motivazione.", "in sede", "40.000-50.000 €", "llm"))
+        self.assertIn("Claude", v["modello"])
+        self.assertEqual((rimosse, senza), ([], []))
+        self.assertEqual(v["testo_completo"], "t" * 400)                  # il resto della voce non si tocca
+
+    def test_sotto_soglia_esce_dalla_coda_e_si_dice(self):
+        coda = [self.voce("Head of Sales", "Reverse", "https://r.example/1", prob=68), self.voce("GTM Manager", "Contents", "https://l.example/2", prob=75)]
+        vals = {S.get_job_id("https://r.example/1"): {"p": 25, "m": "Vendita pura.", "mod": "da remoto", "ral": ""},
+                S.get_job_id("https://l.example/2"): {"p": 80, "m": "Centrata.", "mod": "non indicata", "ral": ""}}
+        nuova, rimosse, senza = C.applica_valutazioni(coda, vals)
+        self.assertEqual([v["company"] for v in nuova], ["Contents"])
+        self.assertEqual([(v["company"], p) for v, p in rimosse], [("Reverse", 25)])
+
+    def test_le_voci_senza_mia_valutazione_restano_e_vengono_segnalate(self):
+        coda = [self.voce("A", "X", "https://x.example/1"), self.voce("B", "Y", "https://y.example/2")]
+        nuova, rimosse, senza = C.applica_valutazioni(coda, {S.get_job_id("https://x.example/1"): {"p": 60, "m": "ok", "mod": "ibrido", "ral": ""}})
+        self.assertEqual(len(nuova), 2)
+        self.assertEqual([v["company"] for v in senza], ["Y"])
+        self.assertEqual(nuova[1]["modello"], "Groq openai/gpt-oss-120b")     # intatta
+
+    def test_il_link_con_parametri_di_tracking_corrisponde_lo_stesso(self):
+        coda = [self.voce("A", "X", "https://x.example/jobs/view/9?trackingId=abc&refId=1")]
+        nuova, rimosse, senza = C.applica_valutazioni(coda, {S.get_job_id("https://x.example/jobs/view/9"): {"p": 60, "m": "ok", "mod": "ibrido", "ral": ""}})
+        self.assertEqual((len(senza), nuova[0]["probabilita"]), (0, 60))
+
+    def test_modalita_non_indicata_diventa_unverified(self):
+        coda = [self.voce("A", "X", "https://x.example/1")]
+        nuova, _, _ = C.applica_valutazioni(coda, {S.get_job_id("https://x.example/1"): {"p": 60, "m": "ok", "mod": "non indicata", "ral": ""}})
+        self.assertEqual(nuova[0]["work_mode"], "unverified")
+
+
 class TestAvviaMail(unittest.TestCase):
     """Dopo la consegna ATS il workflow della mail parte subito SOLO se l'orario normale (18:05) e' gia' passato e la mail di oggi non e' uscita.
     Prima delle 18:05 non serve: la mail parte da sola al suo orario, con anche l'ultimo scraping dei portali (17:30)."""

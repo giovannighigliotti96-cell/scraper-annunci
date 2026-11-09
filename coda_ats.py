@@ -67,3 +67,26 @@ def prepara(candidati, valutazioni, viste, coda, soglia=SOGLIA):
             continue
         tenute.append(j)
     return [j.to_dict() for j in tenute], [S.get_job_id(j.link) for j in tenute], scartate
+
+
+def applica_valutazioni(coda, valutazioni, soglia=SOGLIA):
+    """La MIA valutazione sostituisce quella di Groq su tutte le voci della coda (formato di produzione: una sola mail, un solo valutatore).
+
+    valutazioni: {job_id (get_job_id del link): {"p", "m", "mod", "ral"}}. Ritorna (coda nuova, rimosse [(voce, punteggio)] sotto soglia, voci senza mia valutazione).
+    Le voci senza mia valutazione restano com'erano e vengono segnalate: chi consegna decide se valutarle prima o lasciarle."""
+    nuova, rimosse, senza = [], [], []
+    for v in coda:
+        val = valutazioni.get(S.get_job_id(v.get("link", "")))
+        if val is None:
+            senza.append(v)
+            nuova.append(v)
+            continue
+        p = int(val["p"])
+        if p < soglia:
+            rimosse.append((v, p))
+            continue
+        v = dict(v)
+        v.update({"probabilita": p, "motivazione": val.get("m", ""), "work_mode": _modalita(val.get("mod")), "ral": val.get("ral", "") or "",
+                  "match_level": "Alto" if p >= 75 else "Medio" if p >= 60 else "Base", "valutato_da": "llm", "modello": MODELLO})
+        nuova.append(v)
+    return nuova, rimosse, senza

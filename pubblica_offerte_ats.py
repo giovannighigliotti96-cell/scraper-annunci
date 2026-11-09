@@ -12,6 +12,8 @@ Due usi, entrambi con commit + push su origin/main, in un worktree temporaneo (i
       offerte_viste.json, e nello STESSO commit porta ats_stato.json a "consegnato" (anche con zero offerte: la mail non deve aspettare invano).
       Poi, se la mail di oggi non e' ancora partita, fa partire il workflow email.yml (gh workflow run) cosi' arriva subito.
       Segna come viste in locale le offerte valutate.
+      Se nella cartella c'e' anche valutazioni_coda.json ({get_job_id(link): {"p","m","mod","ral"}}) la MIA valutazione sostituisce quella di Groq su TUTTE le voci
+      dei portali gia' in coda (formato di produzione, un solo valutatore): quelle sotto 50 escono, quelle senza mia valutazione vengono segnalate.
 
 Senza --invia mostra cosa farebbe e non pubblica niente. Se il push viene rifiutato (un altro run ha scritto nel frattempo) riparte da
 origin/main aggiornato e ricalcola: fino a 5 tentativi. --remoto/--ramo servono ai test (un repository locale al posto di GitHub).
@@ -81,12 +83,22 @@ def applica_atteso(wt, **_):
     return "ATS diretti attesi per la mail di oggi", 0
 
 
-def applica_consegna(wt, candidati, valutazioni):
-    """Dentro il worktree: calcola cosa aggiungere con i criteri dei portali e scrive coda, viste e stato 'consegnato'."""
+def applica_consegna(wt, candidati, valutazioni, valutazioni_coda=None):
+    """Dentro il worktree: (se ci sono) applica la MIA valutazione a tutta la coda, calcola cosa aggiungere con i criteri dei portali e scrive coda, viste
+    e stato 'consegnato'. valutazioni_coda = {job_id: {"p","m","mod","ral"}}: sostituisce i punteggi di Groq nel formato di produzione (una sola mail)."""
     os.chdir(wt)
     import coda_ats as C
     coda = leggi(os.path.join(wt, "offerte_giornaliere.json"), [])
     viste = leggi(os.path.join(wt, "offerte_viste.json"), {})
+    coda_cambiata = False
+    if valutazioni_coda:
+        coda, rimosse, senza = C.applica_valutazioni(coda, valutazioni_coda)
+        coda_cambiata = True
+        print(f"valutazione mia sulla coda: {len(coda)} voci restano, {len(rimosse)} tolte perche' sotto soglia, {len(senza)} SENZA mia valutazione")
+        for v, p in rimosse:
+            print(f"   tolta dalla coda ({p}%): {v['company']} | {v['title']}")
+        for v in senza:
+            print(f"   ATTENZIONE senza mia valutazione (resta quella di {v.get('modello') or v.get('valutato_da')}): {v['company']} | {v['title']}")
     voci, ids, scartate = C.prepara(candidati, valutazioni, set(viste), coda)
     os.chdir(QUI)
     print(f"da aggiungere {len(voci)} | scartate {len(scartate)} | coda attuale {len(coda)} voci")
@@ -94,7 +106,7 @@ def applica_consegna(wt, candidati, valutazioni):
         print(f"   scartata: {j.company} | {j.title} | {motivo}")
     for v in voci:
         print(f"   AGGIUNGO {v['probabilita']:3}% {v['company']} | {v['title']} | {v['city']} | {v['link']}")
-    if voci:
+    if voci or coda_cambiata:
         scrivi(os.path.join(wt, "offerte_giornaliere.json"), coda + voci)
         now = time.time()
         for i in ids:
@@ -170,7 +182,8 @@ def main():
     valutazioni = leggi(os.path.join(cart, "valutazioni.json"), {})
     if not candidati or not valutazioni:
         sys.exit("Mancano candidati.json o valutazioni.json nella cartella del giro: nessuna consegna.")
-    esito = pubblica(applica_consegna, a.invia, a.remoto, a.ramo, candidati=candidati, valutazioni=valutazioni)
+    vc = leggi(os.path.join(cart, "valutazioni_coda.json"), None)          # facoltativo: mia valutazione di TUTTE le voci dei portali nella coda
+    esito = pubblica(applica_consegna, a.invia, a.remoto, a.ramo, candidati=candidati, valutazioni=valutazioni, valutazioni_coda=vc)
     if esito is None:
         return
     sys.path.insert(0, os.path.join(QUI, "ats_diretto"))
