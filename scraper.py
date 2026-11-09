@@ -1134,7 +1134,20 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
                                 "le offerte restanti tengono il punteggio euristico.")
                 scaduto = True
             continue
-        testo = job.testo_completo or f"{job.title} {job.company} {job.snippet}"
+        testo = job.testo_completo or ""
+        if len(testo) < TESTO_MINIMO_PER_LLM:
+            # Testo mancante (e' quasi sempre un blocco temporaneo di LinkedIn): si riprova a scaricarlo, anche alle 18:05 per le offerte rimaste indicative.
+            recuperato = _recupera_testo_annuncio(job)
+            if len(recuperato) >= TESTO_MINIMO_PER_LLM:
+                job.testo_completo = testo = recuperato
+                job.fetch_status = "ok"
+        if len(testo) < TESTO_MINIMO_PER_LLM:
+            # MAI valutare dal solo titolo: il modello risponde il 50 neutro e la produzione lo registrava come valutazione "llm" (09/11/2026: ALINE, NewPrinces,
+            # Poletti Usato). L'offerta tiene il punteggio euristico, resta "non valutata dall'LLM" (quindi viene riprovata e non filtrata) e la mail lo dice.
+            print(f"  SENZA TESTO ({len(testo)} car.): non valutata dall'LLM, resta indicativa | {job.title[:50]} [{job.portal}]", flush=True)
+            if "non recuperato" not in (job.motivazione or "").lower():
+                job.motivazione = ("Testo dell'annuncio non recuperato: punteggio indicativo, calcolato dal solo titolo. " + (job.motivazione or "")).strip()
+            continue
         fatte += 1
         t_offerta = time.monotonic()
         try:
@@ -1481,6 +1494,62 @@ _HTML_PAGINE = {}
 PREFETCH_OPERAI = 4
 
 
+# ---- Recupero robusto del testo di un annuncio (09/11/2026) --------------------------------------------------------------------
+# Il 09/11/2026 tre annunci LinkedIn sono arrivati in mail con fetch_status "http_error" e un testo di 31-47 caratteri (solo titolo e azienda):
+# un solo tentativo con timeout di 5 secondi, e i server di GitHub (indirizzi di datacenter) vengono limitati spesso da LinkedIn. Il modello, vedendo
+# solo il titolo, rispondeva il 50 neutro e la produzione lo registrava come valutazione "llm": mai riprovata, mai filtrata.
+# Qui: nuovi tentativi con attesa (404/410 mai riprovati), per LinkedIn l'endpoint "guest" dell'offerta come ultima via, e un TETTO DI TEMPO per run
+# sui nuovi tentativi: se LinkedIn blocca tutto, lo scraping non si allunga di ore.
+_RETRY_BUDGET_S = 300.0
+_budget_retry = [_RETRY_BUDGET_S]
+TESTO_MINIMO_PER_LLM = 300       # sotto questa lunghezza l'annuncio e' solo un titolo: l'LLM non lo valuta (darebbe un 50 neutro non affidabile)
+
+
+def _id_offerta_linkedin(url):
+    m = re.search(r"linkedin\.com/jobs/view/(?:[^?#]*?-)?(\d{6,})(?:[/?#]|$)", url or "")
+    return m.group(1) if m else None
+
+
+def _scarica_html(url):
+    """(html o None, stato) con stato in {"ok", "timeout", "http_error"}. Fino a tre richieste: la pagina, la pagina con piu' tempo, e per LinkedIn
+    l'endpoint guest dell'offerta. I nuovi tentativi spendono il tetto di tempo del run (_budget_retry); finito quello, una richiesta sola."""
+    candidati = [(url, 5), (url, 10)]
+    id_li = _id_offerta_linkedin(url)
+    if id_li:
+        candidati.append((f"https://www.linkedin.com/jobs-guest/jobs/api/jobPosting/{id_li}", 10))
+    stato = "http_error"
+    for i, (u, timeout) in enumerate(candidati):
+        if i > 0:
+            if _budget_retry[0] <= 0:
+                break
+            time.sleep(2)
+        t0 = time.monotonic()
+        try:
+            r = _safe_get(u, headers={"User-Agent": USER_AGENT_CHROME}, timeout=timeout)
+            if r.status_code == 200 and len(r.text or "") > 500:
+                return r.text, "ok"
+            stato = "http_error"
+            if r.status_code in (404, 410):
+                return None, stato
+        except requests.exceptions.Timeout:
+            stato = "timeout"
+        except Exception:
+            stato = "http_error"
+        if i > 0:
+            _budget_retry[0] -= 2 + (time.monotonic() - t0)
+    return None, stato
+
+
+def _recupera_testo_annuncio(job):
+    """Testo dell'annuncio (snippet + pagina) o "" se non si riesce a scaricare."""
+    if not job.link or not _url_is_safe_to_fetch(job.link):
+        return ""
+    html, _ = _scarica_html(job.link)
+    if not html:
+        return ""
+    return f"{job.snippet} {BeautifulSoup(html, 'html.parser').get_text(' ', strip=True)}".strip()
+
+
 def prefetch_pagine(urls, operai=PREFETCH_OPERAI):
     """Scarica in parallelo le pagine indicate e le mette in cache.
 
@@ -1581,10 +1650,9 @@ def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
         return "Base", 0, "unverified", "http_error", 0, "", testo_originale
     try:
         html = _HTML_PAGINE.get(url)
+        stato_fetch = "http_error"
         if html is None:
-            headers = {"User-Agent": USER_AGENT_CHROME}
-            resp = _safe_get(url, headers=headers, timeout=5)
-            html = resp.text if resp.status_code == 200 else None
+            html, stato_fetch = _scarica_html(url)       # con nuovi tentativi (vedi _scarica_html)
         if html is not None:
             soup = BeautifulSoup(html, "html.parser")
             testo_originale += " " + soup.get_text(" ", strip=True)
@@ -1596,7 +1664,7 @@ def calcola_punteggio_e_modalita(url, snippet, data_annuncio="", portale=""):
             if recruiter:
                 _RECRUITER_DA_PAGINA[url] = recruiter
         else:
-            fetch_status = "http_error"
+            fetch_status = stato_fetch
     except requests.exceptions.Timeout:
         fetch_status = "timeout"
         logging.warning(f"Timeout scaricamento testo completo per {url}")
