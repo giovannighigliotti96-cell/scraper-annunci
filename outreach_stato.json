@@ -146,6 +146,14 @@
     "Laura Quarzago": {
       "proposto_il": "2026-11-08",
       "portale": "ReverseGroup"
+    },
+    "Arlene Lalanne": {
+      "proposto_il": "2026-11-09",
+      "portale": "ReverseGroup"
+    },
+    "Commerciale Polestar": {
+      "proposto_il": "2026-11-09",
+      "portale": "LinkedIn"
     }
   },
   "Manydesigns Srl": {
@@ -2808,6 +2816,47 @@
       [
         "Giorgio Fugiglando",
         "Fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Fiore Srl": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Ragione Sociale Posizione",
+        "Titolare"
+      ],
+      [
+        "Funzionario Amministrativo Funzionario",
+        "Direttore Marketing"
+      ]
+    ],
+    "email": [
+      "bari@fioresrl.com",
+      "info@fioresrl.com",
+      "roma@fioresrl.com",
+      "vicenza@fioresrl.com"
+    ]
+  },
+  "Hill Rom Spa": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Agfa Healthcare Italy Spa Unipersonale": {
+    "proposta_il": "2026-11-09",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Pete Winchester",
+        "Managing Director"
+      ],
+      [
+        "Alliance Medical",
+        "Managing Director"
       ]
     ],
     "email": []
