@@ -2860,5 +2860,25 @@
       ]
     ],
     "email": []
+  },
+  "Baumer Italia Srl": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Ingersoll Taegutec Italia Srl": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Sirtef Srl": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "sales@sirtef.it"
+    ]
   }
 }
