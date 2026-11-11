@@ -2880,5 +2880,41 @@
     "email": [
       "sales@sirtef.it"
     ]
+  },
+  "Giacomo Sperone I.Vi.S. Spa Oppure Giacomo Sperone Oppure I.Vi.S.": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Nasce Giacomo Sperone",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "info@giacomosperone.com"
+    ]
+  },
+  "Softwareone Italia Srl": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Biomedica Italia Srl": {
+    "proposta_il": "2026-11-11",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Antonino Marino",
+        "Marketing Director"
+      ],
+      [
+        "Collection Oscar Rizzi",
+        "Managing Director"
+      ]
+    ],
+    "email": [
+      "info@biomedica-italia.it"
+    ]
   }
 }
