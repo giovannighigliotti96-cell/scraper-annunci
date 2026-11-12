@@ -1,5 +1,60 @@
 [
   {
+    "job_id": "https://jobs.ashbyhq.com/HRS/a7dc846f-c2da-4f8a-a639-2758ce5086ed",
+    "data_invio": "2026-11-12",
+    "titolo": "Field Marketing Manager (all genders)",
+    "azienda": "hrs",
+    "citta": "Milano",
+    "portale": "ATS diretto",
+    "probabilita": 68,
+    "link": "https://jobs.ashbyhq.com/HRS/a7dc846f-c2da-4f8a-a639-2758ce5086ed",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-pharma-and-personal-care-at-ecolab-4490038871",
+    "data_invio": "2026-11-12",
+    "titolo": "Marketing Manager Pharma and Personal Care",
+    "azienda": "Ecolab",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 60,
+    "link": "https://it.linkedin.com/jobs/view/marketing-manager-pharma-and-personal-care-at-ecolab-4490038871",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://hp.wd5.myworkdayjobs.com/exteu-ac-careersite/job/Milan-Milano-Italy/Italy-Regional-Marketing-Campaign-Manager_3170896",
+    "data_invio": "2026-11-12",
+    "titolo": "Italy Regional Marketing Campaign Manager",
+    "azienda": "Hp",
+    "citta": "Milano",
+    "portale": "ATS diretto",
+    "probabilita": 60,
+    "link": "https://hp.wd5.myworkdayjobs.com/exteu-ac-careersite/job/Milan-Milano-Italy/Italy-Regional-Marketing-Campaign-Manager_3170896",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-manager-saas-at-chaberton-professionals-4488518085",
+    "data_invio": "2026-11-12",
+    "titolo": "Sales Manager - SaaS",
+    "azienda": "Chaberton Professionals",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 52,
+    "link": "https://it.linkedin.com/jobs/view/sales-manager-saas-at-chaberton-professionals-4488518085",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://opella.wd103.myworkdayjobs.com/OpellaCareers/job/Milano/Brand-Lead-Consumer-Healthcare---Milan_R70000548",
+    "data_invio": "2026-11-12",
+    "titolo": "Brand Lead Consumer Healthcare - Milan",
+    "azienda": "Opella",
+    "citta": "Milano",
+    "portale": "ATS diretto",
+    "probabilita": 52,
+    "link": "https://opella.wd103.myworkdayjobs.com/OpellaCareers/job/Milano/Brand-Lead-Consumer-Healthcare---Milan_R70000548",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/sales-manager-europe-at-picarro-4487824517",
     "data_invio": "2026-11-12",
     "titolo": "Sales Manager - Europe",
@@ -4342,61 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 50,
     "link": "https://it.linkedin.com/jobs/view/sales-digital-advertising-manager-at-the-walt-disney-company-4478424021",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.wyser-search.com/offerte-lavoro-dettaglio/altro/sales-director-milano/1384293/",
-    "data_invio": "2026-10-14",
-    "titolo": "Sales Director",
-    "azienda": "Azienda non specificata",
-    "citta": "Milano",
-    "portale": "Wyser",
-    "probabilita": 50,
-    "link": "https://it.wyser-search.com/offerte-lavoro-dettaglio/altro/sales-director-milano/1384293/",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/senior-marketing-manager-%E2%80%93-italy-at-orien-trade-group-4476650252",
-    "data_invio": "2026-10-14",
-    "titolo": "Senior Marketing Manager – Italy",
-    "azienda": "Orien Trade Group",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/senior-marketing-manager-%E2%80%93-italy-at-orien-trade-group-4476650252",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-at-greyheath-hospitality-4479503160",
-    "data_invio": "2026-10-14",
-    "titolo": "Marketing Manager",
-    "azienda": "Greyheath Hospitality",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-greyheath-hospitality-4479503160",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-%E2%80%93-digital-first-brand-strategy-at-deda-speed-4478440091",
-    "data_invio": "2026-10-14",
-    "titolo": "Brand Manager – Digital-First Brand Strategy",
-    "azienda": "Deda Speed",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/brand-manager-%E2%80%93-digital-first-brand-strategy-at-deda-speed-4478440091",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/revenue-technical-manager-at-mevitech-s-r-l-4479512404",
-    "data_invio": "2026-10-14",
-    "titolo": "Revenue & Technical Manager",
-    "azienda": "MEVITECH S.R.L.",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/revenue-technical-manager-at-mevitech-s-r-l-4479512404",
     "recruiter": ""
   }
 ]
