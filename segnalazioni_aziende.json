@@ -1,4 +1,11 @@
 {
-  "offerte": [],
+  "offerte": [
+    {
+      "titolo": "Manager, Activation Digital Planning, Italy",
+      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5480330008",
+      "azienda": "Wpp Media Srl",
+      "citta": "Milano"
+    }
+  ],
   "autocandidature": []
 }
