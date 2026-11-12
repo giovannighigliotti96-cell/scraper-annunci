@@ -2961,5 +2961,55 @@
       "bnasales@bossard.com",
       "marketing@bossard.com"
     ]
+  },
+  "Gelmini Carlo Srl": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Chiara Gelmini",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "amministrazione@caseificio-gelmini.it",
+      "info@caseificio-gelmini.it"
+    ]
+  },
+  "Kunzi Spa": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Hugo Künzi",
+        "fondatore"
+      ]
+    ],
+    "email": []
+  },
+  "Bompan Srl": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Commerciale Grafico",
+        "CEO"
+      ],
+      [
+        "Massimo Bompan",
+        "presidente"
+      ],
+      [
+        "Commercial Graphic Designer",
+        "CEO"
+      ],
+      [
+        "Full Name",
+        "Marketing Director"
+      ]
+    ],
+    "email": [
+      "informazioni@bompan.it"
+    ]
   }
 }
