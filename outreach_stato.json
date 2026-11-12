@@ -154,6 +154,10 @@
     "Commerciale Polestar": {
       "proposto_il": "2026-11-09",
       "portale": "LinkedIn"
+    },
+    "Federica Doris": {
+      "proposto_il": "2026-11-12",
+      "portale": "MichaelPage"
     }
   },
   "Manydesigns Srl": {
@@ -2915,6 +2919,47 @@
     ],
     "email": [
       "info@biomedica-italia.it"
+    ]
+  },
+  "Samson Srl": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Ocean Fresh Italia Srl": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Juri Pogliani",
+        "fondatore"
+      ]
+    ],
+    "email": [
+      "offerte@oceanfresh.it"
+    ]
+  },
+  "Bossard Italia Srl": {
+    "proposta_il": "2026-11-12",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Daniel Bossard",
+        "CEO"
+      ],
+      [
+        "Empowered People",
+        "talent"
+      ],
+      [
+        "United Nations Global",
+        "CEO"
+      ]
+    ],
+    "email": [
+      "bnasales@bossard.com",
+      "marketing@bossard.com"
     ]
   }
 }
