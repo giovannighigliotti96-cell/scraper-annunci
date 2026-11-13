@@ -3011,5 +3011,43 @@
     "email": [
       "informazioni@bompan.it"
     ]
+  },
+  "Raytech Srl": {
+    "proposta_il": "2026-11-13",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "info@raytech.it",
+      "privacy@raytech.it"
+    ]
+  },
+  "Humanitas Società Per Azioni": {
+    "proposta_il": "2026-11-13",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Pier Carlo Romagnoli",
+        "Presidente"
+      ],
+      [
+        "Nicola Dioguardi",
+        "Presidente"
+      ]
+    ],
+    "email": [
+      "dataprotectionofficer@humanitas.it",
+      "ricoveri.privati@humanitas.it"
+    ]
+  },
+  "Unika Milano Spa": {
+    "proposta_il": "2026-11-13",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "bologna@unikaspa.it",
+      "carpi@unikaspa.it",
+      "cervia@unikaspa.it",
+      "cesano@unikaspa.it"
+    ]
   }
 }
