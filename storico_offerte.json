@@ -1,5 +1,49 @@
 [
   {
+    "job_id": "https://job-boards.greenhouse.io/deliveroo/jobs/8377866",
+    "data_invio": "2026-11-13",
+    "titolo": "Senior Marketing Manager, Merchant Marketing, IT",
+    "azienda": "Deliveroo",
+    "citta": "Milano",
+    "portale": "ATS diretto",
+    "probabilita": 68,
+    "link": "https://job-boards.greenhouse.io/deliveroo/jobs/8377866",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://galderma.wd3.myworkdayjobs.com/broadbean_external/job/Milano/Brand-Manager----Consumer_JR021324",
+    "data_invio": "2026-11-13",
+    "titolo": "Brand Manager, Dermatology Skincare & Consumer Products",
+    "azienda": "Galderma",
+    "citta": "Milano",
+    "portale": "ATS diretto",
+    "probabilita": 58,
+    "link": "https://galderma.wd3.myworkdayjobs.com/broadbean_external/job/Milano/Brand-Manager----Consumer_JR021324",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/buyer-growth-manager-italy-market-at-alibaba-com-4490566336",
+    "data_invio": "2026-11-13",
+    "titolo": "Buyer Growth Manager (Italy-Market)",
+    "azienda": "Alibaba.com",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 55,
+    "link": "https://it.linkedin.com/jobs/view/buyer-growth-manager-italy-market-at-alibaba-com-4490566336",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-brand-manager-at-intermedia-selection-4488550026",
+    "data_invio": "2026-11-13",
+    "titolo": "Senior Brand Manager",
+    "azienda": "Intermedia Selection Srl",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/senior-brand-manager-at-intermedia-selection-4488550026",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://jobs.ashbyhq.com/HRS/a7dc846f-c2da-4f8a-a639-2758ce5086ed",
     "data_invio": "2026-11-12",
     "titolo": "Field Marketing Manager (all genders)",
@@ -4353,50 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 50,
     "link": "https://it.linkedin.com/jobs/view/marketing-manager-at-axians-italia-4476482035",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/mice-manager-%E2%80%93-destination-marketing-business-events-at-aviareps-india-4478131674",
-    "data_invio": "2026-10-14",
-    "titolo": "MICE Manager – Destination Marketing & Business Events",
-    "azienda": "AVIAREPS India",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/mice-manager-%E2%80%93-destination-marketing-business-events-at-aviareps-india-4478131674",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-adobe-digital-experience-at-jobify-recruiting-4472193014",
-    "data_invio": "2026-10-14",
-    "titolo": "Business Development Manager - Adobe Digital Experience",
-    "azienda": "Jobify Recruiting",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-adobe-digital-experience-at-jobify-recruiting-4472193014",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/director-m-f-x-hae-andembry-brand-lead-at-csl-4478706802",
-    "data_invio": "2026-10-14",
-    "titolo": "Director (m/f/x), HAE / ANDEMBRY Brand Lead",
-    "azienda": "CSL",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/director-m-f-x-hae-andembry-brand-lead-at-csl-4478706802",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-digital-advertising-manager-at-the-walt-disney-company-4478424021",
-    "data_invio": "2026-10-14",
-    "titolo": "Sales Digital Advertising Manager",
-    "azienda": "The Walt Disney Company",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/sales-digital-advertising-manager-at-the-walt-disney-company-4478424021",
     "recruiter": ""
   }
 ]
