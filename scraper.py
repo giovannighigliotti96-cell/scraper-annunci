@@ -1965,6 +1965,14 @@ SEARCH_KEYWORDS = [
     "Country Manager",
     "Responsabile Marketing",
     "Responsabile Commerciale",
+    # 13/11/2026 (richiesta di Giovanni, dopo il caso del «Country Marketing Manager Italy»
+    # perso): query larghe per prendere TUTTE le offerte digital e le figure vicine.
+    "Digital",
+    "Digital Marketing",
+    "CRM Manager",
+    "Marketing Lead",
+    "Head of Digital",
+    "Head of E-commerce",
 ]
 
 
@@ -2188,55 +2196,39 @@ _RE_LIVELLO_TITOLO = re.compile(
 )
 
 
+# Ambiti e livelli professionali: basta UNO nel titolo (vedi is_valid_job_title).
+_RE_TITOLO_AMMESSO = re.compile(
+    r"marketing|digital|growth|e-?commerce|\bcrm\b|martech|brand|demand|go.to.market|\bgtm\b|"
+    r"\bsales\b|commerciale|vendite|vendita|business develop|\bbd\b|account|partnership|revenue|"
+    r"country manager|general manager|\bhead\b|director|direttore|responsabile|manager|\blead\b|"
+    r"chief|\bvp\b|vice president|\bcmo\b|\bcoo\b|\bceo\b|strateg|product|customer|channel|trade|"
+    r"retail|comunicazion|communication|media|advertis|\badv\b|consulen|analyst|specialist|coordinator|"
+    r"executive|owner|innovation|transformation|operations",
+    re.IGNORECASE,
+)
+
+
 def is_valid_job_title(title: str) -> bool:
     """
-    Restituisce True se il titolo corrisponde a uno dei ruoli target.
-    Logica: EXACT_TITLES match AND NOT EXCLUSION match.
+    Restituisce True se il titolo e' di un ruolo professionale da valutare.
+
+    13/11/2026, decisione di Giovanni: NESSUNA esclusione per titolo («valuta tu poi le
+    offerte»). Prima il titolo passava da EXACT_TITLES e da TITLE_EXCLUSIONS (Product
+    Marketing, Account Manager, Project Manager, Social Media, Content, lingue, ...):
+    un ruolo giusto scritto in un modo non previsto non arrivava mai alla valutazione
+    (il 12/11 «Country Marketing Manager Italy» fu valutato 38% invece di 72%). Ora basta
+    che il titolo parli di un ambito o di un livello professionale (_RE_TITOLO_AMMESSO):
+    resta fuori solo il rumore evidente (cuoco, infermiere, autista...). Il giudizio sul
+    ruolo lo da' la valutazione sul TESTO intero dell'annuncio, che legge anche i requisiti
+    formali (lingua, titolo, sede, partita IVA). EXACT_TITLES e TITLE_EXCLUSIONS restano
+    nel file solo come riferimento storico: non vengono piu' applicate.
     """
     # Spazi ripetuti compressi: "RESPONSABILE  MARKETING" (doppio spazio, visto
-    # dal vivo su ReverseGroup il 14/09/2026) non combaciava con la regola
-    # "responsabile marketing" e veniva scartato senza motivo.
-    t = re.sub(r"\s+", " ", title.lower()).strip()
-
-    # 1. Controlla esclusioni prima di tutto
-    for excl in TITLE_EXCLUSIONS:
-        if excl in t:
-            return False
-
-    # 2. "Head of BD e Growth" e simili: l'abbreviazione BD non compare in
-    # EXACT_TITLES, quindi serve una regola a parte (vedi _RE_BD_CON_CRESCITA).
-    if _RE_BD_CON_CRESCITA.search(t):
-        return True
-    
-    # 3. Match sui titoli target (sottostringa)
-    for exact in EXACT_TITLES:
-        if exact in t:
-            return True
-
-    # 4. Titoli ammessi solo per corrispondenza esatta (vedi TITOLI_MATCH_ESATTO)
-    base = _titolo_base(t)
-    if base in TITOLI_MATCH_ESATTO:
-        return True
-
-    # 5. Stesso titolo unito a un secondo ruolo di vendita o marketing:
-    # "Head of Digital & Inside Sales" non e' un "Head of Digital qualcosa",
-    # sono due ruoli in uno — ed e' la combinazione in cui il profilo rende di
-    # piu'. Resta escluso "Head of Digital & Innovation", perche' il secondo
-    # pezzo non nomina ne' vendita ne' marketing (era il motivo della regola).
-    for esatto in TITOLI_MATCH_ESATTO:
-        for giunzione in (" & ", " e ", " and ", " + "):
-            if base.startswith(esatto + giunzione):
-                secondo = base[len(esatto) + len(giunzione):]
-                if _RE_SECONDO_RUOLO.search(secondo):
-                    return True
-
-    # 6. Criterio largo: un ambito suo piu' un livello di responsabilita'.
-    # Si aggiunge alla lista esatta, non la sostituisce: tutto cio' che
-    # passava prima passa ancora (vedi _RE_AMBITO_TITOLO).
-    if _RE_AMBITO_TITOLO.search(t) and _RE_LIVELLO_TITOLO.search(t):
-        return True
-
-    return False
+    # dal vivo su ReverseGroup il 14/09/2026).
+    t = re.sub(r"\s+", " ", (title or "").lower()).strip()
+    if len(t) < 4:
+        return False
+    return bool(_RE_TITOLO_AMMESSO.search(t))
 
 # ==========================================
 # GESTIONE DATI E DEDUPLICAZIONE
