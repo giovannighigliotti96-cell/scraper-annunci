@@ -3049,5 +3049,32 @@
       "cervia@unikaspa.it",
       "cesano@unikaspa.it"
     ]
+  },
+  "Integra Group Srl": {
+    "proposta_il": "2026-11-15",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Sra Instruments Spa": {
+    "proposta_il": "2026-11-15",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "Leybold Italia Srl": {
+    "proposta_il": "2026-11-15",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Manfred Dunkel",
+        "managing director"
+      ],
+      [
+        "Ernst Leybold Ernst",
+        "Founder"
+      ]
+    ],
+    "email": []
   }
 }
