@@ -3076,5 +3076,38 @@
       ]
     ],
     "email": []
+  },
+  "Rgpballs Srl": {
+    "proposta_il": "2026-11-16",
+    "citta": "Milano",
+    "persone": [
+      [
+        "Messaggio Autorizzo",
+        "titolare"
+      ]
+    ],
+    "email": [
+      "andrea.rossi@rgpballs.com",
+      "brendan.cane@rgpballs.com",
+      "cristina.cosmai@rgpballs.com",
+      "elena.lucchini@rgpballs.com"
+    ]
+  },
+  "Tajmac Mtm Spa": {
+    "proposta_il": "2026-11-16",
+    "citta": "Milano",
+    "persone": [],
+    "email": []
+  },
+  "India Trading Srl": {
+    "proposta_il": "2026-11-16",
+    "citta": "Milano",
+    "persone": [],
+    "email": [
+      "adam@indiatradingsrl.com",
+      "arjun@indiatradingsrl.com",
+      "dheeraj@indiatradingsrl.com",
+      "dilan@indiatradingsrl.com"
+    ]
   }
 }
