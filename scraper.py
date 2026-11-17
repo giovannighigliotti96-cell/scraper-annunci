@@ -2,6 +2,7 @@ import os
 import re
 import sys
 import time
+import threading
 import calendar
 import json
 import shutil
@@ -87,6 +88,14 @@ BUDGET_VALUTAZIONE_EMAIL_S = 300
 # comodamente sotto il tetto del workflow, perche' le altre fasi sono scese —
 # portali 15 minuti, aziende target 3,5.
 BUDGET_VALUTAZIONE_SCRAPING_S = 25 * 60
+# Tetto DURO per una singola chiamata LLM. Il budget qui sopra e' controllato solo
+# TRA un'offerta e l'altra: dal 13/11/2026 una chiamata a Gemini restava appesa
+# dopo l'esaurimento di Groq, il budget non scattava mai e il run arrivava ai 160
+# minuti del workflow, veniva cancellato e non salvava nulla (nessuna offerta dei
+# portali in mail). Passato questo limite la chiamata viene abbandonata e
+# l'offerta tiene il punteggio euristico; due abbandoni di fila chiudono la fase.
+LIMITE_CHIAMATA_LLM_S = 300.0
+ABBANDONI_DI_FILA_PER_CHIUDERE = 2
 # Quante offerte valutare con l'LLM in un singolo run di scraping. Serve per i
 # picchi: allargando il filtro sui titoli (06/10/2026) le offerte che superano
 # citta', modalita' e freschezza sono passate da una manciata a 65, e i titoli
@@ -1085,6 +1094,33 @@ def valuta_match_candidato(job_text: str) -> tuple:
     return calcola_probabilita_callback(job_text.lower())
 
 
+class _ChiamataAbbandonata(Exception):
+    """La chiamata LLM ha superato LIMITE_CHIAMATA_LLM_S ed e' stata lasciata andare."""
+
+
+def _chiama_con_limite(funzione, argomento, limite_s):
+    """Esegue funzione(argomento) in un thread e aspetta al massimo limite_s secondi.
+
+    Il thread e' daemon: una chiamata appesa non impedisce al processo di chiudersi.
+    Rialza l'eccezione della funzione, o _ChiamataAbbandonata se il tempo finisce.
+    """
+    esito = {}
+
+    def corpo():
+        try:
+            esito["valore"] = funzione(argomento)
+        except BaseException as e:  # noqa: BLE001 - va ripassata al chiamante
+            esito["errore"] = e
+    t = threading.Thread(target=corpo, daemon=True)
+    t.start()
+    t.join(limite_s)
+    if t.is_alive():
+        raise _ChiamataAbbandonata(f"nessuna risposta in {limite_s:.0f} s")
+    if "errore" in esito:
+        raise esito["errore"]
+    return esito.get("valore")
+
+
 def arricchisci_offerte_con_llm(offerte, scadenza=None):
     """Rivaluta con l'LLM le offerte che arriveranno davvero in email,
     sostituendo probabilità e motivazione calcolate dall'euristica.
@@ -1102,6 +1138,7 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
 
     riuscite = 0
     scaduto = False
+    abbandoni_di_fila = 0
     # Prima le piu' promettenti secondo l'euristica: se il tetto taglia, taglia
     # in fondo alla lista, dove le offerte valgono meno.
     da_valutare = sorted(offerte, key=_prob_ordinabile, reverse=True)[:MAX_VALUTAZIONI_LLM_PER_RUN]
@@ -1128,6 +1165,8 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
         # euristico: le offerte non valutate dall'LLM non vengono filtrate per
         # punteggio (vedi offerta_sotto_soglia), quindi arrivano comunque in
         # email. Meglio un punteggio approssimativo che una mail che non parte.
+        if scaduto:
+            continue    # fase chiusa (fornitore che non risponde): le restanti tengono l'euristico
         if scadenza is not None and time.monotonic() > scadenza:
             if not scaduto:
                 logging.warning("Tempo per la valutazione semantica esaurito: "
@@ -1151,10 +1190,20 @@ def arricchisci_offerte_con_llm(offerte, scadenza=None):
         fatte += 1
         t_offerta = time.monotonic()
         try:
-            risultato = valuta_match_semantico(testo)
+            risultato = _chiama_con_limite(valuta_match_semantico, testo, LIMITE_CHIAMATA_LLM_S)
+            abbandoni_di_fila = 0
+        except _ChiamataAbbandonata as e:
+            abbandoni_di_fila += 1
+            print(f"  ABBANDONATA ({e}): resta il punteggio euristico | {job.title[:50]} [{job.portal}]", flush=True)
+            risultato = None
+            if abbandoni_di_fila >= ABBANDONI_DI_FILA_PER_CHIUDERE:
+                logging.warning(f"{abbandoni_di_fila} chiamate LLM appese di fila: il fornitore non risponde, "
+                                "le offerte restanti tengono il punteggio euristico e vengono rivalutate all'ora dell'email.")
+                scaduto = True
         except Exception as e:
             logging.error(f"Valutazione LLM fallita per '{job.title}': {e}")
             risultato = None
+            abbandoni_di_fila = 0
         print(f"  [{fatte}/{quante}] {time.monotonic() - t_offerta:5.1f}s "
               f"(fase {(time.monotonic() - inizio_fase) / 60:4.1f} min) "
               f"{'ok' if risultato else 'nessuna risposta'} | {job.title[:50]}",
