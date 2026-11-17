@@ -4575,7 +4575,13 @@ def invia_alert_immediato(offerte):
     Ritorna il numero di offerte segnalate."""
     if not GMAIL_USER or not GMAIL_APP_PASSWORD or not DESTINATION_EMAIL:
         return 0
-    da_segnalare = [j for j in offerte if _prob_ordinabile(j) >= SOGLIA_ALERT_IMMEDIATO]
+    # Solo punteggi dati da un modello che ha letto l'annuncio. Quello euristico conta
+    # parole chiave e non e' affidabile: il 17/11/2026, con la valutazione dello
+    # scraping chiusa dopo 12 offerte, un Accountant AFC e un Junior Tax Consultant
+    # sono partiti come "95% ad alta affinita'". Le altre arrivano comunque nella
+    # mail serale, dopo la valutazione completa.
+    da_segnalare = [j for j in offerte
+                    if j.valutato_da == "llm" and _prob_ordinabile(j) >= SOGLIA_ALERT_IMMEDIATO]
     if not da_segnalare:
         return 0
     da_segnalare.sort(key=_prob_ordinabile, reverse=True)

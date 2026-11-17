@@ -122,5 +122,69 @@ class TestErroreDelFornitore(Base):
         self.assertEqual(len(e["out"]), 2)
 
 
+class FakeSMTP:
+    """Sostituisce smtplib.SMTP: registra i messaggi invece di spedirli (nessuna mail vera, mai)."""
+    inviati = []
+
+    def __init__(self, *a, **k):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a):
+        return False
+
+    def ehlo(self):
+        pass
+
+    def starttls(self):
+        pass
+
+    def login(self, *a):
+        pass
+
+    def send_message(self, msg):
+        FakeSMTP.inviati.append(msg)
+
+
+class TestAlertImmediatoSoloConValutazioneVera(unittest.TestCase):
+    """17/11/2026: con la valutazione dello scraping chiusa dopo 12 offerte, le altre restavano al punteggio euristico (95% a un Accountant AFC e a un Junior Tax
+    Consultant) e l'alert "Candidati oggi" le spediva come offerte ad alta affinita'. Un punteggio che non viene da un modello non fa partire nessun alert."""
+
+    def setUp(self):
+        FakeSMTP.inviati = []
+        self.p = [mock.patch.object(S, "GMAIL_USER", "prova@example.com"),
+                  mock.patch.object(S, "GMAIL_APP_PASSWORD", "x"),
+                  mock.patch.object(S, "DESTINATION_EMAIL", "dest@example.com"),
+                  mock.patch.object(S.smtplib, "SMTP", FakeSMTP)]
+        for p in self.p:
+            p.start()
+
+    def tearDown(self):
+        for p in self.p:
+            p.stop()
+
+    def test_un_punteggio_euristico_alto_non_manda_nessun_alert(self):
+        job = offerta("Accountant AFC", prob=95)             # valutato_da = "euristica"
+        self.assertEqual(S.invia_alert_immediato([job]), 0)
+        self.assertEqual(FakeSMTP.inviati, [])
+
+    def test_una_valutazione_vera_alta_manda_l_alert(self):
+        job = offerta("Digital Marketing Manager", prob=88)
+        job.valutato_da = "llm"
+        self.assertEqual(S.invia_alert_immediato([job]), 1)
+        self.assertEqual(len(FakeSMTP.inviati), 1)
+
+    def test_in_un_lotto_misto_passano_solo_quelle_valutate_da_un_modello(self):
+        vera = offerta("Digital Marketing Manager", prob=88)
+        vera.valutato_da = "llm"
+        euristiche = [offerta(f"Accountant {i}", prob=95) for i in range(5)]
+        self.assertEqual(S.invia_alert_immediato(euristiche + [vera]), 1)
+        corpo = FakeSMTP.inviati[0].get_payload()[0].get_payload(decode=True).decode("utf-8")
+        self.assertIn("Digital Marketing Manager", corpo)
+        self.assertNotIn("Accountant", corpo)
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)
