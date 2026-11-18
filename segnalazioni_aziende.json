@@ -2129,6 +2129,30 @@
       "link": "https://www.medacta.com/it/careers",
       "azienda": "Medacta Italia Srl",
       "citta": "Milano"
+    },
+    {
+      "titolo": "commerciale@timossi.it",
+      "link": "mailto:commerciale@timossi.it",
+      "azienda": "Timossi Commerciale Spa",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Powered By Gmg Net Digital Agency",
+      "link": "http://www.gmgnet.com",
+      "azienda": "Timossi Commerciale Spa",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Our Production Our Product Our Plant",
+      "link": "https://wingeco.it/work-with-us/",
+      "azienda": "Wingeco Srl",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Our Production",
+      "link": "https://wingeco.it/work-with-us/",
+      "azienda": "Wingeco Srl",
+      "citta": "Genova"
     }
   ],
   "autocandidature": []

@@ -351,7 +351,10 @@
   "Timossi Commerciale Spa": {
     "ultimo_controllo": "2026-11-18",
     "url_careers": "https://www.timossi.it/lavora-con-noi/",
-    "offerte_segnalate": [],
+    "offerte_segnalate": [
+      "commerciale@timossi.it",
+      "powered by gmg net digital agency"
+    ],
     "autocandidatura_segnalata": "2026-09-13"
   },
   "Cavo Luigi Beverage Solutions Srl": {
@@ -622,7 +625,10 @@
   "Wingeco Srl": {
     "ultimo_controllo": "2026-11-18",
     "url_careers": "https://wingeco.it/work-with-us/",
-    "offerte_segnalate": [],
+    "offerte_segnalate": [
+      "our production",
+      "our production our product our plant"
+    ],
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Fluid Power Technology Srl": {
