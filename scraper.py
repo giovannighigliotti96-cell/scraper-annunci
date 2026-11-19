@@ -140,6 +140,21 @@ CITIES = {
         "linkedin_location": "Milan, Italy",
         "lhh_location": "Milano%2C+MI%2C+Italia",
         "glassdoor_url": "https://www.glassdoor.it/Lavoro/milano-marketing-manager-lavori-SRCH_IL.0,6_IC2802090_KO7,24.htm"
+    },
+    # Canton Ticino, aggiunto il 19/11/2026 su richiesta di Giovanni. Solo LinkedIn
+    # cerca per citta': gli altri portali sono italiani (wyser_slug=False spegne
+    # Wyser, che altrimenti scaricherebbe 10 pagine nazionali per non trovare nulla;
+    # gli altri escono da soli perche' girano solo nel ciclo "Genova"). In sede
+    # accettato (filter_hybrid_only False): il frontaliere lavora in ufficio.
+    # Verificato dal vivo: "Ticino, Switzerland" e "Lugano, Switzerland" rendono lo stesso.
+    "Ticino": {
+        "lat": 46.0037,
+        "lon": 8.9511,
+        "filter_hybrid_only": False,
+        "wyser_slug": False,
+        "linkedin_location": "Ticino, Switzerland",
+        # Sedi cercate su jobs.ch (JobsChScraper): la sede e' un campo strutturato, affidabile.
+        "jobsch_sedi": ["Lugano", "Mendrisio", "Bellinzona", "Locarno", "Chiasso"],
     }
 }
 # Torino e' stata spenta il 06/10/2026 su richiesta di Giovanni. Toglierla da
@@ -431,7 +446,7 @@ VINCOLI DEL CANDIDATO (non deducibili in modo affidabile dal solo CV, tienili se
 - Lingue: italiano madrelingua e inglese C1. NESSUN'ALTRA LINGUA. Se l'annuncio ne richiede una terza (tedesco, francese, spagnolo, cinese...) è un requisito bloccante non soddisfatto, anche quando è presentato come "gradito".
 - Seniority: manager con circa 6-8 anni complessivi, con riporto diretto al board. Non è un profilo junior, e non è un direttore generale o un VP di multinazionale.
 - Contesti in cui ha davvero lavorato: PMI e scale-up italiane, più un'azienda tech fondata e ceduta. NON ha esperienza dentro multinazionali strutturate, né nei settori farmaceutico, bancario o assicurativo.
-- Sede: cerca solo a Genova e Milano, e non è disponibile al trasferimento (il full remote dichiarato va invece bene).
+- Sede: cerca solo a Genova, Milano e nel Canton Ticino (Lugano, Mendrisio, Chiasso, Bellinzona, Locarno): in Ticino va bene anche il lavoro in sede. Il resto della Svizzera (Zurigo, Ginevra, Basilea...) è fuori, come il resto d'Italia e dell'estero. Non è disponibile al trasferimento altrove (il full remote dichiarato va invece bene).
 
 COME ASSEGNARE IL PUNTEGGIO (probabilità realistica di essere richiamato per un colloquio):
 - 85-100 → soddisfa i requisiti principali e il ruolo è centrato sulle sue aree forti; nessun requisito bloccante mancante.
@@ -2868,6 +2883,112 @@ class LinkedInScraper(BaseScraper):
 
         return jobs
 
+class JobsChScraper(BaseScraper):
+    """
+    jobs.ch (JobCloud, il portale piu' grande della Svizzera) per il Canton Ticino, aggiunto il 19/11/2026.
+    Usa la ricerca pubblica del sito (/api/v1/public/search): la sede e' un campo strutturato (place) e le lingue richieste sono un campo
+    strutturato (language_skills), quindi non servono ne' l'euristica sulla sede ne' il rischio di LinkedIn di restituire mezza Svizzera.
+    Misurato dal vivo: il parametro «term» NON filtra (Lugano da sola rende 84 offerte di ogni mestiere), quindi si leggono tutte le pagine di
+    ogni sede e il filtro e' is_valid_job_title(). Il testo e' la descrizione del JSON-LD della pagina dell'annuncio (intera, senza il rumore
+    della pagina: ~320 KB di script e menu) piu' un'intestazione con titolo, azienda e sede.
+    Chi richiede una lingua oltre italiano e inglese a livello LIVELLO_LINGUA_BLOCCANTE (3) o superiore si scarta PRIMA di scaricare la pagina:
+    il candidato parla solo italiano e inglese. La scala dei livelli non e' documentata: 3 e' una scelta prudente, da rivedere sui casi reali.
+    Gira solo nel ciclo «Ticino».
+    """
+    API = "https://www.jobs.ch/api/v1/public/search"
+    MAX_PAGINE_PER_SEDE = 8
+    LINGUE_AMMESSE = ("it", "en")
+    LIVELLO_LINGUA_BLOCCANTE = 3
+
+    def __init__(self):
+        super().__init__("JobsCh")
+
+    def _headers(self):
+        return {"User-Agent": USER_AGENT_CHROME, "Accept": "application/json", "Accept-Language": "it-CH,it;q=0.9"}
+
+    def _richiede_altra_lingua(self, doc):
+        return any((s.get("language") or "").lower() not in self.LINGUE_AMMESSE and (s.get("level") or 0) >= self.LIVELLO_LINGUA_BLOCCANTE
+                   for s in (doc.get("language_skills") or []))
+
+    def _pagina(self, sede, pagina):
+        r = requests.get(self.API, params={"location": sede, "page": pagina, "rows": 20}, headers=self._headers(), timeout=20)
+        if r.status_code != 200:
+            raise RuntimeError(f"jobs.ch HTTP {r.status_code}")
+        r.encoding = "utf-8"          # senza charset nell'header requests ripiega su latin-1 e gli accenti diventano «�»
+        return r.json()
+
+    def _descrizione(self, link):
+        """Testo della descrizione dal JSON-LD (JobPosting) della pagina dell'annuncio, o None se non leggibile."""
+        import json as _json
+        if not _url_is_safe_to_fetch(link):
+            return None
+        try:
+            r = requests.get(link, headers={"User-Agent": USER_AGENT_CHROME, "Accept-Language": "it-CH,it;q=0.9"}, timeout=20)
+            if r.status_code != 200:
+                return None
+            r.encoding = "utf-8"
+            soup = BeautifulSoup(r.text, "html.parser")
+            for script in soup.find_all("script", type="application/ld+json"):
+                try:
+                    dati = _json.loads(script.string or "{}")
+                except Exception:
+                    continue
+                for item in (dati if isinstance(dati, list) else [dati]):
+                    if isinstance(item, dict) and item.get("@type") == "JobPosting" and item.get("description"):
+                        return BeautifulSoup(str(item["description"]), "html.parser").get_text(" ", strip=True)
+        except Exception as e:
+            logging.warning(f"{self.portal_name}: pagina non leggibile {link}: {e}")
+        return None
+
+    def _costruisci(self, doc, link, data, city_name):
+        titolo = doc.get("title") or ""
+        azienda = doc.get("company_name") or ""
+        intestazione = f"{titolo}\n{azienda}\nSede: {doc.get('place') or ''}, Ticino, Svizzera"
+        descrizione = self._descrizione(link)
+        fetch_status = "ok" if descrizione else "http_error"
+        testo = f"{intestazione}\n{descrizione or doc.get('preview') or ''}"
+        tl = testo.lower()
+        count = sum(1 for skill in CV_SKILLS if skill in tl)
+        livello = "Alto" if count >= 3 else "Medio" if count >= 1 else "Base"
+        probabilita, motivazione = valuta_match_candidato(testo)
+        return ScrapedJob(titolo, azienda, self.portal_name, link, date=data, match_level=livello, match_count=count, city=city_name,
+                          work_mode=detect_work_mode(tl), fetch_status=fetch_status, probabilita=probabilita, motivazione=motivazione, testo_completo=testo)
+
+    def scrape(self, city_name, city_config):
+        if city_name != "Ticino":
+            return []
+        jobs, visti_id, viste = [], set(), load_viste()
+        for sede in city_config.get("jobsch_sedi") or []:
+            for pagina in range(1, self.MAX_PAGINE_PER_SEDE + 1):
+                try:
+                    d = self._pagina(sede, pagina)
+                except Exception as e:
+                    logging.error(f"{self.portal_name} ({sede}, pagina {pagina}): {e}")
+                    break
+                logging.info(f"{self.portal_name} ({sede}, pagina {pagina}): {len(d.get('documents') or [])} offerte")
+                for doc in d.get("documents") or []:
+                    job_id = doc.get("job_id")
+                    if not job_id or job_id in visti_id:
+                        continue
+                    visti_id.add(job_id)
+                    try:
+                        if not is_valid_job_title(doc.get("title") or "") or self._richiede_altra_lingua(doc):
+                            continue
+                        link = (((doc.get("_links") or {}).get("detail_en") or {}).get("href")) or f"https://www.jobs.ch/en/vacancies/detail/{job_id}/"
+                        data = doc.get("publication_date") or ""
+                        if link in viste or get_job_id(link) in viste or _troppo_vecchio_per_scaricare(data, self.portal_name):
+                            continue
+                        jobs.append(self._costruisci(doc, link, data, city_name))
+                        time.sleep(1)
+                    except Exception as e:
+                        logging.error(f"{self.portal_name}: offerta {job_id} scartata per errore: {e}")
+                if pagina >= (d.get("num_pages") or 1):
+                    break
+                time.sleep(2)
+            time.sleep(2)
+        return jobs
+
+
 class MichaelPageScraper(BaseScraper):
     """
     MichaelPage IT — gli URL per-città restituiscono 404.
@@ -3160,6 +3281,8 @@ class WyserScraper(BaseScraper):
     def scrape(self, city_name, city_config):
         jobs = []
         wyser_slug = city_config.get("wyser_slug")
+        if wyser_slug is False:         # citta' fuori dal portale (Ticino): nessuna richiesta
+            return jobs
         base_url = (f"https://it.wyser-search.com/offerte-lavoro/{wyser_slug}/"
                     if wyser_slug else "https://it.wyser-search.com/offerte-lavoro/")
         headers = {
@@ -4087,6 +4210,9 @@ def avviso_presenza(job):
     da Genova. Non si scartano piu' (l'etichetta dei portali sbaglia spesso,
     vedi filtra_offerte_per_citta), ma vanno segnalate: su Milano una
     presenza quotidiana e' un pendolarismo vero, e la decisione spetta a lui."""
+    if job.work_mode == "in sede" and job.city == "Ticino":
+        # 19/11/2026: dal Ticino non si fa il pendolare da Milano o Genova: o si fa il frontaliere dalla zona di Como/Varese o ci si trasferisce.
+        return "lavoro in sede in Ticino, valuta frontalierato o trasferimento"
     if job.work_mode != "in sede" or job.city != "Milano":
         return ""
     return f"presenza quotidiana a {job.city}, valuta il pendolarismo"
@@ -4755,7 +4881,20 @@ def invia_email(nuove_offerte):
 CITTA_TARGET_PATTERN = {
     "Genova": ["genova", "genoa"],
     "Milano": ["milano", "milan ", "milan,", "milan)", "assago", "sesto san giovanni", "rho ", "segrate"],
+    # Canton Ticino (19/11/2026). Solo nomi che non esistono in Italia e che non sono parole comuni:
+    # «ticino» da solo e' anche il fiume e il parco di Pavia e Varese, quindi serve «canton ticino».
+    "Ticino": ["lugano", "mendrisio", "chiasso", "bellinzona", "locarno", "giubiasco", "biasca", "stabio", "balerna",
+               "canton ticino", "ticino, switzerland", "ticino, svizzera"],
 }
+
+# Citta' svizzere NON ticinesi: un annuncio che LinkedIn attribuisce al Ticino ma che nomina Zurigo o Ginevra
+# e' fuori area, come uno di Pavia attribuito a Milano. Sono separate da ALTRE_CITTA_ITALIANE di proposito:
+# valgono solo per il Ticino, perche' un annuncio di Milano che cita la casa madre di Zurigo non e' fuori area.
+ALTRE_CITTA_SVIZZERE = [
+    "zurigo", "zurich", "zürich", "ginevra", "geneva", "genève", "geneve", "basilea", "basel", "berna", "bern",
+    "losanna", "lausanne", "zug", "lucerna", "lucerne", "winterthur", "san gallo", "st. gallen", "st gallen",
+    "neuchâtel", "neuchatel", "friburgo", "fribourg", "sion", "coira", "chur",
+]
 
 # Luoghi italiani NON target: se l'annuncio nazionale nomina solo uno di questi
 # e nessuna città target, la sede è quasi certamente altrove e l'offerta è rumore.
@@ -4862,14 +5001,26 @@ def _re_altre_citta():
     return _RE_ALTRE_CITTA
 
 
+_RE_ALTRE_CITTA_TICINO = None
+
+
+def _re_altre_citta_ticino():
+    """Come _re_altre_citta, piu' le citta' svizzere non ticinesi: solo per le offerte attribuite al Ticino."""
+    global _RE_ALTRE_CITTA_TICINO
+    if _RE_ALTRE_CITTA_TICINO is None:
+        alternative = "|".join(re.escape(c) for c in sorted(ALTRE_CITTA_ITALIANE + ALTRE_CITTA_SVIZZERE, key=len, reverse=True))
+        _RE_ALTRE_CITTA_TICINO = re.compile(rf"(?<!\w)(?:{alternative})(?!\w)")
+    return _RE_ALTRE_CITTA_TICINO
+
+
 def nomina_altra_citta(testo) -> bool:
     """True se il testo nomina almeno una citta' o regione NON target."""
     return bool(_re_altre_citta().search(testo or ""))
 
 
-def quante_altre_citta(testo) -> int:
-    """Quante volte compare la citta' non target piu' citata del testo."""
-    trovate = _re_altre_citta().findall(testo or "")
+def quante_altre_citta(testo, per_ticino=False) -> int:
+    """Quante volte compare la citta' non target piu' citata del testo. Per un'offerta del Ticino contano anche Zurigo, Ginevra ecc."""
+    trovate = (_re_altre_citta_ticino() if per_ticino else _re_altre_citta()).findall(testo or "")
     if not trovate:
         return 0
     conteggi = {}
@@ -4912,7 +5063,7 @@ def citta_coerente_col_testo(job) -> bool:
         return True
 
     nostre = sum(testo.count(v) for v in varianti)
-    altre = quante_altre_citta(testo)
+    altre = quante_altre_citta(testo, per_ticino=(job.city == "Ticino"))
     if not nostre:
         # Come prima: senza la città attribuita, decide la presenza di altre.
         return altre == 0
@@ -5260,6 +5411,7 @@ def esegui_scraping_job(orario_label):
 
     scrapers = [
         LinkedInScraper(),
+        JobsChScraper(),        # solo Ticino (19/11/2026): negli altri cicli esce subito
         MichaelPageScraper(),
         WyserScraper(),
         LhhScraper(),
