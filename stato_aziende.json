@@ -19,7 +19,7 @@
     "senza_careers": "2026-10-28"
   },
   "Alliance Healthcare Italia (It Services) Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.alliance-healthcare.it/lavora-con-noi/",
     "offerte_segnalate": [
       "marketing e vendite",
@@ -45,7 +45,7 @@
     "senza_careers": "2026-11-06"
   },
   "Cordua Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://cordua.org/lavora-con-cordua/",
     "offerte_segnalate": [
       "disponibilità anche immediata"
@@ -73,7 +73,7 @@
     "senza_careers": "2026-11-06"
   },
   "Meccanocar Italia Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.meccanocar.it/en/work-with-us",
     "offerte_segnalate": [
       "accessories for chemical products",
@@ -103,7 +103,7 @@
     "senza_careers": "2026-11-06"
   },
   "Panificio Pasticceria Tossini 1 Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.tossini.it/lavora-con-noi/",
     "offerte_segnalate": [
       "commerciale@tossini.it",
@@ -113,7 +113,7 @@
     "autocandidatura_segnalata": "2026-09-11"
   },
   "Carestream Health Italia Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://careers.carestream.com/",
     "offerte_segnalate": [
       "innovation that’s life changing",
@@ -134,7 +134,7 @@
     "senza_careers": "2026-11-06"
   },
   "Generalmarine Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://generalmarine.it/lavora-con-noi",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-11"
@@ -176,11 +176,17 @@
     "senza_careers": "2026-11-06"
   },
   "Arrow Diagnostics Srl": {
-    "ultimo_controllo": "2026-10-22",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "http://www.arrowdiagnostics.it/it/lavora-con-noi/",
-    "offerte_segnalate": [],
-    "autocandidatura_segnalata": "2026-09-13",
-    "senza_careers": "2026-10-22"
+    "offerte_segnalate": [
+      "addetto/a segreteria marketing (ref: 2026/10)",
+      "junior operations & service administration support (ref: 2026/11)",
+      "media center",
+      "media media center",
+      "product overview assays extraction instruments software edoc",
+      "treasury & icfr junior manager\n(ref: 2026/09)"
+    ],
+    "autocandidatura_segnalata": "2026-09-13"
   },
   "Spiga Nord Società Per Azioni": {
     "ultimo_controllo": "2026-11-02",
@@ -205,7 +211,7 @@
     "senza_careers": "2026-11-06"
   },
   "Isma Controlli Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://about.ismacontrolli.com/it/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-11-06"
@@ -237,7 +243,7 @@
     "senza_careers": "2026-11-07"
   },
   "Relab Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.relabsrl.it/posizioni-aperte/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-11"
@@ -255,7 +261,7 @@
     "senza_careers": "2026-11-20"
   },
   "Nts Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.ntsystem.it/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-11"
@@ -277,7 +283,7 @@
     "senza_careers": "2026-11-07"
   },
   "Audio Effetti Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://audioeffetti.com/it/careers",
     "offerte_segnalate": [
       "about chi siamo brand mieiordini b2b"
@@ -293,7 +299,7 @@
     "senza_careers": "2026-11-07"
   },
   "Mikai Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.mikai.it/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -307,7 +313,7 @@
     "senza_careers": "2026-11-07"
   },
   "Wilhelmsen Ships Service Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.wilhelmsen.com/careers",
     "offerte_segnalate": [
       "media centre",
@@ -332,7 +338,7 @@
     "senza_careers": "2026-11-07"
   },
   "Phase Motion Control Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.phase.eu/it/lavora-con-noi/",
     "offerte_segnalate": [
       "www.comunicazione-visiva.com"
@@ -340,7 +346,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Centro Per Gli Studi Di Tecnica Navale Cetena Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.cetena.it/opportunita-di-lavoro/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -350,7 +356,7 @@
     "senza_careers": "2026-11-07"
   },
   "Timossi Commerciale Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.timossi.it/lavora-con-noi/",
     "offerte_segnalate": [
       "commerciale@timossi.it",
@@ -367,7 +373,7 @@
     "senza_careers": "2026-11-07"
   },
   "Kongsberg Maritime Italy Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.kongsbergmaritime.com/a-career-with-kongsberg-maritime/",
     "offerte_segnalate": [
       "from coordinator to instructor",
@@ -390,7 +396,7 @@
     "senza_careers": "2026-11-02"
   },
   "Helan Cosmesi Di Laboratorio Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://helan.com/lavora-con-noi",
     "offerte_segnalate": [
       "crea un account",
@@ -429,7 +435,7 @@
     "senza_careers": "2026-11-07"
   },
   "Monti E Barabino Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://montiebarabino.com/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-13"
@@ -455,7 +461,7 @@
     "senza_careers": "2026-11-07"
   },
   "Ultraflex Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.ultraflex.it/it/lavora-con-noi/",
     "offerte_segnalate": [
       "leader in marine product innovation",
@@ -481,7 +487,7 @@
     "senza_careers": "2026-11-07"
   },
   "Uflex Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://uflex.it/it/lavora-con-noi/",
     "offerte_segnalate": [
       "brands chiudi brands apri brands",
@@ -495,13 +501,13 @@
     "senza_careers": "2026-11-07"
   },
   "Green Project Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.greenproject.it/careers",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Iis Cert Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.iis.it/it/lavora-con-noi",
     "offerte_segnalate": [
       "media ed eventi +",
@@ -538,7 +544,7 @@
     "senza_careers": "2026-11-06"
   },
   "Servizi Industriali Genova Sige Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.sige.ge.it/lavora-con-noi.html",
     "offerte_segnalate": [
       "certificazione valida ai sensi del d.lgs 81/08 come rspp o aspp o cse o hse manager;",
@@ -566,7 +572,7 @@
     "senza_careers": "2026-11-06"
   },
   "Elar Società Per Azioni": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.elarnet.eu/lavora-con-noi/posizioni-aperte",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -612,7 +618,7 @@
     "senza_careers": "2026-11-06"
   },
   "Azienda Chimica Genovese Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.acgmarine.com/company/work-with-us/",
     "offerte_segnalate": [
       "google tag manager"
@@ -624,7 +630,7 @@
     "senza_careers": "2026-11-06"
   },
   "Wingeco Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://wingeco.it/work-with-us/",
     "offerte_segnalate": [
       "our production",
@@ -641,7 +647,7 @@
     "senza_careers": "2026-11-06"
   },
   "Ultraflex Control Systems Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.ultraflex.it/it/lavora-con-noi/",
     "offerte_segnalate": [
       "leader in marine product innovation",
@@ -651,7 +657,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Exxro Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.exxro.com/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -668,7 +674,7 @@
     "senza_careers": "2026-11-17"
   },
   "Simco Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.simcoitaly.com/lavora-con-noi",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -710,7 +716,7 @@
     "senza_careers": "2026-11-06"
   },
   "Ansaldo Nucleare Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.ansaldoenergia.com/discover-our-job-opportunities",
     "offerte_segnalate": [
       "board of directors, board of auditors and supervisory board",
@@ -724,7 +730,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "T. Mariotti Società Per Azioni": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.mariottiyard.it/careers",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -742,7 +748,7 @@
     "senza_careers": "2026-11-06"
   },
   "Bergen Engines (Italia) Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.bergenengines.com/join-us-at-data-centre-world-frankfurt-to-see-the-future-of-powering-ai/",
     "offerte_segnalate": [
       "global service partnerships",
@@ -779,7 +785,7 @@
     "senza_careers": "2026-11-06"
   },
   "Veleria San Giorgio Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.veleriasangiorgio.com/lavora-con-noi/",
     "offerte_segnalate": [
       "azienda chi siamo ricerca e sviluppo contatti b2c contatti b2b dettagli account logout",
@@ -839,7 +845,7 @@
     "senza_careers": "2026-11-06"
   },
   "Nielsen Media Services Italy Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.nielsen.com/careers/",
     "offerte_segnalate": [
       "career growth",
@@ -857,7 +863,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Avvale Yubiq Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.avvale.com/careers",
     "offerte_segnalate": [
       "cloud migration strategy",
@@ -885,7 +891,7 @@
     "senza_careers": "2026-11-06"
   },
   "Cegeka Business Solutions Italia Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.cegeka.com/it/careers",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -907,7 +913,7 @@
     "senza_careers": "2026-11-06"
   },
   "Nielsen Media Italy Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.nielsen.com/careers/",
     "offerte_segnalate": [
       "career growth",
@@ -948,7 +954,7 @@
     "senza_careers": "2026-11-06"
   },
   "Arredissima Legnano Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.arredissima.com/contatti/lavora-con-noi/",
     "offerte_segnalate": [
       "a digital project by bizen",
@@ -957,7 +963,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Bcd Travel Italy Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.bcdtravel.com/jobs/",
     "offerte_segnalate": [
       "global executive team",
@@ -972,7 +978,7 @@
     "senza_careers": "2026-11-06"
   },
   "Wpp Media Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.wppmedia.com/careers",
     "offerte_segnalate": [
       "associate, influencer marketing, italy",
@@ -1001,7 +1007,7 @@
     "autocandidatura_segnalata": "2026-09-14"
   },
   "Finomnia Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.finomnia.com/it/lavora-con-noi",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -1037,7 +1043,7 @@
     "senza_careers": "2026-11-06"
   },
   "Menghi Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://menghi.com/lavora-con-noi/",
     "offerte_segnalate": [
       "produzione responsabile"
@@ -1057,7 +1063,7 @@
     "senza_careers": "2026-11-06"
   },
   "Accenture Services And Technology Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.accenture.com/us-en/careers",
     "offerte_segnalate": [
       "board of directors",
@@ -1074,7 +1080,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Sauter Italia Spa": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.sauteritalia.it/aziende/lavoro-e-carriera/lavora-con-noi/",
     "offerte_segnalate": [
       "notizie e media",
@@ -1083,7 +1089,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Exeltis Italia Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://exeltis.it/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -1093,13 +1099,13 @@
     "senza_careers": "2026-11-06"
   },
   "Emmelibri Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.emmelibri.it/lavora-con-noi/",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Medacta Italia Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.medacta.com/it/careers",
     "offerte_segnalate": [
       "analyst coverage",
@@ -1115,7 +1121,7 @@
     "autocandidatura_segnalata": "2026-09-12"
   },
   "Qiagen Srl": {
-    "ultimo_controllo": "2026-11-20",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.qiagen.com/us/careers",
     "offerte_segnalate": [],
     "autocandidatura_segnalata": "2026-09-12"
@@ -1521,11 +1527,12 @@
     "senza_careers": "2026-10-26"
   },
   "Advanz Pharma Italia Srl": {
-    "ultimo_controllo": "2026-10-22",
+    "ultimo_controllo": "2026-11-21",
     "url_careers": "https://www.advanzpharma.com/careers",
-    "offerte_segnalate": [],
-    "autocandidatura_segnalata": "2026-09-13",
-    "senza_careers": "2026-10-22"
+    "offerte_segnalate": [
+      "product risk materials"
+    ],
+    "autocandidatura_segnalata": "2026-09-13"
   },
   "Einhell Italia Srl": {
     "ultimo_controllo": "2026-11-07",
