@@ -1,5 +1,60 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-give-back-beauty-4491825035",
+    "data_invio": "2026-11-21",
+    "titolo": "Brand Manager",
+    "azienda": "Give Back Beauty",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 58,
+    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-give-back-beauty-4491825035",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/client-engagement-manager-%E2%80%93-europe-at-zegna-4432278932",
+    "data_invio": "2026-11-21",
+    "titolo": "Client Engagement Manager – Europe",
+    "azienda": "Zegna",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 52,
+    "link": "https://it.linkedin.com/jobs/view/client-engagement-manager-%E2%80%93-europe-at-zegna-4432278932",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://myportal.lhh.com/it/it/application/job-description/JN%20-102026-1182985",
+    "data_invio": "2026-11-21",
+    "titolo": "Responsabile Ufficio Tecnico - Impiantistica Elettrica e Meccanica",
+    "azienda": "SPRING PROFESSIONAL",
+    "citta": "Milano",
+    "portale": "LHH",
+    "probabilita": 50,
+    "link": "https://myportal.lhh.com/it/it/application/job-description/JN%20-102026-1182985?queryState=eyJ0ZW5hbnRJZCI6IjIyMyIsInVzZXJGbG93Ijoiam9iQXBwbHlfcG9ydGFsIn0=&utm_source=websites&source=websites",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/sales-account-manager-at-lhh-4492966649",
+    "data_invio": "2026-11-21",
+    "titolo": "Sales Account Manager",
+    "azienda": "LHH",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/sales-account-manager-at-lhh-4492966649",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/digital-leads-acquisition-specialist-at-allianz-italia-4493235487",
+    "data_invio": "2026-11-21",
+    "titolo": "Digital Leads Acquisition Specialist",
+    "azienda": "Allianz Italia",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/digital-leads-acquisition-specialist-at-allianz-italia-4493235487",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/insurance-brokerage-regional-sales-leader-marsh-risk-europe-at-marsh-4476705279",
     "data_invio": "2026-11-21",
     "titolo": "Insurance Brokerage Regional Sales Leader, Marsh Risk Europe",
@@ -4342,61 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 55,
     "link": "https://it.linkedin.com/jobs/view/fx-sales-manager-at-ebury-4484458226",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-lotus-bakeries-4484225019",
-    "data_invio": "2026-10-28",
-    "titolo": "Brand Manager",
-    "azienda": "Lotus Bakeries",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/brand-manager-at-lotus-bakeries-4484225019",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-sales-italy-at-fresha-4482211581",
-    "data_invio": "2026-10-28",
-    "titolo": "Head of Sales (Italy)",
-    "azienda": "Fresha",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/head-of-sales-italy-at-fresha-4482211581",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-sales-h-f-milan-at-eskimoz-4482966229",
-    "data_invio": "2026-10-28",
-    "titolo": "Head of Sales H/F - Milan",
-    "azienda": "Eskimoz",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/head-of-sales-h-f-milan-at-eskimoz-4482966229",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/business-development-manager-at-talent-on-board-srl-4483855503",
-    "data_invio": "2026-10-28",
-    "titolo": "Business Development Manager",
-    "azienda": "Talent On Board Srl",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/business-development-manager-at-talent-on-board-srl-4483855503",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/head-of-sales-telematics-italy-at-radius-4484425986",
-    "data_invio": "2026-10-28",
-    "titolo": "Head of Sales - Telematics - Italy",
-    "azienda": "Radius",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 50,
-    "link": "https://it.linkedin.com/jobs/view/head-of-sales-telematics-italy-at-radius-4484425986",
     "recruiter": ""
   }
 ]
