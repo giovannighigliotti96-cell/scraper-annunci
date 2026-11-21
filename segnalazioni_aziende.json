@@ -1,29 +1,4 @@
 {
-  "offerte": [
-    {
-      "titolo": "Lifecycle partnership for packaging and paper producers",
-      "link": "https://www.valmet.com/packaging-and-paper/lifecycle-partnership-for-packaging-and-paper-producers/",
-      "azienda": "Valmet Spa",
-      "citta": "Milano"
-    },
-    {
-      "titolo": "New Business Development & R&D",
-      "link": "https://www.yokogawa.com/about/careers/",
-      "azienda": "Yokogawa Italia Srl",
-      "citta": "Milano"
-    },
-    {
-      "titolo": "Yokogawa Innovation Core Columns",
-      "link": "https://www.yokogawa.com/about/careers/",
-      "azienda": "Yokogawa Italia Srl",
-      "citta": "Milano"
-    },
-    {
-      "titolo": "Senior Manager, Strategy, Italy",
-      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5490810008",
-      "azienda": "Wpp Media Srl",
-      "citta": "Milano"
-    }
-  ],
+  "offerte": [],
   "autocandidature": []
 }
