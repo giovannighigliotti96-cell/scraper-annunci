@@ -418,5 +418,26 @@
     "valutato_da": "llm",
     "recruiter": "",
     "modello": "Groq openai/gpt-oss-120b"
+  },
+  {
+    "title": "Capital Projects & Economics - ambito Transportation, Logistics and Infrastructure - Senior Consultant | Milano [ADV]",
+    "company": "PwC Italia",
+    "portal": "AziendeDirette",
+    "link": "https://pwc.wd3.myworkdayjobs.com/Global_Experienced_Careers/job/Milan/Capital-Projects---Economics---ambito-Transportation--Logistics-and-Infrastructure---Consultant---Milano--ADV-_766058WD/apply",
+    "date": "2026-11-18",
+    "snippet": "Milano, Milano, Italy",
+    "match_level": "Base",
+    "match_count": 0,
+    "city": "Milano",
+    "work_mode": "unverified",
+    "fetch_status": "ok",
+    "probabilita": 55,
+    "motivazione": "L'annuncio richiede capacità di analisi economico‑finanziaria e esperienza in progetti di infrastrutture/trasporti; il candidato ha esperienza manageriale in digital sales e startup, ma non ha background in consulenza né nel settore richiesto. Ha la seniority e la sede (Milano) richieste, ma il gap principale è la mancanza di competenze specifiche di project economics.",
+    "testo_completo": "Milano, Milano, Italy Sei pronto a fare la differenza nel settore dei trasporti e delle infrastrutture? Unisciti a noi come Senior Consultant nella practice Capital Projects & Economics e contribuisci a progetti ad alto impatto. Sviluppa piani strategici e analisi economico-finanziarie, lavorando a fianco di professionisti esperti.",
+    "ral": "",
+    "dettaglio_modalita": "",
+    "valutato_da": "llm",
+    "recruiter": "",
+    "modello": "Groq openai/gpt-oss-120b"
   }
 ]
