@@ -1,5 +1,38 @@
 [
   {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4492352073",
+    "data_invio": "2026-11-22",
+    "titolo": "Senior Global Marketing Manager, Digital Solutions",
+    "azienda": "LivaNova",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 66,
+    "link": "https://it.linkedin.com/jobs/view/senior-global-marketing-manager-digital-solutions-at-livanova-4492352073",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/engagement-manager-smb-at-legora-4475246515",
+    "data_invio": "2026-11-22",
+    "titolo": "Engagement Manager SMB",
+    "azienda": "Legora",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 52,
+    "link": "https://it.linkedin.com/jobs/view/engagement-manager-smb-at-legora-4475246515",
+    "recruiter": ""
+  },
+  {
+    "job_id": "https://it.linkedin.com/jobs/view/senior-account-manager-italy-at-jd-com-4478041057",
+    "data_invio": "2026-11-22",
+    "titolo": "Senior Account Manager - Italy",
+    "azienda": "JD.COM",
+    "citta": "Milano",
+    "portale": "LinkedIn",
+    "probabilita": 50,
+    "link": "https://it.linkedin.com/jobs/view/senior-account-manager-italy-at-jd-com-4478041057",
+    "recruiter": ""
+  },
+  {
     "job_id": "https://it.linkedin.com/jobs/view/brand-manager-at-give-back-beauty-4491825035",
     "data_invio": "2026-11-21",
     "titolo": "Brand Manager",
@@ -4364,39 +4397,6 @@
     "portale": "LinkedIn",
     "probabilita": 68,
     "link": "https://it.linkedin.com/jobs/view/sales-manager-settore-dentale-at-michael-page-4482211374",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-pillar-4483829568",
-    "data_invio": "2026-10-28",
-    "titolo": "Marketing Manager Italy",
-    "azienda": "Pillar",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/marketing-manager-italy-at-pillar-4483829568",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/sales-business-transformation-manager-milano-at-ey-4465242346",
-    "data_invio": "2026-10-28",
-    "titolo": "Sales & Business Transformation Manager - Milano",
-    "azienda": "EY",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/sales-business-transformation-manager-milano-at-ey-4465242346",
-    "recruiter": ""
-  },
-  {
-    "job_id": "https://it.linkedin.com/jobs/view/fx-sales-manager-at-ebury-4484458226",
-    "data_invio": "2026-10-28",
-    "titolo": "FX Sales Manager",
-    "azienda": "Ebury",
-    "citta": "Milano",
-    "portale": "LinkedIn",
-    "probabilita": 55,
-    "link": "https://it.linkedin.com/jobs/view/fx-sales-manager-at-ebury-4484458226",
     "recruiter": ""
   }
 ]
