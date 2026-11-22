@@ -14,7 +14,7 @@ from scraper import (
     LinkedInScraper, MichaelPageScraper, PagePersonnelScraper,
     WyserScraper, LhhScraper, GiGroupScraper, ManpowerScraper,
     IQMSelezioneScraper, PraxiScraper, AntalScraper, HaysScraper,
-    ReverseGroupScraper, AdamiScraper,
+    ReverseGroupScraper, AdamiScraper, JobsChScraper,
     CITIES, load_viste, save_viste, load_giornaliere,
     save_giornaliere, filtra_offerte_per_citta,
     dedup_offerte, aggiorna_stato_portali, arricchisci_offerte_con_llm,
@@ -30,6 +30,7 @@ if __name__ == "__main__":
 
     scrapers = [
         LinkedInScraper(),
+        JobsChScraper(),        # solo Ticino: negli altri cicli esce subito. Va qui E in esegui_scraping_job: il workflow lancia questo script (il 19/11 era solo li' e non girava)
         MichaelPageScraper(),
         WyserScraper(),
         LhhScraper(),

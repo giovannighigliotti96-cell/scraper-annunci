@@ -98,6 +98,30 @@ class TestSedeDaiPortaliNazionali(unittest.TestCase):
         self.assertIsNone(S.rileva_citta_offerta(offerta("Marketing Manager Roma", "Italia")))
 
 
+class TestIngressiDelRunUsanoGliStessiPortali(unittest.TestCase):
+    """Il workflow GitHub «Scraping offerte» lancia run_manual_scrape.py, NON esegui_scraping_job: ognuno ha il suo elenco di portali. Il 19/11/2026 jobs.ch era stato
+    aggiunto solo a esegui_scraping_job e per tre giorni non e' mai girato in produzione (nessuna voce JobsCh in stato_portali.json)."""
+
+    @staticmethod
+    def portali(testo):
+        import re
+        righe = [r for r in testo.splitlines() if not r.lstrip().startswith("#")]
+        return sorted(set(re.findall(r"\b(\w+Scraper)\(\)", " ".join(righe))))
+
+    def test_run_manual_scrape_ha_gli_stessi_portali_di_esegui_scraping_job(self):
+        import inspect
+        radice = os.path.dirname(os.path.abspath(__file__))
+        manuale = self.portali(open(os.path.join(radice, "run_manual_scrape.py"), encoding="utf-8").read())
+        schedulato = self.portali(inspect.getsource(S.esegui_scraping_job))
+        self.assertEqual(manuale, schedulato)
+
+    def test_jobsch_gira_nel_workflow(self):
+        radice = os.path.dirname(os.path.abspath(__file__))
+        self.assertIn("JobsChScraper", self.portali(open(os.path.join(radice, "run_manual_scrape.py"), encoding="utf-8").read()))
+        flusso = open(os.path.join(radice, ".github", "workflows", "scraping.yml"), encoding="utf-8").read()
+        self.assertIn("run_manual_scrape.py", flusso)
+
+
 class TestPromptDiValutazioneAmmetteIlTicino(unittest.TestCase):
     """Il prompt diceva «cerca solo a Genova e Milano» e trattava la sede fuori dalle citta' come requisito bloccante (punteggio sotto 40):
     ogni offerta ticinese sarebbe stata bocciata dal modello. Il regolamento della sede deve nominare il Ticino."""
