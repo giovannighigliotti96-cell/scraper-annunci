@@ -1,10 +1,11 @@
 {
   "LinkedIn": {
-    "ultime_offerte": 126,
+    "ultime_offerte": 194,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      194,
       126,
       156,
       222,
@@ -43,16 +44,16 @@
       84,
       84,
       72,
-      70,
-      75
+      70
     ]
   },
   "MichaelPage": {
     "ultime_offerte": 0,
-    "run_a_zero": 2,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "run_a_zero": 3,
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      0,
       0,
       0,
       345,
@@ -91,8 +92,7 @@
       75,
       74,
       72,
-      70,
-      71
+      70
     ]
   },
   "PagePersonnel": {
@@ -104,9 +104,10 @@
   "Wyser": {
     "ultime_offerte": 36,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      36,
       36,
       35,
       35,
@@ -145,16 +146,16 @@
       6,
       7,
       1,
-      1,
-      7
+      1
     ]
   },
   "LHH": {
-    "ultime_offerte": 267,
+    "ultime_offerte": 265,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      265,
       267,
       267,
       269,
@@ -193,7 +194,6 @@
       26,
       26,
       26,
-      26,
       26
     ]
   },
@@ -212,7 +212,7 @@
   "IQMSelezione": {
     "ultime_offerte": 51,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
       51,
@@ -231,6 +231,7 @@
       51,
       51,
       51,
+      51,
       50,
       50,
       50,
@@ -253,16 +254,16 @@
       4,
       4,
       4,
-      5,
       5
     ]
   },
   "PRAXI": {
-    "ultime_offerte": 67,
+    "ultime_offerte": 66,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      66,
       67,
       67,
       68,
@@ -301,7 +302,6 @@
       7,
       7,
       7,
-      7,
       7
     ]
   },
@@ -313,8 +313,8 @@
   },
   "Hays": {
     "ultime_offerte": 0,
-    "run_a_zero": 64,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "run_a_zero": 65,
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
       0,
@@ -362,9 +362,10 @@
   "ReverseGroup": {
     "ultime_offerte": 19,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      19,
       19,
       20,
       20,
@@ -403,7 +404,6 @@
       6,
       6,
       6,
-      6,
       6
     ]
   },
@@ -414,11 +414,12 @@
     "ultimo_errore": ""
   },
   "AziendeDirette": {
-    "ultime_offerte": 379,
+    "ultime_offerte": 381,
     "run_a_zero": 0,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      381,
       379,
       375,
       375,
@@ -457,16 +458,16 @@
       12,
       11,
       11,
-      11,
       11
     ]
   },
   "JobsCh": {
     "ultime_offerte": 0,
-    "run_a_zero": 4,
-    "ultimo_run": "2026-11-23T11:44:17",
+    "run_a_zero": 5,
+    "ultimo_run": "2026-11-23T14:49:08",
     "ultimo_errore": "",
     "storico_conteggi": [
+      0,
       0,
       0,
       0,
