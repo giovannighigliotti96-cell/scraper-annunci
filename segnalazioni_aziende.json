@@ -1,4 +1,65 @@
 {
-  "offerte": [],
+  "offerte": [
+    {
+      "titolo": "Products & Applications",
+      "link": "https://www.samsongroup.com/en/products-applications/product-selector/",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Product selector",
+      "link": "https://www.samsongroup.com/en/products-applications/product-selector/",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Digital solutions",
+      "link": "https://www.samsongroup.com/en/products-applications/digital-solutions/",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Tire Production",
+      "link": "https://www.samson.it",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "After-sales Service Open Returning goods Service partners",
+      "link": "https://www.samson.it",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "After-sales Service",
+      "link": "https://www.samsongroup.com/en/service-support/after-sales-service/",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Innovation Center",
+      "link": "https://www.samson.it",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Research & Innovation",
+      "link": "https://www.samson.it",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "sales-it@samsongroup.com",
+      "link": "mailto:sales-it@samsongroup.com",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Condizioni Generali di Vendita",
+      "link": "https://www.samson.it/GTC-REV-06.pdf",
+      "azienda": "Samson Srl",
+      "citta": "Milano"
+    }
+  ],
   "autocandidature": []
 }
