@@ -1,17 +1,4 @@
 {
-  "offerte": [
-    {
-      "titolo": "Associate, Strategy, Italy",
-      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5495179008",
-      "azienda": "Wpp Media Srl",
-      "citta": "Milano"
-    },
-    {
-      "titolo": "Manager, Engagement Media Solutions, Italy",
-      "link": "https://job-boards.greenhouse.io/wppmedia/jobs/5495200008",
-      "azienda": "Wpp Media Srl",
-      "citta": "Milano"
-    }
-  ],
+  "offerte": [],
   "autocandidature": []
 }
