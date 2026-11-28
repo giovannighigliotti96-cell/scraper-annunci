@@ -1,4 +1,53 @@
 {
-  "offerte": [],
+  "offerte": [
+    {
+      "titolo": "Social Media Natale 2023",
+      "link": "https://www.manuport.it/lavora-con-noi",
+      "azienda": "Manuport Srl",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Social Media",
+      "link": "https://www.manuport.it/it/news-146/social-media.html",
+      "azienda": "Manuport Srl",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Attività Vendita Noleggio Ricambi Assistenza tecnica MHC Service",
+      "link": "https://www.manuport.it/lavora-con-noi",
+      "azienda": "Manuport Srl",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "Vendita Noleggio Ricambi Assistenza tecnica MHC Service",
+      "link": "https://www.manuport.it/lavora-con-noi",
+      "azienda": "Manuport Srl",
+      "citta": "Genova"
+    },
+    {
+      "titolo": "By Industry By Industry Product Porfolio Our Own Products",
+      "link": "https://disproquima.com/careers/",
+      "azienda": "Disproquima Italia Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Product Porfolio",
+      "link": "https://disproquima.com/careers/",
+      "azienda": "Disproquima Italia Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Our Own Products",
+      "link": "https://disproquima.com/careers/",
+      "azienda": "Disproquima Italia Srl",
+      "citta": "Milano"
+    },
+    {
+      "titolo": "Product Portfolio",
+      "link": "https://disproquima.com/product-portfolio/",
+      "azienda": "Disproquima Italia Srl",
+      "citta": "Milano"
+    }
+  ],
   "autocandidature": []
 }
